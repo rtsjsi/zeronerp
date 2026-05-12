@@ -1,15 +1,9 @@
 /**
- * OCR Service — Tesseract.js wrapper
+ * OCR Service — Stub implementation (Tesseract removed to reduce bundle size)
  * 
- * Provides document scanning capabilities using Tesseract.js.
- * Runs in-browser for client-side OCR or server-side in Node.
- * 
- * Usage:
- *   const text = await extractTextFromImage(imageFile);
- *   const parsed = await aiParseDocument(text, 'invoice', [...]);
+ * Provides document scanning capabilities. Currently disabled to optimize
+ * bundle size for Cloudflare Free plan.
  */
-
-import Tesseract from 'tesseract.js';
 
 export interface OcrResult {
   success: boolean;
@@ -19,74 +13,34 @@ export interface OcrResult {
 }
 
 /**
- * Extract text from an image file or URL using Tesseract.js OCR.
- * 
- * @param image — File, Blob, URL string, or base64 data URI
- * @param lang  — OCR language(s), default 'eng' (English)
- *                Use 'eng+hin' for English + Hindi
+ * Extract text from an image file or URL.
+ * (STUB: Currently disabled to reduce bundle size)
  */
 export async function extractTextFromImage(
   image: File | Blob | string,
   lang = 'eng',
 ): Promise<OcrResult> {
-  try {
-    const result = await Tesseract.recognize(image, lang, {
-      logger: (info) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[OCR]', info.status, `${Math.round((info.progress || 0) * 100)}%`);
-        }
-      },
-    });
-
-    return {
-      success: true,
-      text: result.data.text.trim(),
-      confidence: result.data.confidence,
-    };
-  } catch (error) {
-    console.error('[OCR Service Error]', error);
-    return {
-      success: false,
-      text: '',
-      confidence: 0,
-      error: error instanceof Error ? error.message : 'OCR processing failed',
-    };
-  }
+  console.warn('[OCR] Service is currently disabled to optimize bundle size.');
+  return {
+    success: false,
+    text: '',
+    confidence: 0,
+    error: 'OCR service is currently disabled to meet deployment size limits.',
+  };
 }
 
 /**
  * Extract text from multiple images and concatenate results.
- * Useful for multi-page documents.
+ * (STUB: Currently disabled to reduce bundle size)
  */
 export async function extractTextFromMultipleImages(
   images: Array<File | Blob | string>,
   lang = 'eng',
 ): Promise<OcrResult> {
-  try {
-    const results = await Promise.all(
-      images.map((img) => extractTextFromImage(img, lang)),
-    );
-
-    const allText = results
-      .filter((r) => r.success)
-      .map((r) => r.text)
-      .join('\n\n--- Page Break ---\n\n');
-
-    const avgConfidence =
-      results.reduce((sum, r) => sum + r.confidence, 0) / results.length;
-
-    return {
-      success: true,
-      text: allText,
-      confidence: avgConfidence,
-    };
-  } catch (error) {
-    console.error('[OCR Service Error]', error);
-    return {
-      success: false,
-      text: '',
-      confidence: 0,
-      error: error instanceof Error ? error.message : 'Multi-page OCR failed',
-    };
-  }
+  return {
+    success: false,
+    text: '',
+    confidence: 0,
+    error: 'OCR service is currently disabled to meet deployment size limits.',
+  };
 }
