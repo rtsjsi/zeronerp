@@ -7,13 +7,27 @@ import { defineCloudflareConfig } from "@opennextjs/cloudflare";
  * smaller workers, helping us stay under the 3MiB limit of the Free plan.
  */
 export default defineCloudflareConfig({
-  default: {
-    minify: true,
-  },
-  // Split routes into separate workers to reduce individual worker size
   functions: {
+    // Default worker configuration
+    default: {
+      minify: true,
+    },
+    // Split routes into separate workers to reduce individual worker size
     dashboard: {
-      patterns: ["dashboard/*", "inventory/*", "procurement/*", "sales/*", "finance/*", "hr/*"],
+      patterns: [
+        "dashboard", 
+        "dashboard/*", 
+        "inventory", 
+        "inventory/*", 
+        "procurement", 
+        "procurement/*", 
+        "sales", 
+        "sales/*", 
+        "finance", 
+        "finance/*", 
+        "hr", 
+        "hr/*"
+      ],
       minify: true,
     },
     api: {
@@ -21,7 +35,7 @@ export default defineCloudflareConfig({
       minify: true,
     },
     auth: {
-      patterns: ["login/*", "api/auth/*"],
+      patterns: ["login", "login/*", "api/auth/*"],
       minify: true,
     }
   }
