@@ -1,9 +1,28 @@
-// default open-next.config.ts file created by @opennextjs/cloudflare
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
-// import r2IncrementalCache from "@opennextjs/cloudflare/overrides/incremental-cache/r2-incremental-cache";
 
+/**
+ * Cloudflare Configuration for ZeronERP
+ * 
+ * We are enabling 'split' mode to break the application into multiple
+ * smaller workers, helping us stay under the 3MiB limit of the Free plan.
+ */
 export default defineCloudflareConfig({
-	// For best results consider enabling R2 caching
-	// See https://opennext.js.org/cloudflare/caching for more details
-	// incrementalCache: r2IncrementalCache
+  default: {
+    minify: true,
+  },
+  // Split routes into separate workers to reduce individual worker size
+  functions: {
+    dashboard: {
+      patterns: ["dashboard/*", "inventory/*", "procurement/*", "sales/*", "finance/*", "hr/*"],
+      minify: true,
+    },
+    api: {
+      patterns: ["api/*"],
+      minify: true,
+    },
+    auth: {
+      patterns: ["login/*", "api/auth/*"],
+      minify: true,
+    }
+  }
 });
