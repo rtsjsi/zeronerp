@@ -13,7 +13,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['@prisma/client', 'prisma', 'pg', 'pg-cloudflare'],
+  serverExternalPackages: ['@prisma/client', 'prisma', 'pg', 'pg-cloudflare', 'recharts', 'lucide-react'],
   // Allow image domains for Supabase storage and R2
   images: {
     remotePatterns: [
