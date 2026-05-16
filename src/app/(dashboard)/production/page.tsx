@@ -1,5 +1,6 @@
 import { Plus, Factory } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/shared/page-header";
 import { BatchList } from "./batch-list";
 
 export default function ProductionPage() {
