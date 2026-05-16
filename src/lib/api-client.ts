@@ -39,6 +39,16 @@ export async function apiFetch<T = unknown>(
     headers,
   });
 
-  const json: ApiResponse<T> = await response.json();
-  return json;
+  try {
+    const json: ApiResponse<T> = await response.json();
+    return json;
+  } catch (err) {
+    return {
+      success: false,
+      data: null,
+      message: `Server Error (${response.status}): ${response.statusText}`,
+      errors: null,
+      pagination: null,
+    };
+  }
 }
