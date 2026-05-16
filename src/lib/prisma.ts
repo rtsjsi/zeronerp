@@ -8,18 +8,19 @@ const prismaClientSingleton = () => {
     throw new Error('DATABASE_URL is not set in environment variables');
   }
 
-  // Choose the correct driver based on the environment
-  // Cloudflare Workers (workerd) require pg-cloudflare
-  // Node.js (build/dev) requires standard pg
+  // Choose the correct driver constructor based on the runtime
   let pool;
-  if (process.env.NEXT_RUNTIME === 'edge' || typeof (globalThis as any).WebSocket !== 'undefined') {
-    // We are on Cloudflare or an Edge runtime
-    const { Pool } = require('pg-cloudflare');
-    pool = new Pool({ connectionString });
+  
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    // We are on Cloudflare Edge
+    const EdgePool = require('pg-cloudflare');
+    // Handle different export patterns (default vs named)
+    const PoolConstructor = EdgePool.default || EdgePool.Pool || EdgePool;
+    pool = new PoolConstructor({ connectionString });
   } else {
-    // We are in Node.js (during build or local dev)
-    const { Pool } = require('pg');
-    pool = new Pool({ connectionString });
+    // We are in Node.js (Build/Dev)
+    const { Pool: NodePool } = require('pg');
+    pool = new NodePool({ connectionString });
   }
 
   const adapter = new PrismaPg(pool);
