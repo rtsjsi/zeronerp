@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 
 export default function InventoryPage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [activeTab, setActiveTab] = useState("items");
   const [isItemOpen, setIsItemOpen] = useState(false);
   const [isWarehouseOpen, setIsWarehouseOpen] = useState(false);
@@ -85,7 +85,7 @@ export default function InventoryPage() {
     <div className="space-y-6 animate-fade-in">
       {/* DEBUG BANNER - Remove after fix */}
       <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded text-[10px] font-mono">
-        User: {user?.email} | Tenant: {user?.tenantId} | Items Loaded: {items?.length || 0}
+        Session: {session ? "YES" : "NO"} | User: {user?.email || "NULL"} | Tenant: {user?.tenantId || "NULL"} | Items Loaded: {items?.length || 0}
       </div>
       <PageHeader
         title="Inventory"

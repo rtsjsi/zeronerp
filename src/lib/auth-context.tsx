@@ -59,7 +59,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const json = await res.json();
         if (json.success) {
           setUser(json.data);
+        } else {
+          console.error('[Auth] Profile fetch failed:', json.message);
         }
+      } else {
+        console.error('[Auth] Profile fetch HTTP error:', res.status);
       }
     } catch (err) {
       console.error('[Auth] Failed to fetch user profile', err);
