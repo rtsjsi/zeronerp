@@ -21,7 +21,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   LogOut,
   Moon,
   Sun,
@@ -178,7 +177,6 @@ export function Sidebar() {
       {/* Bottom section */}
       <div className="px-2 py-3 space-y-1">
         {/* AI Assistant */}
-        {renderNavItem({ label: "Ask ERP", href: "/ask", icon: Sparkles })}
         {renderNavItem({ label: "Settings", href: "/settings", icon: Settings })}
 
         {/* Theme toggle */}

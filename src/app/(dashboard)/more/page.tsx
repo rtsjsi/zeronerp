@@ -11,7 +11,6 @@ import {
   TrendingUp,
   BarChart3,
   Settings,
-  Sparkles,
   Factory,
   Users,
   ChevronRight,
@@ -28,7 +27,6 @@ const menuItems = [
   { label: "Reports", href: "/reports", icon: BarChart3, description: "Business analytics" },
   { label: "Production", href: "/production", icon: Factory, description: "BOM & batches" },
   { label: "HR", href: "/hr", icon: Users, description: "Employees & payroll" },
-  { label: "Ask ERP", href: "/ask", icon: Sparkles, description: "AI assistant" },
   { label: "Settings", href: "/settings", icon: Settings, description: "Configuration" },
 ];
 
