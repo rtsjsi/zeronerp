@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 /**
  * GET /api/health
  * 
@@ -19,3 +20,4 @@ export async function GET() {
     pagination: null,
   });
 }
+

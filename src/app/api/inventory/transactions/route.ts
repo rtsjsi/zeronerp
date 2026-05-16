@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { withAuth } from "@/lib/auth-middleware";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError } from "@/lib/api-response";
@@ -24,3 +25,4 @@ export const GET = withAuth(async (_req, ctx) => {
     return apiError("Internal server error", 500);
   }
 });
+

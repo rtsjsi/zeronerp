@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 /**
  * GET /api/auth/me
  * 
@@ -17,3 +18,4 @@ export const GET = withAuth(async (_req, ctx) => {
     tenantName: ctx.tenant.name,
   });
 });
+

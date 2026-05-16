@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { withAuth } from "@/lib/auth-middleware";
 import { ProcurementService } from "@/lib/services/procurement.service";
 import { apiSuccess, apiError } from "@/lib/api-response";
@@ -35,3 +36,4 @@ export const POST = withAuth(async (req, ctx) => {
     return apiError("Internal server error", 500);
   }
 });
+

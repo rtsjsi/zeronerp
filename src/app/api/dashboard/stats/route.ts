@@ -2,6 +2,8 @@ import { withAuth } from "@/lib/auth-middleware";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError } from "@/lib/api-response";
 
+export const dynamic = "force-dynamic";
+
 export const GET = withAuth(async (_req, ctx) => {
   try {
     const tenantId = ctx.tenantId;
