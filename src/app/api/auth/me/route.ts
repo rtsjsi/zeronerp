@@ -1,8 +1,7 @@
 /**
  * GET /api/auth/me
  * 
- * Returns the authenticated user's profile including tenant info and permissions.
- * Used by the client-side AuthContext to hydrate user state.
+ * Returns the authenticated user's profile including tenant info.
  */
 
 export const runtime = "nodejs";
@@ -16,6 +15,5 @@ export const GET = withAuth(async (_req, ctx) => {
     fullName: ctx.user.fullName,
     tenantId: ctx.tenant.id,
     tenantName: ctx.tenant.name,
-    permissions: ctx.permissions,
   });
 });

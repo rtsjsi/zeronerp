@@ -3,8 +3,6 @@
  * 
  * Provides user session, tenant info, and auth actions (login, logout)
  * to all client components via React context.
- * 
- * Gracefully handles missing Supabase configuration.
  */
 
 'use client';
@@ -21,7 +19,6 @@ interface AppUser {
   tenantId: string;
   tenantName: string;
   avatarUrl?: string;
-  permissions: string[];
 }
 
 interface AuthContextValue {
@@ -109,7 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await fetchAppUser(newSession.access_token);
         } else {
           setUser(null);
-          // Only redirect if signed out
           if (event === 'SIGNED_OUT') {
             router.push('/login');
           }

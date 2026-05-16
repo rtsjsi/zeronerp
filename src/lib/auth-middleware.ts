@@ -1,15 +1,9 @@
 /**
- * Auth Middleware
+ * Auth Middleware (Simplified)
  * 
  * Extracts and validates the JWT from the Authorization header,
  * resolves the User + Tenant from the database, and injects
  * an AuthContext into route handler callbacks.
- * 
- * Usage:
- *   export const GET = withAuth(async (req, ctx) => {
- *     const { user, tenant } = ctx;
- *     return apiSuccess({ user });
- *   });
  */
 
 import { NextRequest } from 'next/server';
@@ -36,7 +30,6 @@ export interface AuthContext {
     settings: unknown;
     aiEnabled: boolean;
   };
-  permissions: string[];
   params: any;
 }
 
@@ -91,27 +84,7 @@ export function withAuth(handler: AuthenticatedHandler) {
         return apiError('Tenant not found or inactive', 403);
       }
 
-      // 5. Resolve permissions
-      const userRoles = await prisma.userRole.findMany({
-        where: { userId: user.id },
-        include: {
-          role: {
-            include: {
-              rolePermissions: {
-                include: { permission: true },
-              },
-            },
-          },
-        },
-      });
-
-      const permissions = (userRoles as any[]).flatMap((ur) =>
-        ur.role.rolePermissions.map(
-          (rp: any) => `${rp.permission.module}:${rp.permission.resource}:${rp.permission.action}`,
-        ),
-      );
-
-      // 6. Build context
+      // 5. Build context
       const ctx: AuthContext = {
         userId: user.id,
         tenantId: user.tenantId,
@@ -130,7 +103,6 @@ export function withAuth(handler: AuthenticatedHandler) {
           settings: tenant.settings,
           aiEnabled: tenant.aiEnabled,
         },
-        permissions,
         params,
       };
 
@@ -140,17 +112,4 @@ export function withAuth(handler: AuthenticatedHandler) {
       return apiError('Authentication failed', 500);
     }
   };
-}
-
-/**
- * Check if the user has a specific permission.
- * Permission format: "module:resource:action"
- */
-export function hasPermission(
-  permissions: string[],
-  module: string,
-  resource: string,
-  action: string,
-): boolean {
-  return permissions.includes(`${module}:${resource}:${action}`);
 }

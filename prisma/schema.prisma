@@ -1,5 +1,5 @@
 // ============================================
-// ZeronERP — Prisma Schema
+// ZeronERP — Prisma Schema (Simplified)
 // Multi-tenant ERP with soft deletes & audit
 // ============================================
 
@@ -22,7 +22,7 @@ model Tenant {
   domain      String?
   logo        String?
   settings    Json     @default("{}")
-  customTerms Json     @default("{}")   // e.g. {"warehouse": "Depot"}
+  customTerms Json     @default("{}")
   aiEnabled   Boolean  @default(true)
   isActive    Boolean  @default(true)
   isDeleted   Boolean  @default(false)
@@ -31,7 +31,6 @@ model Tenant {
   createdBy   String?  @db.Uuid
 
   users       User[]
-  roles       Role[]
   auditLogs   AuditLog[]
 
   @@schema("public")
@@ -57,81 +56,11 @@ model User {
   createdBy     String?  @db.Uuid
 
   tenant        Tenant   @relation(fields: [tenantId], references: [id])
-  userRoles     UserRole[]
   auditLogs     AuditLog[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
   @@index([supabaseUid])
-  @@schema("public")
-}
-
-// ─── ROLE ───────────────────────────────────────────
-
-model Role {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  name        String
-  description String?
-  isSystem    Boolean  @default(false)  // system roles cannot be deleted
-  isDeleted   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   String?  @db.Uuid
-
-  tenant          Tenant           @relation(fields: [tenantId], references: [id])
-  rolePermissions RolePermission[]
-  userRoles       UserRole[]
-
-  @@unique([tenantId, name])
-  @@index([tenantId])
-  @@schema("public")
-}
-
-// ─── PERMISSION ────────────────────────────────────
-
-model Permission {
-  id          String   @id @default(uuid()) @db.Uuid
-  module      String               // e.g. "inventory", "sales"
-  action      String               // e.g. "create", "read", "update", "delete"
-  resource    String               // e.g. "item", "warehouse"
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  rolePermissions RolePermission[]
-
-  @@unique([module, action, resource])
-  @@schema("public")
-}
-
-// ─── ROLE ↔ PERMISSION ─────────────────────────────
-
-model RolePermission {
-  id           String     @id @default(uuid()) @db.Uuid
-  roleId       String     @db.Uuid
-  permissionId String     @db.Uuid
-  createdAt    DateTime   @default(now())
-
-  role       Role       @relation(fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
-
-  @@unique([roleId, permissionId])
-  @@schema("public")
-}
-
-// ─── USER ↔ ROLE ────────────────────────────────────
-
-model UserRole {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  roleId    String   @db.Uuid
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-  role Role @relation(fields: [roleId], references: [id])
-
-  @@unique([userId, roleId])
   @@schema("public")
 }
 
@@ -158,8 +87,6 @@ model AuditLog {
   @@index([tenantId, createdAt])
   @@schema("public")
 }
-
-// ─── CONFIG ENGINE ──────────────────────────────────
 
 // ─── CONFIG ENGINE ──────────────────────────────────
 
@@ -191,7 +118,7 @@ model Item {
   sku          String
   name         String
   description  String?
-  uom          String   @default("pcs")    // Unit of Measure
+  uom          String   @default("pcs")
   basePrice    Decimal  @default(0) @db.Decimal(12, 2)
   customFields Json     @default("{}")
   isActive     Boolean  @default(true)
@@ -296,7 +223,7 @@ model PurchaseOrder {
   tenantId     String   @db.Uuid
   vendorId     String   @db.Uuid
   poNumber     String
-  status       String   @default("DRAFT") // "DRAFT" | "SENT" | "RECEIVED" | "CANCELLED"
+  status       String   @default("DRAFT")
   totalAmount  Decimal  @default(0) @db.Decimal(12, 2)
   notes        String?
   isDeleted    Boolean  @default(false)
@@ -355,7 +282,7 @@ model SalesOrder {
   tenantId     String   @db.Uuid
   customerId   String   @db.Uuid
   soNumber     String
-  status       String   @default("DRAFT") // "DRAFT" | "CONFIRMED" | "SHIPPED" | "CANCELLED"
+  status       String   @default("DRAFT")
   totalAmount  Decimal  @default(0) @db.Decimal(12, 2)
   notes        String?
   isDeleted    Boolean  @default(false)
