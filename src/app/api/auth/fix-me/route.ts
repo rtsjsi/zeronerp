@@ -17,9 +17,14 @@ export async function GET(req: NextRequest) {
     const supabase = createAdminClient();
     const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
 
-    if (error || !supabaseUser) {
-      return apiError("Invalid session", 401);
+    if (error) {
+      return apiError(`Supabase Error: ${error.message}`, 401);
     }
+    if (!supabaseUser) {
+      return apiError("No user found in Supabase session", 401);
+    }
+
+    console.log("Fixing user:", supabaseUser.email, "UID:", supabaseUser.id);
 
     // 2. Resolve Demo Tenant
     const tenant = await prisma.tenant.findUnique({
@@ -27,7 +32,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!tenant) {
-      return apiError("Demo tenant not found. Please run seed first.", 404);
+      return apiError("Demo tenant 'zeron-demo' not found in database.", 404);
     }
 
     // 3. Upsert User
@@ -47,8 +52,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return apiSuccess({ user, tenant }, "Account linked successfully!");
+    return apiSuccess({ user, tenant }, `Success! Linked ${supabaseUser.email} to ${tenant.name}`);
   } catch (err: any) {
-    return apiError(err.message, 500);
+    console.error("Fix-me error:", err);
+    return apiError(`System Error: ${err.message}`, 500);
   }
 }

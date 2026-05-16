@@ -97,7 +97,7 @@ export default function InventoryPage() {
                 toast.success("Account fixed! Refreshing...");
                 window.location.reload();
               } else {
-                toast.error("Failed to fix account");
+                toast.error(res.message || "Failed to fix account");
               }
             }}
           >
