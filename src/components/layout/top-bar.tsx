@@ -23,7 +23,6 @@ import { Badge } from "@/components/ui/badge";
 export function TopBar() {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 h-16 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -73,28 +72,6 @@ export function TopBar() {
             ) : (
               <Moon className="w-[18px] h-[18px]" />
             )}
-          </Button>
-
-          {/* Global search */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-muted-foreground hover:text-foreground"
-            onClick={() => setSearchOpen(!searchOpen)}
-            id="global-search-btn"
-          >
-            <Search className="w-[18px] h-[18px]" />
-          </Button>
-
-          {/* Notifications */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 relative text-muted-foreground hover:text-foreground"
-            id="notifications-btn"
-          >
-            <Bell className="w-[18px] h-[18px]" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive" />
           </Button>
 
           {/* User menu */}
