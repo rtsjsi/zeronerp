@@ -7,11 +7,12 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getEnv } from '../env';
 
 /** Admin client — bypasses RLS, for server-side operations only */
 export function createAdminClient(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = getEnv('NEXT_PUBLIC_SUPABASE_URL');
+  const key = getEnv('SUPABASE_SERVICE_ROLE_KEY');
 
   if (!url || !key) {
     throw new Error('Missing Supabase server environment variables');
@@ -27,8 +28,8 @@ export function createAdminClient(): SupabaseClient {
 
 /** Regular client with anon key — respects RLS */
 export function createServerClient(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = getEnv('NEXT_PUBLIC_SUPABASE_URL');
+  const key = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 
   if (!url || !key) {
     throw new Error('Missing Supabase public environment variables');
