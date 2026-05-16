@@ -104,7 +104,7 @@ export default function SalesPage() {
           ) : filteredOrders && filteredOrders.length > 0 ? (
             <SalesOrderTable
               orders={filteredOrders}
-              onViewDetails={(order) => console.log("View SO", order)}
+              onViewDetails={() => {}}
               onUpdateStatus={(id, status) => {
                 toast.promise(
                   apiFetch(`/api/sales/orders/${id}`, { 
@@ -145,7 +145,7 @@ export default function SalesPage() {
           ) : filteredCustomers && filteredCustomers.length > 0 ? (
             <CustomerTable
               customers={filteredCustomers}
-              onEdit={(customer) => console.log("Edit Customer", customer)}
+              onEdit={() => {}}
               onDelete={async (id) => {
                 if (!confirm("Are you sure?")) return;
                 const res = await apiFetch(`/api/sales/customers/${id}`, { method: "DELETE" });
