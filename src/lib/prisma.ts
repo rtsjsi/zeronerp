@@ -8,7 +8,7 @@ const prismaClientSingleton = () => {
   if (!connectionString) {
     throw new Error('DATABASE_URL is not set in environment variables');
   }
-  const pool = new Pool({ connectionString });
+  const pool = new (Pool as any)({ connectionString });
   const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
