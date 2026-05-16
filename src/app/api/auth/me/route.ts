@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
  * Returns the authenticated user's profile including tenant info.
  */
 
-export const runtime = "nodejs";
 import { withAuth } from "@/lib/auth-middleware";
 import { apiSuccess } from "@/lib/api-response";
 
@@ -18,4 +17,3 @@ export const GET = withAuth(async (_req, ctx) => {
     tenantName: ctx.tenant.name,
   });
 });
-

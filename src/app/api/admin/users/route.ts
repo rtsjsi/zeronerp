@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { withAuth } from "@/lib/auth-middleware";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -15,11 +15,14 @@ const userSchema = z.object({
  * GET /api/admin/users
  */
 export const GET = withAuth(async (_req, ctx) => {
-  const users = await prisma.user.findMany({
-    where: { tenantId: ctx.tenantId },
-    orderBy: { createdAt: "desc" },
-  });
-  return apiSuccess(users);
+  const { data: users } = await db()
+    .from('User')
+    .select('*')
+    .eq('tenantId', ctx.tenantId)
+    .eq('isDeleted', false)
+    .order('createdAt', { ascending: false });
+
+  return apiSuccess(users || []);
 });
 
 /**
@@ -51,15 +54,21 @@ export const POST = withAuth(async (req, ctx) => {
     }
 
     // 2. Create in DB
-    const user = await prisma.user.create({
-      data: {
+    const { data: user, error: dbError } = await db()
+      .from('User')
+      .insert({
         tenantId: ctx.tenantId,
         email,
         fullName,
         supabaseUid: sbUser.user.id,
         isActive: true,
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      return apiError(`Database Error: ${dbError.message}`, 500);
+    }
 
     return apiSuccess(user, "User created successfully", 201);
   } catch (err: any) {
@@ -67,4 +76,3 @@ export const POST = withAuth(async (req, ctx) => {
     return apiError(err.message || "Internal server error", 500);
   }
 });
-

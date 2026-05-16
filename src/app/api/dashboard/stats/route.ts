@@ -1,22 +1,24 @@
-import { withAuth } from "@/lib/auth-middleware";
-import { prisma } from "@/lib/prisma";
-import { apiSuccess, apiError } from "@/lib/api-response";
-
 export const dynamic = "force-dynamic";
+
+import { withAuth } from "@/lib/auth-middleware";
+import { db } from "@/lib/db";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
 export const GET = withAuth(async (_req, ctx) => {
   try {
     const tenantId = ctx.tenantId;
+    const supaDb = db();
 
-    // 1. Total Inventory Value (Base price * quantity in stock)
-    const items = await prisma.item.findMany({
-      where: { tenantId, isDeleted: false },
-      include: { stocks: true },
-    });
+    // 1. Total Inventory Value
+    const { data: items } = await supaDb
+      .from('Item')
+      .select('basePrice, stocks:Stock(quantity)')
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false);
 
     let totalInventoryValue = 0;
-    items.forEach(item => {
-      const totalQty = item.stocks.reduce((sum, s) => sum + Number(s.quantity), 0);
+    (items || []).forEach((item: any) => {
+      const totalQty = (item.stocks || []).reduce((sum: number, s: any) => sum + Number(s.quantity), 0);
       totalInventoryValue += Number(item.basePrice) * totalQty;
     });
 
@@ -25,34 +27,52 @@ export const GET = withAuth(async (_req, ctx) => {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const monthSales = await prisma.salesOrder.aggregate({
-      where: { 
-        tenantId, 
-        isDeleted: false,
-        createdAt: { gte: startOfMonth },
-        status: { not: "CANCELLED" }
-      },
-      _sum: { totalAmount: true }
-    });
+    const { data: monthSalesData } = await supaDb
+      .from('SalesOrder')
+      .select('totalAmount')
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .neq('status', 'CANCELLED')
+      .gte('createdAt', startOfMonth.toISOString());
 
-    // 3. Pending Orders (PO + SO)
-    const pendingPOs = await prisma.purchaseOrder.count({
-      where: { tenantId, isDeleted: false, status: "DRAFT" }
-    });
-    const pendingSOs = await prisma.salesOrder.count({
-      where: { tenantId, isDeleted: false, status: "DRAFT" }
-    });
+    const monthSales = (monthSalesData || []).reduce(
+      (sum: number, o: any) => sum + Number(o.totalAmount || 0), 0
+    );
 
-    // 4. Counts for display
-    const vendorCount = await prisma.vendor.count({ where: { tenantId, isDeleted: false } });
-    const customerCount = await prisma.customer.count({ where: { tenantId, isDeleted: false } });
+    // 3. Pending Orders
+    const { count: pendingPOs } = await supaDb
+      .from('PurchaseOrder')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .eq('status', 'DRAFT');
+
+    const { count: pendingSOs } = await supaDb
+      .from('SalesOrder')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .eq('status', 'DRAFT');
+
+    // 4. Counts
+    const { count: vendorCount } = await supaDb
+      .from('Vendor')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false);
+
+    const { count: customerCount } = await supaDb
+      .from('Customer')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false);
 
     return apiSuccess({
       inventoryValue: totalInventoryValue,
-      monthSales: Number(monthSales._sum.totalAmount || 0),
-      pendingOrders: pendingPOs + pendingSOs,
-      vendorCount,
-      customerCount
+      monthSales,
+      pendingOrders: (pendingPOs || 0) + (pendingSOs || 0),
+      vendorCount: vendorCount || 0,
+      customerCount: customerCount || 0,
     });
   } catch (err) {
     console.error("[Dashboard Stats API Error]", err);

@@ -1,5 +1,9 @@
-import { prisma } from "@/lib/prisma";
-import { AuditService } from "./audit.service";
+/**
+ * Sales Service (Supabase SDK)
+ */
+
+import { db } from '@/lib/db';
+import { AuditService } from './audit.service';
 
 export class SalesService {
   /**
@@ -7,10 +11,14 @@ export class SalesService {
    */
 
   static async getCustomers(tenantId: string) {
-    return prisma.customer.findMany({
-      where: { tenantId, isDeleted: false },
-      orderBy: { name: "asc" },
-    });
+    const { data } = await db()
+      .from('Customer')
+      .select('*')
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .order('name', { ascending: true });
+
+    return data || [];
   }
 
   static async createCustomer(tenantId: string, userId: string, data: {
@@ -21,15 +29,19 @@ export class SalesService {
     address?: string;
     customFields?: Record<string, unknown>;
   }) {
-    const customer = await prisma.customer.create({
-      data: {
+    const { data: customer, error } = await db()
+      .from('Customer')
+      .insert({
         ...data,
         tenantId,
         createdBy: userId,
-      },
-    });
+      })
+      .select()
+      .single();
 
-    await AuditService.log(tenantId, userId, "Customer", customer.id, "create", null, customer);
+    if (error) throw new Error(error.message);
+
+    await AuditService.log(tenantId, userId, 'Customer', customer.id, 'create', null, customer);
     return customer;
   }
 
@@ -38,16 +50,14 @@ export class SalesService {
    */
 
   static async getSalesOrders(tenantId: string) {
-    return prisma.salesOrder.findMany({
-      where: { tenantId, isDeleted: false },
-      include: {
-        customer: true,
-        items: {
-          include: { item: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const { data } = await db()
+      .from('SalesOrder')
+      .select('*, customer:Customer(*), items:SalesOrderItem(*, item:Item(*))')
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .order('createdAt', { ascending: false });
+
+    return data || [];
   }
 
   static async createSalesOrder(tenantId: string, userId: string, data: {
@@ -61,88 +71,119 @@ export class SalesService {
     }[];
   }) {
     const { items, ...soData } = data;
-
-    // Calculate total amount
     const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
 
-    const so = await prisma.salesOrder.create({
-      data: {
+    const supaDb = db();
+
+    // 1. Create SO
+    const { data: so, error: soErr } = await supaDb
+      .from('SalesOrder')
+      .insert({
         ...soData,
         tenantId,
         totalAmount,
         createdBy: userId,
-        items: {
-          create: items.map(item => ({
-            itemId: item.itemId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.quantity * item.unitPrice,
-          })),
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
+      })
+      .select()
+      .single();
 
-    await AuditService.log(tenantId, userId, "SalesOrder", so.id, "create", null, so);
-    return so;
+    if (soErr) throw new Error(soErr.message);
+
+    // 2. Create SO Items
+    const soItems = items.map(item => ({
+      soId: so.id,
+      itemId: item.itemId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      totalPrice: item.quantity * item.unitPrice,
+    }));
+
+    await supaDb.from('SalesOrderItem').insert(soItems);
+
+    await AuditService.log(tenantId, userId, 'SalesOrder', so.id, 'create', null, so);
+
+    // Return with items
+    const { data: fullSo } = await supaDb
+      .from('SalesOrder')
+      .select('*, items:SalesOrderItem(*)')
+      .eq('id', so.id)
+      .single();
+
+    return fullSo || so;
   }
 
   static async updateOrderStatus(tenantId: string, userId: string, id: string, status: string) {
-    const oldSo = await prisma.salesOrder.findFirst({ 
-      where: { id, tenantId },
-      include: { items: true }
-    });
-    if (!oldSo) throw new Error("Sales Order not found");
+    const supaDb = db();
 
-    const newSo = await prisma.salesOrder.update({
-      where: { id },
-      data: { status },
-    });
+    const { data: oldSo } = await supaDb
+      .from('SalesOrder')
+      .select('*, items:SalesOrderItem(*)')
+      .eq('id', id)
+      .eq('tenantId', tenantId)
+      .single();
 
-    // If order is CONFIRMED, deduct stock from the first available warehouse
-    // In a real app, you'd pick a specific warehouse or handle multiple shipments
-    if (status === "CONFIRMED" && oldSo.status === "DRAFT") {
-      const warehouse = await prisma.warehouse.findFirst({ where: { tenantId } });
-      
-      if (warehouse) {
+    if (!oldSo) throw new Error('Sales Order not found');
+
+    const { data: newSo, error } = await supaDb
+      .from('SalesOrder')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    // If order is CONFIRMED, deduct stock
+    if (status === 'CONFIRMED' && oldSo.status === 'DRAFT') {
+      const { data: warehouse } = await supaDb
+        .from('Warehouse')
+        .select('*')
+        .eq('tenantId', tenantId)
+        .eq('isDeleted', false)
+        .limit(1)
+        .single();
+
+      if (warehouse && oldSo.items) {
         for (const orderItem of oldSo.items) {
-          await prisma.stock.upsert({
-            where: {
-              itemId_warehouseId: {
+          // Check existing stock
+          const { data: existingStock } = await supaDb
+            .from('Stock')
+            .select('*')
+            .eq('itemId', orderItem.itemId)
+            .eq('warehouseId', warehouse.id)
+            .single();
+
+          if (existingStock) {
+            await supaDb
+              .from('Stock')
+              .update({ quantity: Number(existingStock.quantity) - Number(orderItem.quantity) })
+              .eq('id', existingStock.id);
+          } else {
+            await supaDb
+              .from('Stock')
+              .insert({
+                tenantId,
                 itemId: orderItem.itemId,
                 warehouseId: warehouse.id,
-              },
-            },
-            create: {
-              tenantId,
-              itemId: orderItem.itemId,
-              warehouseId: warehouse.id,
-              quantity: -orderItem.quantity,
-            },
-            update: {
-              quantity: { decrement: orderItem.quantity },
-            },
-          });
+                quantity: -Number(orderItem.quantity),
+              });
+          }
 
           // Log the stock transaction
-          await prisma.inventoryTransaction.create({
-            data: {
-              tenantId,
-              itemId: orderItem.itemId,
-              warehouseId: warehouse.id,
-              type: "OUT",
-              quantity: -orderItem.quantity,
-              reference: `Sales Order ${oldSo.soNumber}`,
-              performedBy: userId,
-            },
+          await supaDb.from('InventoryTransaction').insert({
+            tenantId,
+            itemId: orderItem.itemId,
+            warehouseId: warehouse.id,
+            type: 'OUT',
+            quantity: -Number(orderItem.quantity),
+            reference: `Sales Order ${oldSo.soNumber}`,
+            performedBy: userId,
           });
         }
       }
     }
 
-    await AuditService.log(tenantId, userId, "SalesOrder", id, "update_status", oldSo, newSo);
+    await AuditService.log(tenantId, userId, 'SalesOrder', id, 'update_status', oldSo, newSo);
     return newSo;
   }
 }

@@ -1,14 +1,14 @@
 /**
- * Auth Middleware (Simplified)
+ * Auth Middleware (Supabase SDK)
  * 
  * Extracts and validates the JWT from the Authorization header,
- * resolves the User + Tenant from the database, and injects
- * an AuthContext into route handler callbacks.
+ * resolves the User + Tenant from the database via Supabase SDK,
+ * and injects an AuthContext into route handler callbacks.
  */
 
 import { NextRequest } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
 import { apiError } from '@/lib/api-response';
 
 /** Context injected into authenticated route handlers */
@@ -60,27 +60,30 @@ export function withAuth(handler: AuthenticatedHandler) {
         return apiError('Invalid or expired token', 401);
       }
 
-      // 3. Resolve application user
-      const user = await prisma.user.findFirst({
-        where: {
-          supabaseUid: supabaseUser.id,
-          isActive: true,
-        },
-      });
+      // 3. Resolve application user via Supabase SDK
+      const supaDb = db();
+      const { data: user, error: userErr } = await supaDb
+        .from('User')
+        .select('*')
+        .eq('supabaseUid', supabaseUser.id)
+        .eq('isActive', true)
+        .eq('isDeleted', false)
+        .single();
 
-      if (!user) {
+      if (userErr || !user) {
         return apiError('User not found in application', 403);
       }
 
       // 4. Resolve tenant
-      const tenant = await prisma.tenant.findFirst({
-        where: {
-          id: user.tenantId,
-          isActive: true,
-        },
-      });
+      const { data: tenant, error: tenantErr } = await supaDb
+        .from('Tenant')
+        .select('*')
+        .eq('id', user.tenantId)
+        .eq('isActive', true)
+        .eq('isDeleted', false)
+        .single();
 
-      if (!tenant) {
+      if (tenantErr || !tenant) {
         return apiError('Tenant not found or inactive', 403);
       }
 

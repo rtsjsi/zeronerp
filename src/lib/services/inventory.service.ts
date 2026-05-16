@@ -1,7 +1,9 @@
-import { prisma } from "@/lib/prisma";
-import { AuditService } from "./audit.service";
-// Using any for Decimal to avoid complex prisma runtime path issues during build
-type Decimal = any;
+/**
+ * Inventory Service (Supabase SDK)
+ */
+
+import { db } from '@/lib/db';
+import { AuditService } from './audit.service';
 
 export class InventoryService {
   /**
@@ -9,26 +11,26 @@ export class InventoryService {
    */
 
   static async getItems(tenantId: string) {
-    return prisma.item.findMany({
-      where: { tenantId },
-      include: {
-        stocks: {
-          include: { warehouse: true },
-        },
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+    const { data: items } = await db()
+      .from('Item')
+      .select('*, stocks:Stock(*, warehouse:Warehouse(*))')
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .order('updatedAt', { ascending: false });
+
+    return items || [];
   }
 
   static async getItemById(tenantId: string, id: string) {
-    return prisma.item.findFirst({
-      where: { id, tenantId },
-      include: {
-        stocks: {
-          include: { warehouse: true },
-        },
-      },
-    });
+    const { data } = await db()
+      .from('Item')
+      .select('*, stocks:Stock(*, warehouse:Warehouse(*))')
+      .eq('id', id)
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .single();
+
+    return data;
   }
 
   static async createItem(tenantId: string, userId: string, data: {
@@ -36,41 +38,54 @@ export class InventoryService {
     name: string;
     description?: string;
     uom?: string;
-    basePrice?: number | string | Decimal;
-    customFields?: any;
+    basePrice?: number;
   }) {
-    const item = await prisma.item.create({
-      data: {
+    const { data: item, error } = await db()
+      .from('Item')
+      .insert({
         ...data,
         tenantId,
         createdBy: userId,
-      },
-    });
+      })
+      .select()
+      .single();
 
-    await AuditService.log(tenantId, userId, "Item", item.id, "create", null, item);
+    if (error) throw new Error(error.message);
+
+    await AuditService.log(tenantId, userId, 'Item', item.id, 'create', null, item);
     return item;
   }
 
-  static async updateItem(tenantId: string, userId: string, id: string, data: any) {
+  static async updateItem(tenantId: string, userId: string, id: string, updateData: any) {
     const oldItem = await this.getItemById(tenantId, id);
-    if (!oldItem) throw new Error("Item not found");
+    if (!oldItem) throw new Error('Item not found');
 
-    const newItem = await prisma.item.update({
-      where: { id },
-      data,
-    });
+    const { data: newItem, error } = await db()
+      .from('Item')
+      .update(updateData)
+      .eq('id', id)
+      .eq('tenantId', tenantId)
+      .select()
+      .single();
 
-    await AuditService.log(tenantId, userId, "Item", id, "update", oldItem, newItem);
+    if (error) throw new Error(error.message);
+
+    await AuditService.log(tenantId, userId, 'Item', id, 'update', oldItem, newItem);
     return newItem;
   }
 
   static async deleteItem(tenantId: string, userId: string, id: string) {
-    const item = await prisma.item.update({
-      where: { id, tenantId },
-      data: { isDeleted: true },
-    });
+    const { data: item, error } = await db()
+      .from('Item')
+      .update({ isDeleted: true })
+      .eq('id', id)
+      .eq('tenantId', tenantId)
+      .select()
+      .single();
 
-    await AuditService.log(tenantId, userId, "Item", id, "delete", item, null);
+    if (error) throw new Error(error.message);
+
+    await AuditService.log(tenantId, userId, 'Item', id, 'delete', item, null);
     return item;
   }
 
@@ -79,10 +94,14 @@ export class InventoryService {
    */
 
   static async getWarehouses(tenantId: string) {
-    return prisma.warehouse.findMany({
-      where: { tenantId },
-      orderBy: { name: "asc" },
-    });
+    const { data } = await db()
+      .from('Warehouse')
+      .select('*')
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .order('name', { ascending: true });
+
+    return data || [];
   }
 
   static async createWarehouse(tenantId: string, userId: string, data: {
@@ -90,15 +109,19 @@ export class InventoryService {
     code: string;
     location?: string;
   }) {
-    const warehouse = await prisma.warehouse.create({
-      data: {
+    const { data: warehouse, error } = await db()
+      .from('Warehouse')
+      .insert({
         ...data,
         tenantId,
         createdBy: userId,
-      },
-    });
+      })
+      .select()
+      .single();
 
-    await AuditService.log(tenantId, userId, "Warehouse", warehouse.id, "create", null, warehouse);
+    if (error) throw new Error(error.message);
+
+    await AuditService.log(tenantId, userId, 'Warehouse', warehouse.id, 'create', null, warehouse);
     return warehouse;
   }
 }

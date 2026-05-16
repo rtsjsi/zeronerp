@@ -1,17 +1,10 @@
 /**
- * Audit Log Service
- * 
- * Records every data change in the AuditLog table.
- * Called from service layers after any create/update/delete operation.
+ * Audit Log Service (Supabase SDK)
  */
 
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
 
 export class AuditService {
-  /**
-   * Write an audit log entry.
-   * This should be called after every data mutation.
-   */
   static async log(
     tenantId: string,
     userId: string | null,
@@ -23,43 +16,37 @@ export class AuditService {
     options?: { ipAddress?: string; userAgent?: string }
   ): Promise<void> {
     try {
-      await prisma.auditLog.create({
-        data: {
-          tenantId,
-          userId,
-          entity,
-          entityId,
-          action,
-          oldValues: oldValues ?? undefined,
-          newValues: newValues ?? undefined,
-          ipAddress: options?.ipAddress,
-          userAgent: options?.userAgent,
-        },
+      await db().from('AuditLog').insert({
+        tenantId,
+        userId,
+        entity,
+        entityId,
+        action,
+        oldValues: oldValues ?? null,
+        newValues: newValues ?? null,
+        ipAddress: options?.ipAddress ?? null,
+        userAgent: options?.userAgent ?? null,
       });
     } catch (error) {
-      // Audit logging should never crash the main operation
       console.error('[Audit Log Error]', error);
     }
   }
 
-  /**
-   * Get audit history for a specific entity.
-   */
   static async getHistory(
     tenantId: string,
     entity: string,
     entityId: string,
     limit = 50,
   ) {
-    return prisma.auditLog.findMany({
-      where: { tenantId, entity, entityId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      include: {
-        user: {
-          select: { fullName: true, email: true },
-        },
-      },
-    });
+    const { data } = await db()
+      .from('AuditLog')
+      .select('*, user:User(fullName, email)')
+      .eq('tenantId', tenantId)
+      .eq('entity', entity)
+      .eq('entityId', entityId)
+      .order('createdAt', { ascending: false })
+      .limit(limit);
+
+    return data || [];
   }
 }
