@@ -31,9 +31,9 @@ export const POST = withAuth(async (req, ctx) => {
 
     const order = await ProcurementService.createPurchaseOrder(ctx.tenantId, ctx.userId, parsed.data);
     return apiSuccess(order, "Purchase Order created", 201);
-  } catch (err) {
+  } catch (err: any) {
     console.error("[Orders API Error]", err);
-    return apiError("Internal server error", 500);
+    return apiError(err.message || "Internal server error", 500);
   }
 });
 

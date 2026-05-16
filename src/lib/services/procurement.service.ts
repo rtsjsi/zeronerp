@@ -71,7 +71,7 @@ export class ProcurementService {
     }[];
   }) {
     const { items, ...poData } = data;
-    const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const totalAmount = Number(items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2));
 
     const supaDb = db();
 
