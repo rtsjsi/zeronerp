@@ -86,6 +86,24 @@ export default function InventoryPage() {
       {/* DEBUG BANNER - Remove after fix */}
       <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded text-[10px] font-mono">
         Session: {session ? "YES" : "NO"} | User: {user?.email || "NULL"} | Tenant: {user?.tenantId || "NULL"} | Items Loaded: {items?.length || 0}
+        {!user && session && (
+          <Button 
+            size="xs" 
+            variant="destructive" 
+            className="ml-4 h-5 text-[9px] px-2"
+            onClick={async () => {
+              const res = await apiFetch("/api/auth/fix-me");
+              if (res.success) {
+                toast.success("Account fixed! Refreshing...");
+                window.location.reload();
+              } else {
+                toast.error("Failed to fix account");
+              }
+            }}
+          >
+            Fix My Account
+          </Button>
+        )}
       </div>
       <PageHeader
         title="Inventory"
