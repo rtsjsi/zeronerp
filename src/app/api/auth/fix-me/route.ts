@@ -7,13 +7,18 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    // Check Env
+    if (!process.env.DATABASE_URL) {
+      return apiError("Environment Error: DATABASE_URL is missing in Cloudflare Dashboard.", 500);
+    }
+
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return apiError("No token found", 401);
     }
     const token = authHeader.replace("Bearer ", "");
 
-    // 1. Get UID from session (Using public client for verification)
+    // 1. Get UID from session
     const supabase = createServerClient();
     const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
 
@@ -21,10 +26,8 @@ export async function GET(req: NextRequest) {
       return apiError(`Supabase Error: ${error.message}`, 401);
     }
     if (!supabaseUser) {
-      return apiError("No user found in Supabase session", 401);
+      return apiError("No user found in session", 401);
     }
-
-    console.log("Fixing user:", supabaseUser.email, "UID:", supabaseUser.id);
 
     // 2. Resolve Demo Tenant
     const tenant = await prisma.tenant.findUnique({
@@ -32,7 +35,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!tenant) {
-      return apiError("Demo tenant 'zeron-demo' not found in database.", 404);
+      return apiError("Database Error: Demo tenant 'zeron-demo' not found. Please run seed.", 404);
     }
 
     // 3. Upsert User
@@ -52,9 +55,8 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return apiSuccess({ user, tenant }, `Success! Linked ${supabaseUser.email} to ${tenant.name}`);
+    return apiSuccess({ user, tenant }, `Success! Linked ${supabaseUser.email}`);
   } catch (err: any) {
-    console.error("Fix-me error:", err);
-    return apiError(`System Error: ${err.message}`, 500);
+    return apiError(`Runtime Error: ${err.message}`, 500);
   }
 }
