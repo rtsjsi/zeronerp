@@ -22,6 +22,7 @@ export interface AuthContext {
     email: string;
     fullName: string;
     tenantId: string;
+    role: 'ADMIN' | 'USER';
   };
   tenant: {
     id: string;
@@ -98,6 +99,7 @@ export function withAuth(handler: AuthenticatedHandler) {
           email: user.email,
           fullName: user.fullName,
           tenantId: user.tenantId,
+          role: user.role as 'ADMIN' | 'USER',
         },
         tenant: {
           id: tenant.id,
@@ -108,6 +110,12 @@ export function withAuth(handler: AuthenticatedHandler) {
         },
         params,
       };
+
+      // 6. Role-based path restrictions
+      const path = req.nextUrl.pathname;
+      if (path.startsWith('/api/admin/users') && user.role !== 'ADMIN') {
+        return apiError('Permission denied: Admin access required', 403);
+      }
 
       return handler(req, ctx);
     } catch (err) {

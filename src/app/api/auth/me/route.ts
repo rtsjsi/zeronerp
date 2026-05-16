@@ -15,5 +15,6 @@ export const GET = withAuth(async (_req, ctx) => {
     fullName: ctx.user.fullName,
     tenantId: ctx.tenant.id,
     tenantName: ctx.tenant.name,
+    role: ctx.user.role,
   });
 });

@@ -25,6 +25,7 @@ import {
   Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 
@@ -55,6 +56,7 @@ const adminNavItems: NavItem[] = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuth();
 
   const isActive = (href: string) => pathname.startsWith(href);
 
@@ -165,14 +167,16 @@ export function Sidebar() {
           {secondaryNavItems.map(renderNavItem)}
         </div>
 
-        <div className="pt-4 space-y-0.5">
-          {!collapsed && (
-            <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
-              Admin
-            </span>
-          )}
-          {adminNavItems.map(renderNavItem)}
-        </div>
+        {user?.role === 'ADMIN' && (
+          <div className="pt-4 space-y-0.5">
+            {!collapsed && (
+              <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
+                Admin
+              </span>
+            )}
+            {adminNavItems.map(renderNavItem)}
+          </div>
+        )}
       </nav>
 
       <Separator className="mx-3 mt-2" />

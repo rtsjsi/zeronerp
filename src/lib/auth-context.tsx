@@ -19,6 +19,7 @@ interface AppUser {
   tenantId: string;
   tenantName: string;
   avatarUrl?: string;
+  role: 'ADMIN' | 'USER';
 }
 
 interface AuthContextValue {
