@@ -1,5 +1,5 @@
 import 'server-only';
-import { Pool } from 'pg';
+import { Pool } from 'pg-cloudflare';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client/edge';
 
