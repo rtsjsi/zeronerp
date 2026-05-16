@@ -1,10 +1,6 @@
-/**
- * Dashboard Home Page
- * 
- * Shows role-based KPI widgets, recent activity, and quick actions.
- * This is a placeholder that will be expanded in Phase 2.
- */
+"use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   Package,
   ShoppingCart,
@@ -12,62 +8,73 @@ import {
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
+  Plus,
+  Users,
+  Box,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-export const metadata = {
-  title: "Dashboard",
-};
-
-const kpiCards = [
-  {
-    title: "Total Inventory Value",
-    value: "₹24,56,890",
-    change: "+12.5%",
-    trend: "up" as const,
-    icon: Package,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-  },
-  {
-    title: "This Month Sales",
-    value: "₹8,45,200",
-    change: "+8.2%",
-    trend: "up" as const,
-    icon: Receipt,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    title: "Pending Orders",
-    value: "23",
-    change: "-3.1%",
-    trend: "down" as const,
-    icon: ShoppingCart,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
-  },
-  {
-    title: "Revenue Growth",
-    value: "+18.5%",
-    change: "+2.4%",
-    trend: "up" as const,
-    icon: TrendingUp,
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
-  },
-];
+import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format";
+import Link from "next/link";
 
 export default function DashboardPage() {
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: async () => {
+      const res = await apiFetch<any>("/api/dashboard/stats");
+      if (!res.success) throw new Error(res.message);
+      return res.data;
+    },
+  });
+
+  const kpiCards = [
+    {
+      title: "Total Inventory Value",
+      value: formatCurrency(stats?.inventoryValue || 0),
+      change: "+0.0%",
+      trend: "up" as const,
+      icon: Package,
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
+    },
+    {
+      title: "This Month Sales",
+      value: formatCurrency(stats?.monthSales || 0),
+      change: "+0.0%",
+      trend: "up" as const,
+      icon: Receipt,
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+    },
+    {
+      title: "Pending Orders",
+      value: stats?.pendingOrders || 0,
+      change: "0",
+      trend: "up" as const,
+      icon: ShoppingCart,
+      color: "text-amber-500",
+      bg: "bg-amber-500/10",
+    },
+    {
+      title: "Active Partners",
+      value: (stats?.vendorCount || 0) + (stats?.customerCount || 0),
+      change: `V:${stats?.vendorCount || 0} C:${stats?.customerCount || 0}`,
+      trend: "up" as const,
+      icon: Users,
+      color: "text-violet-500",
+      bg: "bg-violet-500/10",
+    },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-          Good afternoon 👋
+          Welcome back
         </h1>
         <p className="text-muted-foreground mt-1">
-          Here&apos;s what&apos;s happening with your business today.
+          Here&apos;s an overview of your ZeronERP instance.
         </p>
       </div>
 
@@ -89,21 +96,11 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">{kpi.value}</div>
+                <div className="text-2xl font-bold text-foreground">
+                  {isLoading ? "..." : kpi.value}
+                </div>
                 <div className="flex items-center gap-1 mt-1">
-                  {kpi.trend === "up" ? (
-                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
-                  ) : (
-                    <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
-                  )}
-                  <span
-                    className={`text-xs font-medium ${
-                      kpi.trend === "up" ? "text-emerald-500" : "text-red-500"
-                    }`}
-                  >
-                    {kpi.change}
-                  </span>
-                  <span className="text-xs text-muted-foreground">vs last month</span>
+                  <span className="text-xs text-muted-foreground">{kpi.change}</span>
                 </div>
               </CardContent>
             </Card>
@@ -120,22 +117,23 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {[
-              { label: "New Sales Invoice", href: "/sales/invoices/new", icon: Receipt },
-              { label: "Add Stock Entry", href: "/inventory/stock/new", icon: Package },
-              { label: "Create Purchase Order", href: "/procurement/orders/new", icon: ShoppingCart },
+              { label: "New Sales Order", href: "/sales", icon: ShoppingCart },
+              { label: "Add Inventory Item", href: "/inventory", icon: Box },
+              { label: "Create Purchase Order", href: "/procurement", icon: ShoppingBagIcon },
             ].map((action, i) => {
-              const ActionIcon = action.icon;
+              const ActionIcon = action.icon || Package;
               return (
-                <button
+                <Link
                   key={i}
+                  href={action.href}
                   className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left group"
                 >
                   <div className="p-2 rounded-lg bg-primary/5 group-hover:bg-primary/10 transition-colors">
                     <ActionIcon className="w-4 h-4 text-primary" />
                   </div>
                   <span className="text-sm font-medium text-foreground">{action.label}</span>
-                  <ArrowUpRight className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
+                  <Plus className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
               );
             })}
           </CardContent>
@@ -147,20 +145,35 @@ export default function DashboardPage() {
             <CardTitle className="text-base">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <TrendingUp className="w-7 h-7 text-muted-foreground" />
-              </div>
-              <h3 className="text-sm font-medium text-foreground mb-1">
-                No activity yet
-              </h3>
-              <p className="text-xs text-muted-foreground max-w-[240px]">
-                Start by creating your first inventory item or sales order. Your recent activity will appear here.
-              </p>
+            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+              <TrendingUp className="w-8 h-8 mb-4 opacity-20" />
+              <p className="text-sm">Real-time activity feed coming soon.</p>
+              <p className="text-xs mt-1">Audit logs are already being captured in the background.</p>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
+  );
+}
+
+function ShoppingBagIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+      <path d="M3 6h18" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
   );
 }

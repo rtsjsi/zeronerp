@@ -203,6 +203,7 @@ model Item {
   stocks       Stock[]
   transactions InventoryTransaction[]
   poItems      PurchaseOrderItem[]
+  soItems      SalesOrderItem[]
 
   @@unique([tenantId, sku])
   @@index([tenantId])
@@ -321,6 +322,65 @@ model PurchaseOrderItem {
 
   purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id])
   item          Item          @relation(fields: [itemId], references: [id])
+
+  @@schema("public")
+}
+
+// ─── SALES ──────────────────────────────────────────
+
+model Customer {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  name         String
+  contactName  String?
+  email        String?
+  phone        String?
+  address      String?
+  customFields Json     @default("{}")
+  isActive     Boolean  @default(true)
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?  @db.Uuid
+
+  salesOrders  SalesOrder[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@schema("public")
+}
+
+model SalesOrder {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  customerId   String   @db.Uuid
+  soNumber     String
+  status       String   @default("DRAFT") // "DRAFT" | "CONFIRMED" | "SHIPPED" | "CANCELLED"
+  totalAmount  Decimal  @default(0) @db.Decimal(12, 2)
+  notes        String?
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?  @db.Uuid
+
+  customer     Customer         @relation(fields: [customerId], references: [id])
+  items        SalesOrderItem[]
+
+  @@unique([tenantId, soNumber])
+  @@index([tenantId])
+  @@schema("public")
+}
+
+model SalesOrderItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  soId         String   @db.Uuid
+  itemId       String   @db.Uuid
+  quantity     Decimal  @db.Decimal(12, 3)
+  unitPrice    Decimal  @db.Decimal(12, 2)
+  totalPrice   Decimal  @db.Decimal(12, 2)
+
+  salesOrder   SalesOrder @relation(fields: [soId], references: [id])
+  item         Item       @relation(fields: [itemId], references: [id])
 
   @@schema("public")
 }
