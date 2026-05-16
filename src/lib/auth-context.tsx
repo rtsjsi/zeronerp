@@ -10,6 +10,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import type { Session, User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js';
 
@@ -43,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   const supabase: SupabaseClient | null = getSupabaseBrowser();
   const isConfigured = !!supabase;
@@ -94,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = sb.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      async (event, newSession) => {
         if (cancelled) return;
         setSession(newSession);
         setSupabaseUser(newSession?.user ?? null);
@@ -103,6 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await fetchAppUser(newSession.access_token);
         } else {
           setUser(null);
+          // Only redirect if signed out
+          if (event === 'SIGNED_OUT') {
+            router.push('/login');
+          }
         }
       },
     );
@@ -111,12 +117,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [supabase, fetchAppUser]);
+  }, [supabase, fetchAppUser, router]);
 
   /** Email + password sign in */
   const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) {
-      return { error: 'Supabase is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.' };
+      return { error: 'Supabase is not configured.' };
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -133,7 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setSession(null);
     setSupabaseUser(null);
-  }, [supabase]);
+    router.push('/login');
+  }, [supabase, router]);
 
   /** Manually refresh user data */
   const refreshUser = useCallback(async () => {
