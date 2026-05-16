@@ -81,9 +81,9 @@ export function VendorTable({ vendors, onEdit, onDelete }: VendorTableProps) {
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger render={
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted transition-colors">
+                    <button className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
                       <MoreHorizontal className="w-4 h-4" />
-                    </Button>
+                    </button>
                   } />
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Vendor Actions</DropdownMenuLabel>
