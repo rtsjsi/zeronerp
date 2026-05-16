@@ -13,7 +13,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { apiError } from '@/lib/api-response';
 
@@ -60,7 +60,7 @@ export function withAuth(handler: AuthenticatedHandler) {
       const token = authHeader.replace('Bearer ', '');
 
       // 2. Validate with Supabase
-      const supabase = createAdminClient();
+      const supabase = createServerClient();
       const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
 
       if (error || !supabaseUser) {

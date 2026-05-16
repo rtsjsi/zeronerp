@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createServerClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { NextRequest } from "next/server";
@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
     }
     const token = authHeader.replace("Bearer ", "");
 
-    // 1. Get UID from session
-    const supabase = createAdminClient();
+    // 1. Get UID from session (Using public client for verification)
+    const supabase = createServerClient();
     const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
 
     if (error) {
