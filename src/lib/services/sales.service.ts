@@ -90,13 +90,57 @@ export class SalesService {
   }
 
   static async updateOrderStatus(tenantId: string, userId: string, id: string, status: string) {
-    const oldSo = await prisma.salesOrder.findFirst({ where: { id, tenantId } });
+    const oldSo = await prisma.salesOrder.findFirst({ 
+      where: { id, tenantId },
+      include: { items: true }
+    });
     if (!oldSo) throw new Error("Sales Order not found");
 
     const newSo = await prisma.salesOrder.update({
       where: { id },
       data: { status },
     });
+
+    // If order is CONFIRMED, deduct stock from the first available warehouse
+    // In a real app, you'd pick a specific warehouse or handle multiple shipments
+    if (status === "CONFIRMED" && oldSo.status === "DRAFT") {
+      const warehouse = await prisma.warehouse.findFirst({ where: { tenantId } });
+      
+      if (warehouse) {
+        for (const orderItem of oldSo.items) {
+          await prisma.stock.upsert({
+            where: {
+              itemId_warehouseId: {
+                itemId: orderItem.itemId,
+                warehouseId: warehouse.id,
+              },
+            },
+            create: {
+              tenantId,
+              itemId: orderItem.itemId,
+              warehouseId: warehouse.id,
+              quantity: -orderItem.quantity,
+            },
+            update: {
+              quantity: { decrement: orderItem.quantity },
+            },
+          });
+
+          // Log the stock transaction
+          await prisma.inventoryTransaction.create({
+            data: {
+              tenantId,
+              itemId: orderItem.itemId,
+              warehouseId: warehouse.id,
+              type: "OUT",
+              quantity: -orderItem.quantity,
+              reference: `Sales Order ${oldSo.soNumber}`,
+              performedBy: userId,
+            },
+          });
+        }
+      }
+    }
 
     await AuditService.log(tenantId, userId, "SalesOrder", id, "update_status", oldSo, newSo);
     return newSo;

@@ -55,12 +55,12 @@ export function CreateSalesOrderDialog({ open, onOpenChange, onSuccess }: Create
 
   const fetchCustomers = async () => {
     const res = await apiFetch<any[]>("/api/sales/customers");
-    if (res.success) setCustomers(res.data);
+    if (res.success) setCustomers(res.data || []);
   };
 
   const fetchItems = async () => {
     const res = await apiFetch<any[]>("/api/inventory/items");
-    if (res.success) setInventoryItems(res.data);
+    if (res.success) setInventoryItems(res.data || []);
   };
 
   const form = useForm<SoFormValues>({

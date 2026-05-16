@@ -55,12 +55,12 @@ export function CreatePurchaseOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
   const fetchVendors = async () => {
     const res = await apiFetch<any[]>("/api/procurement/vendors");
-    if (res.success) setVendors(res.data);
+    if (res.success) setVendors(res.data || []);
   };
 
   const fetchItems = async () => {
     const res = await apiFetch<any[]>("/api/inventory/items");
-    if (res.success) setInventoryItems(res.data);
+    if (res.success) setInventoryItems(res.data || []);
   };
 
   const form = useForm<PoFormValues>({

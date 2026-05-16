@@ -60,12 +60,12 @@ export function StockMovementDialog({ open, onOpenChange, onSuccess }: StockMove
 
   const fetchItems = async () => {
     const res = await apiFetch<any[]>("/api/inventory/items");
-    if (res.success) setItems(res.data);
+    if (res.success) setItems(res.data || []);
   };
 
   const fetchWarehouses = async () => {
     const res = await apiFetch<any[]>("/api/inventory/warehouses");
-    if (res.success) setWarehouses(res.data);
+    if (res.success) setWarehouses(res.data || []);
   };
 
   const form = useForm<MovementFormValues>({

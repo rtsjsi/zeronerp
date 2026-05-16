@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, ShoppingCart, UserGroupIcon, Search, Filter, ShoppingBag, Users } from "lucide-react";
+import { Plus, ShoppingCart, Search, Filter, ShoppingBag, Users } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { VendorTable } from "@/components/procurement/vendor-table";

@@ -17,7 +17,7 @@ export class AuditService {
     userId: string | null,
     entity: string,
     entityId: string,
-    action: 'create' | 'update' | 'delete',
+    action: 'create' | 'update' | 'delete' | 'update_status' | 'stock_move',
     oldValues?: any,
     newValues?: any,
     options?: { ipAddress?: string; userAgent?: string }

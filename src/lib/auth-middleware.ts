@@ -37,6 +37,7 @@ export interface AuthContext {
     aiEnabled: boolean;
   };
   permissions: string[];
+  params: any;
 }
 
 type AuthenticatedHandler = (
@@ -49,7 +50,7 @@ type AuthenticatedHandler = (
  * Extracts JWT, validates via Supabase, resolves user & tenant.
  */
 export function withAuth(handler: AuthenticatedHandler) {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest, { params }: { params: any }) => {
     try {
       // 1. Extract token
       const authHeader = req.headers.get('authorization');
@@ -130,6 +131,7 @@ export function withAuth(handler: AuthenticatedHandler) {
           aiEnabled: tenant.aiEnabled,
         },
         permissions,
+        params,
       };
 
       return handler(req, ctx);
