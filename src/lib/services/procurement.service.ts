@@ -84,6 +84,8 @@ export class ProcurementService {
         totalAmount,
         createdBy: userId,
         status: 'DRAFT',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
