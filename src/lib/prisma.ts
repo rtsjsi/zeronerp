@@ -1,4 +1,5 @@
 import 'server-only';
+import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client/edge';
 
@@ -8,21 +9,13 @@ const prismaClientSingleton = () => {
     throw new Error('DATABASE_URL is not set in environment variables');
   }
 
-  // Choose the correct driver constructor based on the runtime
-  let pool;
+  // Use the standard pg Pool. 
+  // Cloudflare Workers now support this natively via 'connect'
+  const pool = new Pool({ 
+    connectionString,
+    max: 1 // Crucial for serverless to prevent connection exhaustion
+  });
   
-  if (process.env.NEXT_RUNTIME === 'edge') {
-    // We are on Cloudflare Edge
-    const EdgePool = require('pg-cloudflare');
-    // Handle different export patterns (default vs named)
-    const PoolConstructor = EdgePool.default || EdgePool.Pool || EdgePool;
-    pool = new PoolConstructor({ connectionString });
-  } else {
-    // We are in Node.js (Build/Dev)
-    const { Pool: NodePool } = require('pg');
-    pool = new NodePool({ connectionString });
-  }
-
   const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
