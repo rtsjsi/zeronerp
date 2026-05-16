@@ -71,7 +71,7 @@ export function withAuth(handler: AuthenticatedHandler) {
         .single();
 
       if (userErr || !user) {
-        return apiError('User not found in application', 403);
+        return apiError(userErr ? `DB Error (User): ${userErr.message}` : 'User not found in application', 403);
       }
 
       // 4. Resolve tenant
@@ -84,7 +84,7 @@ export function withAuth(handler: AuthenticatedHandler) {
         .single();
 
       if (tenantErr || !tenant) {
-        return apiError('Tenant not found or inactive', 403);
+        return apiError(tenantErr ? `DB Error (Tenant): ${tenantErr.message}` : 'Tenant not found or inactive', 403);
       }
 
       // 5. Build context
