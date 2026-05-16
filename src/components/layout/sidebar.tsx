@@ -18,22 +18,15 @@ import {
   Receipt,
   TrendingUp,
   BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
-  LogOut,
-  Moon,
-  Sun,
   Factory,
   Users as UsersIcon,
   Search,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/lib/auth-context";
 
 interface NavItem {
   label: string;
@@ -53,19 +46,15 @@ const mainNavItems: NavItem[] = [
 
 const secondaryNavItems: NavItem[] = [
   { label: "Production", href: "/production", icon: Factory },
-  { label: "HR", href: "/hr", icon: UsersIcon },
 ];
 
 const adminNavItems: NavItem[] = [
   { label: "User Management", href: "/admin/users", icon: UsersIcon },
-  { label: "System Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
-  const { user, signOut } = useAuth();
 
   const isActive = (href: string) => pathname.startsWith(href);
 
@@ -190,79 +179,7 @@ export function Sidebar() {
 
       {/* Bottom section */}
       <div className="px-2 py-3 space-y-1">
-        {/* AI Assistant */}
-        {renderNavItem({ label: "Settings", href: "/settings", icon: Settings })}
-
-        {/* Theme toggle */}
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full",
-                "text-sidebar-foreground/70 hover:bg-sidebar-accent transition-colors",
-                "justify-center px-2",
-              )}
-            >
-              {theme === "dark" ? (
-                <Sun className="w-[18px] h-[18px]" />
-              ) : (
-                <Moon className="w-[18px] h-[18px]" />
-              )}
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {theme === "dark" ? "Light mode" : "Dark mode"}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full",
-              "text-sidebar-foreground/70 hover:bg-sidebar-accent transition-colors",
-            )}
-          >
-            {theme === "dark" ? (
-              <Sun className="w-[18px] h-[18px]" />
-            ) : (
-              <Moon className="w-[18px] h-[18px]" />
-            )}
-            <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
-          </button>
-        )}
-
-        <Separator className="!my-2" />
-
-        {/* User */}
-        <div
-          className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg",
-            collapsed && "justify-center px-2",
-          )}
-        >
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">
-            {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
-          </div>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {user?.fullName || "User"}
-              </p>
-              <p className="text-[11px] text-sidebar-foreground/50 truncate">
-                {user?.tenantName || "Organization"}
-              </p>
-            </div>
-          )}
-          {!collapsed && (
-            <button
-              onClick={signOut}
-              className="text-sidebar-foreground/40 hover:text-destructive transition-colors p-1"
-              title="Sign out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        {/* Placeholder if needed */}
       </div>
 
       {/* Collapse toggle */}

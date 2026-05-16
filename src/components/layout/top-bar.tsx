@@ -5,8 +5,9 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Bell, Sparkles, Menu } from "lucide-react";
+import { Search, Bell, Sparkles, Menu, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -21,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 
 export function TopBar() {
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
@@ -59,6 +61,20 @@ export function TopBar() {
 
         {/* Right — Actions */}
         <div className="flex items-center gap-2">
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? (
+              <Sun className="w-[18px] h-[18px]" />
+            ) : (
+              <Moon className="w-[18px] h-[18px]" />
+            )}
+          </Button>
+
           {/* Global search */}
           <Button
             variant="ghost"
@@ -68,16 +84,6 @@ export function TopBar() {
             id="global-search-btn"
           >
             <Search className="w-[18px] h-[18px]" />
-          </Button>
-
-          {/* AI Assistant */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-muted-foreground hover:text-primary"
-            id="ai-assistant-btn"
-          >
-            <Sparkles className="w-[18px] h-[18px]" />
           </Button>
 
           {/* Notifications */}

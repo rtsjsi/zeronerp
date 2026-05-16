@@ -26,7 +26,6 @@ const menuItems = [
   { label: "Finance", href: "/finance", icon: TrendingUp, description: "Accounts & GST" },
   { label: "Reports", href: "/reports", icon: BarChart3, description: "Business analytics" },
   { label: "Production", href: "/production", icon: Factory, description: "BOM & batches" },
-  { label: "HR", href: "/hr", icon: Users, description: "Employees & payroll" },
   { label: "Settings", href: "/settings", icon: Settings, description: "Configuration" },
 ];
 
