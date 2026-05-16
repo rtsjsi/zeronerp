@@ -83,11 +83,15 @@ export class ProcurementService {
         tenantId,
         totalAmount,
         createdBy: userId,
+        status: 'DRAFT',
       })
       .select()
       .single();
 
-    if (poErr) throw new Error(poErr.message);
+    if (poErr) {
+      console.error("[ProcurementService] PO Insert Error:", poErr);
+      throw new Error(`Failed to create Purchase Order: ${poErr.message}`);
+    }
 
     // 2. Create PO Items
     const poItems = items.map(item => ({
@@ -95,21 +99,33 @@ export class ProcurementService {
       itemId: item.itemId,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      totalPrice: item.quantity * item.unitPrice,
+      totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
     }));
 
-    await supaDb.from('PurchaseOrderItem').insert(poItems);
+    const { error: itemErr } = await supaDb.from('PurchaseOrderItem').insert(poItems);
+    
+    if (itemErr) {
+      console.error("[ProcurementService] PO Items Insert Error:", itemErr);
+      // Rollback PO? (Manual cleanup since no transaction here)
+      await supaDb.from('PurchaseOrder').delete().eq('id', po.id);
+      throw new Error(`Failed to add items to Purchase Order: ${itemErr.message}`);
+    }
 
     await AuditService.log(tenantId, userId, 'PurchaseOrder', po.id, 'create', null, po);
 
     // Return with items
-    const { data: fullPo } = await supaDb
+    const { data: fullPo, error: fetchErr } = await supaDb
       .from('PurchaseOrder')
       .select('*, items:PurchaseOrderItem(*)')
       .eq('id', po.id)
       .single();
 
-    return fullPo || po;
+    if (fetchErr) {
+      console.warn("[ProcurementService] PO Fetch Error after creation:", fetchErr);
+      return po;
+    }
+
+    return fullPo;
   }
 
   static async updateOrderStatus(tenantId: string, userId: string, id: string, status: string) {
