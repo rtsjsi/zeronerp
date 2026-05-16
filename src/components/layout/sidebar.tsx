@@ -56,6 +56,11 @@ const secondaryNavItems: NavItem[] = [
   { label: "HR", href: "/hr", icon: UsersIcon },
 ];
 
+const adminNavItems: NavItem[] = [
+  { label: "User Management", href: "/admin/users", icon: UsersIcon },
+  { label: "System Settings", href: "/admin/settings", icon: Settings },
+];
+
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
@@ -169,6 +174,15 @@ export function Sidebar() {
             </span>
           )}
           {secondaryNavItems.map(renderNavItem)}
+        </div>
+
+        <div className="pt-4 space-y-0.5">
+          {!collapsed && (
+            <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
+              Admin
+            </span>
+          )}
+          {adminNavItems.map(renderNavItem)}
         </div>
       </nav>
 
