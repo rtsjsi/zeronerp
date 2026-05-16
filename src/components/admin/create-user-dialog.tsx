@@ -17,29 +17,31 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 
-const inviteSchema = z.object({
+const createSchema = z.object({
   email: z.string().email("Invalid email address"),
   fullName: z.string().min(2, "Full name is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type InviteFormValues = z.infer<typeof inviteSchema>;
+type CreateFormValues = z.infer<typeof createSchema>;
 
-interface InviteUserDialogProps {
+interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
 
-export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDialogProps) {
-  const form = useForm<InviteFormValues>({
-    resolver: zodResolver(inviteSchema),
+export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDialogProps) {
+  const form = useForm<CreateFormValues>({
+    resolver: zodResolver(createSchema),
     defaultValues: {
       email: "",
       fullName: "",
+      password: "",
     },
   });
 
-  const onSubmit = async (data: InviteFormValues) => {
+  const onSubmit = async (data: CreateFormValues) => {
     try {
       const res = await apiFetch("/api/admin/users", {
         method: "POST",
@@ -47,7 +49,7 @@ export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDi
       });
 
       if (res.success) {
-        toast.success("User invited successfully");
+        toast.success("User created successfully");
         form.reset();
         onOpenChange(false);
         onSuccess();
@@ -63,9 +65,9 @@ export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Invite User</DialogTitle>
+          <DialogTitle>Create New User</DialogTitle>
           <DialogDescription>
-            Send an invitation to join your organization. They will receive an email to set their password.
+            Add a new member to your organization directly.
           </DialogDescription>
         </DialogHeader>
 
@@ -86,12 +88,20 @@ export function InviteUserDialog({ open, onOpenChange, onSuccess }: InviteUserDi
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="password">Initial Password</Label>
+            <Input id="password" type="password" placeholder="Min 6 characters" {...form.register("password")} />
+            {form.formState.errors.password && (
+              <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
+            )}
+          </div>
+
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" loading={form.formState.isSubmitting}>
-              Send Invite
+              Create User
             </Button>
           </DialogFooter>
         </form>

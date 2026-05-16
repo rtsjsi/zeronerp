@@ -43,17 +43,11 @@ model User {
   tenantId      String   @db.Uuid
   email         String
   fullName      String
-  avatarUrl     String?
-  phone         String?
-  whatsapp      String?
   supabaseUid   String   @unique        // maps to Supabase Auth user
   isActive      Boolean  @default(true)
   isDeleted     Boolean  @default(false)
-  customFields  Json     @default("{}")
-  lastLoginAt   DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  createdBy     String?  @db.Uuid
 
   tenant        Tenant   @relation(fields: [tenantId], references: [id])
   auditLogs     AuditLog[]

@@ -6,14 +6,14 @@ import { UserPlus, Users, Shield, Search, Filter } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { UserTable } from "@/components/admin/user-table";
-import { InviteUserDialog } from "@/components/admin/invite-user-dialog";
+import { CreateUserDialog } from "@/components/admin/create-user-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export default function UserManagementPage() {
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -68,11 +68,11 @@ export default function UserManagementPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="User Management"
-        description="Manage your organization's members and their access."
+        description="Manage your organization's members directly."
         breadcrumbs={[{ label: "Admin" }, { label: "Users" }]}
       >
-        <Button onClick={() => setIsInviteOpen(true)} className="gap-2">
-          <UserPlus className="w-4 h-4" /> Invite Member
+        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+          <UserPlus className="w-4 h-4" /> Add Member
         </Button>
       </PageHeader>
 
@@ -116,17 +116,17 @@ export default function UserManagementPage() {
             description={
               searchQuery
                 ? `No members match your search "${searchQuery}".`
-                : "Invite your first team member to collaborate on ZeronERP."
+                : "Add your first team member to start collaborating."
             }
-            actionLabel={searchQuery ? "Clear Search" : "Invite Member"}
-            onAction={() => (searchQuery ? setSearchQuery("") : setIsInviteOpen(true))}
+            actionLabel={searchQuery ? "Clear Search" : "Add Member"}
+            onAction={() => (searchQuery ? setSearchQuery("") : setIsCreateOpen(true))}
           />
         )}
       </div>
 
-      <InviteUserDialog
-        open={isInviteOpen}
-        onOpenChange={setIsInviteOpen}
+      <CreateUserDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })}
       />
     </div>
