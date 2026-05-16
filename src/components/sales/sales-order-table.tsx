@@ -94,11 +94,11 @@ export function SalesOrderTable({ orders, onViewDetails, onUpdateStatus }: Sales
               <TableCell>{getStatusBadge(order.status)}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DropdownMenuTrigger render={
+                    <button className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
                       <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
+                    </button>
+                  } />
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>SO Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />

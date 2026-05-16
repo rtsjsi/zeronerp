@@ -73,11 +73,11 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
                   </td>
                   <td className="px-6 py-4 text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger>
-                        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenuTrigger render={
+                        <button className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
                           <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
+                        </button>
+                      } />
                       <DropdownMenuContent align="end" className="w-40">
                         <DropdownMenuItem onClick={() => onEdit(item)}>
                           <Edit2 className="mr-2 h-4 w-4" /> Edit
