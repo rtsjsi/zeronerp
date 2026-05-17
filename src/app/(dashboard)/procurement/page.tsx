@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, ShoppingCart, Search, Filter, ShoppingBag, Users } from "lucide-react";
+import { Plus, ShoppingCart, Search, Filter, ShoppingBag, Users, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { VendorTable } from "@/components/procurement/vendor-table";
 import { CreateVendorDialog } from "@/components/procurement/create-vendor-dialog";
 import { PurchaseOrderTable } from "@/components/procurement/purchase-order-table";
 import { CreatePurchaseOrderDialog } from "@/components/procurement/create-purchase-order-dialog";
+import { PayableInvoiceTable } from "@/components/procurement/payable-invoice-table";
+import { CreateInvoiceDialog } from "@/components/procurement/create-invoice-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,9 +18,10 @@ import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export default function ProcurementPage() {
-  const [activeTab, setActiveTab] = useState("orders");
+  const [activeTab, setActiveTab] = useState("invoices");
   const [isVendorOpen, setIsVendorOpen] = useState(false);
   const [isOrderOpen, setIsOrderOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -27,6 +30,15 @@ export default function ProcurementPage() {
     queryKey: ["purchase-orders"],
     queryFn: async () => {
       const res = await apiFetch<any[]>("/api/procurement/orders");
+      if (!res.success) throw new Error(res.message);
+      return res.data;
+    },
+  });
+
+  const { data: invoices, isLoading: isLoadingInvoices } = useQuery({
+    queryKey: ["purchase-invoices"],
+    queryFn: async () => {
+      const res = await apiFetch<any[]>("/api/procurement/invoices");
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
@@ -42,9 +54,14 @@ export default function ProcurementPage() {
   });
 
   // Filters
+  const filteredInvoices = invoices?.filter((invoice) =>
+    invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invoice.vendor?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const filteredOrders = orders?.filter((order) =>
     order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.vendor.name.toLowerCase().includes(searchQuery.toLowerCase())
+    order.vendor?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredVendors = vendors?.filter((vendor) =>
@@ -56,22 +73,28 @@ export default function ProcurementPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Procurement"
-        description="Manage suppliers, purchase orders, and goods receipts"
+        description="Manage suppliers, purchase orders, and payable invoices"
         breadcrumbs={[{ label: "Procurement" }]}
       >
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setIsVendorOpen(true)} className="gap-2">
             <Users className="w-4 h-4" /> Add Vendor
           </Button>
-          <Button onClick={() => setIsOrderOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Create PO
+          <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2">
+            <ShoppingCart className="w-4 h-4" /> Create PO (Optional)
+          </Button>
+          <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Record Supplier Invoice
           </Button>
         </div>
       </PageHeader>
 
-      <Tabs defaultValue="orders" className="w-full" onValueChange={setActiveTab}>
+      <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card/30 p-4 rounded-xl border backdrop-blur-sm">
           <TabsList className="bg-background/50">
+            <TabsTrigger value="invoices" className="gap-2">
+              <Receipt className="w-4 h-4" /> Payable Invoices
+            </TabsTrigger>
             <TabsTrigger value="orders" className="gap-2">
               <ShoppingBag className="w-4 h-4" /> Orders
             </TabsTrigger>
@@ -95,6 +118,28 @@ export default function ProcurementPage() {
             </Button>
           </div>
         </div>
+
+        <TabsContent value="invoices" className="mt-6">
+          {isLoadingInvoices ? (
+            <div className="grid place-items-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredInvoices && filteredInvoices.length > 0 ? (
+            <PayableInvoiceTable invoices={filteredInvoices} />
+          ) : (
+            <EmptyState
+              icon={Receipt}
+              title={searchQuery ? "No matching invoices" : "No invoices yet"}
+              description={
+                searchQuery
+                  ? `No invoices found matching "${searchQuery}".`
+                  : "Directly record supplier invoices with materials here to immediately update inventory stock."
+              }
+              actionLabel={searchQuery ? "Clear Search" : "Record Supplier Invoice"}
+              onAction={() => (searchQuery ? setSearchQuery("") : setIsInvoiceOpen(true))}
+            />
+          )}
+        </TabsContent>
 
         <TabsContent value="orders" className="mt-6">
           {isLoadingOrders ? (
@@ -129,7 +174,7 @@ export default function ProcurementPage() {
               description={
                 searchQuery
                   ? `No orders found matching "${searchQuery}".`
-                  : "Create your first purchase order to start tracking procurement."
+                  : "Create an optional purchase order to track supplier intent before invoicing."
               }
               actionLabel={searchQuery ? "Clear Search" : "Create Purchase Order"}
               onAction={() => (searchQuery ? setSearchQuery("") : setIsOrderOpen(true))}
@@ -162,7 +207,7 @@ export default function ProcurementPage() {
               description={
                 searchQuery
                   ? `No vendors found matching "${searchQuery}".`
-                  : "Add your suppliers here to link them to purchase orders."
+                  : "Add your suppliers here to link them to purchase orders and invoices."
               }
               actionLabel={searchQuery ? "Clear Search" : "Add Vendor"}
               onAction={() => (searchQuery ? setSearchQuery("") : setIsVendorOpen(true))}
@@ -181,6 +226,16 @@ export default function ProcurementPage() {
         open={isOrderOpen}
         onOpenChange={setIsOrderOpen}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["purchase-orders"] })}
+      />
+
+      <CreateInvoiceDialog
+        open={isInvoiceOpen}
+        onOpenChange={setIsInvoiceOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["purchase-invoices"] });
+          queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+        }}
+        purchaseOrders={orders || []}
       />
     </div>
   );

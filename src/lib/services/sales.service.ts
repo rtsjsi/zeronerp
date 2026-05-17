@@ -186,4 +186,142 @@ export class SalesService {
     await AuditService.log(tenantId, userId, 'SalesOrder', id, 'update_status', oldSo, newSo);
     return newSo;
   }
+
+  /**
+   * SALES INVOICE CRUD
+   */
+
+  static async getSalesInvoices(tenantId: string) {
+    const { data } = await db()
+      .from('SalesInvoice')
+      .select('*, customer:Customer(*), items:SalesInvoiceItem(*, item:Item(*), warehouse:Warehouse(*))')
+      .eq('tenantId', tenantId)
+      .eq('isDeleted', false)
+      .order('createdAt', { ascending: false });
+
+    return data || [];
+  }
+
+  static async createSalesInvoice(tenantId: string, userId: string, data: {
+    customerId: string;
+    invoiceNumber: string;
+    financialYear: string;
+    notes?: string;
+    soId?: string | null;
+    items: {
+      itemId: string;
+      warehouseId: string;
+      quantity: number;
+      unitPrice: number;
+    }[];
+  }) {
+    const supaDb = db();
+
+    // 1. Check for duplicates
+    const { data: existing } = await supaDb
+      .from('SalesInvoice')
+      .select('id')
+      .eq('tenantId', tenantId)
+      .eq('invoiceNumber', data.invoiceNumber)
+      .eq('financialYear', data.financialYear)
+      .eq('isDeleted', false)
+      .maybeSingle();
+
+    if (existing) {
+      throw new Error("Duplicate Sales Invoice number is not allowed in the same financial year.");
+    }
+
+    const { items, soId, ...invData } = data;
+    const totalAmount = Number(items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2));
+
+    // 2. Insert invoice
+    const { data: invoice, error: invErr } = await supaDb
+      .from('SalesInvoice')
+      .insert({
+        ...invData,
+        tenantId,
+        totalAmount,
+        soId: soId || null,
+        status: 'COMPLETED',
+        createdBy: userId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (invErr) {
+      console.error("[SalesService] Invoice Insert Error:", invErr);
+      throw new Error(`Failed to create Sales Invoice: ${invErr.message}`);
+    }
+
+    // 3. Create items
+    const invItems = items.map(item => ({
+      invoiceId: invoice.id,
+      itemId: item.itemId,
+      warehouseId: item.warehouseId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+    }));
+
+    const { error: itemErr } = await supaDb.from('SalesInvoiceItem').insert(invItems);
+
+    if (itemErr) {
+      console.error("[SalesService] Invoice Items Insert Error:", itemErr);
+      await supaDb.from('SalesInvoice').delete().eq('id', invoice.id);
+      throw new Error(`Failed to add items to Sales Invoice: ${itemErr.message}`);
+    }
+
+    // 4. Update Stock & Log transactions
+    for (const item of items) {
+      const { data: existingStock } = await supaDb
+        .from('Stock')
+        .select('*')
+        .eq('itemId', item.itemId)
+        .eq('warehouseId', item.warehouseId)
+        .maybeSingle();
+
+      if (existingStock) {
+        const { error: stockErr } = await supaDb
+          .from('Stock')
+          .update({ quantity: Number(existingStock.quantity) - Number(item.quantity) })
+          .eq('id', existingStock.id);
+        if (stockErr) console.error("Stock update error:", stockErr);
+      } else {
+        const { error: stockErr } = await supaDb
+          .from('Stock')
+          .insert({
+            tenantId,
+            itemId: item.itemId,
+            warehouseId: item.warehouseId,
+            quantity: -Number(item.quantity),
+          });
+        if (stockErr) console.error("Stock insert error:", stockErr);
+      }
+
+      await supaDb.from('InventoryTransaction').insert({
+        tenantId,
+        itemId: item.itemId,
+        warehouseId: item.warehouseId,
+        type: 'OUT',
+        quantity: -Number(item.quantity),
+        reference: `Sales Invoice ${data.invoiceNumber}`,
+        performedBy: userId,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    // 5. Update SO status if linked
+    if (soId) {
+      await supaDb
+        .from('SalesOrder')
+        .update({ status: 'COMPLETED' })
+        .eq('id', soId);
+    }
+
+    await AuditService.log(tenantId, userId, 'SalesInvoice', invoice.id, 'create', null, invoice);
+
+    return invoice;
+  }
 }

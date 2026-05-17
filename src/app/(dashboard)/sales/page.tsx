@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Receipt, UserCircle, Search, Filter, ShoppingCart, Users } from "lucide-react";
+import { Plus, Receipt, UserCircle, Search, Filter, ShoppingCart, Users, ShoppingBag } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CustomerTable } from "@/components/sales/customer-table";
 import { CreateCustomerDialog } from "@/components/sales/create-customer-dialog";
 import { SalesOrderTable } from "@/components/sales/sales-order-table";
 import { CreateSalesOrderDialog } from "@/components/sales/create-sales-order-dialog";
+import { SalesInvoiceTable } from "@/components/sales/sales-invoice-table";
+import { CreateInvoiceDialog } from "@/components/sales/create-invoice-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,9 +18,10 @@ import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export default function SalesPage() {
-  const [activeTab, setActiveTab] = useState("orders");
+  const [activeTab, setActiveTab] = useState("invoices");
   const [isCustomerOpen, setIsCustomerOpen] = useState(false);
   const [isOrderOpen, setIsOrderOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -27,6 +30,15 @@ export default function SalesPage() {
     queryKey: ["sales-orders"],
     queryFn: async () => {
       const res = await apiFetch<any[]>("/api/sales/orders");
+      if (!res.success) throw new Error(res.message);
+      return res.data;
+    },
+  });
+
+  const { data: invoices, isLoading: isLoadingInvoices } = useQuery({
+    queryKey: ["sales-invoices"],
+    queryFn: async () => {
+      const res = await apiFetch<any[]>("/api/sales/invoices");
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
@@ -42,9 +54,14 @@ export default function SalesPage() {
   });
 
   // Filters
+  const filteredInvoices = invoices?.filter((invoice) =>
+    invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invoice.customer?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const filteredOrders = orders?.filter((order) =>
     order.soNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.customer.name.toLowerCase().includes(searchQuery.toLowerCase())
+    order.customer?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredCustomers = customers?.filter((customer) =>
@@ -63,17 +80,23 @@ export default function SalesPage() {
           <Button variant="outline" onClick={() => setIsCustomerOpen(true)} className="gap-2">
             <UserCircle className="w-4 h-4" /> Add Customer
           </Button>
-          <Button onClick={() => setIsOrderOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Create SO
+          <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2">
+            <ShoppingCart className="w-4 h-4" /> Create SO (Optional)
+          </Button>
+          <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Record Sales Invoice
           </Button>
         </div>
       </PageHeader>
 
-      <Tabs defaultValue="orders" className="w-full" onValueChange={setActiveTab}>
+      <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card/30 p-4 rounded-xl border backdrop-blur-sm">
           <TabsList className="bg-background/50">
+            <TabsTrigger value="invoices" className="gap-2">
+              <Receipt className="w-4 h-4" /> Sales Invoices
+            </TabsTrigger>
             <TabsTrigger value="orders" className="gap-2">
-              <ShoppingCart className="w-4 h-4" /> Orders
+              <ShoppingBag className="w-4 h-4" /> Orders
             </TabsTrigger>
             <TabsTrigger value="customers" className="gap-2">
               <Users className="w-4 h-4" /> Customers
@@ -95,6 +118,28 @@ export default function SalesPage() {
             </Button>
           </div>
         </div>
+
+        <TabsContent value="invoices" className="mt-6">
+          {isLoadingInvoices ? (
+            <div className="grid place-items-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredInvoices && filteredInvoices.length > 0 ? (
+            <SalesInvoiceTable invoices={filteredInvoices} />
+          ) : (
+            <EmptyState
+              icon={Receipt}
+              title={searchQuery ? "No matching invoices" : "No invoices yet"}
+              description={
+                searchQuery
+                  ? `No invoices found matching "${searchQuery}".`
+                  : "Directly record sales invoices here to instantly deduct inventory stock and generate sales records."
+              }
+              actionLabel={searchQuery ? "Clear Search" : "Record Sales Invoice"}
+              onAction={() => (searchQuery ? setSearchQuery("") : setIsInvoiceOpen(true))}
+            />
+          )}
+        </TabsContent>
 
         <TabsContent value="orders" className="mt-6">
           {isLoadingOrders ? (
@@ -124,12 +169,12 @@ export default function SalesPage() {
             />
           ) : (
             <EmptyState
-              icon={Receipt}
-              title={searchQuery ? "No matching orders" : "No sales yet"}
+              icon={ShoppingCart}
+              title={searchQuery ? "No matching orders" : "No sales orders yet"}
               description={
                 searchQuery
                   ? `No orders found matching "${searchQuery}".`
-                  : "Create your first sales order or invoice to start tracking revenue."
+                  : "Create an optional sales order to track customer intent before invoicing."
               }
               actionLabel={searchQuery ? "Clear Search" : "Create Sales Order"}
               onAction={() => (searchQuery ? setSearchQuery("") : setIsOrderOpen(true))}
@@ -162,7 +207,7 @@ export default function SalesPage() {
               description={
                 searchQuery
                   ? `No customers found matching "${searchQuery}".`
-                  : "Add your customers here to link them to sales orders."
+                  : "Add your customers here to link them to sales orders and invoices."
               }
               actionLabel={searchQuery ? "Clear Search" : "Add Customer"}
               onAction={() => (searchQuery ? setSearchQuery("") : setIsCustomerOpen(true))}
@@ -181,6 +226,16 @@ export default function SalesPage() {
         open={isOrderOpen}
         onOpenChange={setIsOrderOpen}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["sales-orders"] })}
+      />
+
+      <CreateInvoiceDialog
+        open={isInvoiceOpen}
+        onOpenChange={setIsInvoiceOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["sales-invoices"] });
+          queryClient.invalidateQueries({ queryKey: ["sales-orders"] });
+        }}
+        salesOrders={orders || []}
       />
     </div>
   );
