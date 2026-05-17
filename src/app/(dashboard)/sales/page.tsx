@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Receipt, UserCircle, Search, Filter, ShoppingCart, Users, ShoppingBag } from "lucide-react";
+import { Plus, Receipt, UserCircle, Search, Filter, ShoppingCart, Users, ShoppingBag, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CustomerTable } from "@/components/sales/customer-table";
@@ -11,6 +11,7 @@ import { SalesOrderTable } from "@/components/sales/sales-order-table";
 import { CreateSalesOrderDialog } from "@/components/sales/create-sales-order-dialog";
 import { SalesInvoiceTable } from "@/components/sales/sales-invoice-table";
 import { CreateInvoiceDialog } from "@/components/sales/create-invoice-dialog";
+import { ExpressPOSDialog } from "@/components/sales/express-pos-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +23,7 @@ export default function SalesPage() {
   const [isCustomerOpen, setIsCustomerOpen] = useState(false);
   const [isOrderOpen, setIsOrderOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [isPOSOpen, setIsPOSOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -83,8 +85,11 @@ export default function SalesPage() {
           <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2">
             <ShoppingCart className="w-4 h-4" /> Create SO (Optional)
           </Button>
-          <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Record Sales Invoice
+          <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} className="gap-2">
+            <Receipt className="w-4 h-4" /> Record B2B Invoice
+          </Button>
+          <Button onClick={() => setIsPOSOpen(true)} className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md border-none">
+            <Sparkles className="w-4 h-4 text-yellow-300 fill-yellow-300" /> Express POS checkout
           </Button>
         </div>
       </PageHeader>
@@ -133,7 +138,7 @@ export default function SalesPage() {
               description={
                 searchQuery
                   ? `No invoices found matching "${searchQuery}".`
-                  : "Directly record sales invoices here to instantly deduct inventory stock and generate sales records."
+                  : "Directly record sales invoices or checkout walk-in retail buyers here to instantly generate receipts."
               }
               actionLabel={searchQuery ? "Clear Search" : "Record Sales Invoice"}
               onAction={() => (searchQuery ? setSearchQuery("") : setIsInvoiceOpen(true))}
@@ -236,6 +241,14 @@ export default function SalesPage() {
           queryClient.invalidateQueries({ queryKey: ["sales-orders"] });
         }}
         salesOrders={orders || []}
+      />
+
+      <ExpressPOSDialog
+        open={isPOSOpen}
+        onOpenChange={setIsPOSOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["sales-invoices"] });
+        }}
       />
     </div>
   );

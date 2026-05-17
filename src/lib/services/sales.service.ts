@@ -202,12 +202,42 @@ export class SalesService {
     return data || [];
   }
 
+  static async getOrCreateWalkInCustomer(tenantId: string, userId: string) {
+    const supaDb = db();
+    const { data: customer } = await supaDb
+      .from('Customer')
+      .select('*')
+      .eq('tenantId', tenantId)
+      .eq('name', 'Walk-in Customer')
+      .eq('isDeleted', false)
+      .maybeSingle();
+
+    if (customer) return customer;
+
+    const { data: newCustomer, error } = await supaDb
+      .from('Customer')
+      .insert({
+        tenantId,
+        name: 'Walk-in Customer',
+        contactName: 'Retail Buyer',
+        createdBy: userId,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to seed Walk-in Customer: ${error.message}`);
+    return newCustomer;
+  }
+
   static async createSalesInvoice(tenantId: string, userId: string, data: {
-    customerId: string;
+    customerId?: string;
     invoiceNumber: string;
     financialYear: string;
     notes?: string;
     soId?: string | null;
+    paymentMethod?: string;
+    amountReceived?: number;
+    amountReturned?: number;
     items: {
       itemId: string;
       warehouseId: string;
@@ -217,7 +247,14 @@ export class SalesService {
   }) {
     const supaDb = db();
 
-    // 1. Check for duplicates
+    // 1. Resolve or create Walk-in Customer
+    let customerId = data.customerId;
+    if (!customerId || customerId === 'walkin') {
+      const walkIn = await this.getOrCreateWalkInCustomer(tenantId, userId);
+      customerId = walkIn.id;
+    }
+
+    // 2. Check for duplicates
     const { data: existing } = await supaDb
       .from('SalesInvoice')
       .select('id')
@@ -231,18 +268,22 @@ export class SalesService {
       throw new Error("Duplicate Sales Invoice number is not allowed in the same financial year.");
     }
 
-    const { items, soId, ...invData } = data;
+    const { items, soId, customerId: oldCustomerId, ...invData } = data;
     const totalAmount = Number(items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2));
 
-    // 2. Insert invoice
+    // 3. Insert invoice
     const { data: invoice, error: invErr } = await supaDb
       .from('SalesInvoice')
       .insert({
         ...invData,
+        customerId,
         tenantId,
         totalAmount,
         soId: soId || null,
         status: 'COMPLETED',
+        paymentMethod: data.paymentMethod || 'CASH',
+        amountReceived: data.amountReceived !== undefined ? data.amountReceived : totalAmount,
+        amountReturned: data.amountReturned !== undefined ? data.amountReturned : 0,
         createdBy: userId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

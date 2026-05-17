@@ -5,11 +5,14 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { z } from "zod";
 
 const invoiceSchema = z.object({
-  customerId: z.string().uuid(),
+  customerId: z.string().optional(),
   invoiceNumber: z.string().min(2),
   financialYear: z.string().min(4),
   notes: z.string().optional(),
   soId: z.string().uuid().optional().nullable(),
+  paymentMethod: z.string().optional(),
+  amountReceived: z.number().optional(),
+  amountReturned: z.number().optional(),
   items: z.array(z.object({
     itemId: z.string().uuid(),
     warehouseId: z.string().uuid(),
