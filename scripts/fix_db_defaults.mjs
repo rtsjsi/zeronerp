@@ -1,7 +1,10 @@
 import pg from 'pg';
 
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 const { Client } = pg;
-const connectionString = "postgresql://postgres.ttmqdpdlgwccuhdsooba:2nfO66M0WeP6Jw4A@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres";
+const connectionString = process.env.DATABASE_URL;
 
 async function fixDefaults() {
   const client = new Client({ connectionString });

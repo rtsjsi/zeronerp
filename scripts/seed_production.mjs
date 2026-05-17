@@ -1,8 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-const SUPABASE_URL = 'https://ttmqdpdlgwccuhdsooba.supabase.co';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0bXFkcGRsZ3djY3VoZHNvb2JhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODU2MzI5NSwiZXhwIjoyMDk0MTM5Mjk1fQ.r2o07Y84DywrD1J-IuKPOEzBk-6t-ljboKCQ1OOVp3s';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('Missing required environment variables for Supabase connection');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
