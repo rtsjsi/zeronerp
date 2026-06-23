@@ -31,7 +31,8 @@ export function StoreSelector() {
 
   if (user?.role !== 'SUPER_ADMIN') return null;
 
-  const handleSelect = (val: string) => {
+  const handleSelect = (val: string | null) => {
+    if (!val) return;
     setSelectedId(val);
     if (val === 'none') {
       document.cookie = "zeron_superadmin_store_id=; path=/; max-age=0"; // Delete cookie

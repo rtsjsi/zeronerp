@@ -25,7 +25,7 @@ export const POST = withAuth(async (req, ctx) => {
       password: body.password,
       role: body.role || 'USER',
     });
-    return apiSuccess(user, 201);
+    return apiSuccess(user, "Success", 201);
   } catch (err: any) {
     return apiError(err.message, 500);
   }

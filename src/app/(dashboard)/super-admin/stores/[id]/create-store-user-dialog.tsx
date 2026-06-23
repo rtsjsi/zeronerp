@@ -100,7 +100,7 @@ export function CreateStoreUserDialog({ storeId, open, onOpenChange, onSuccess }
             <Label>Role</Label>
             <Select 
               value={formData.role} 
-              onValueChange={(val) => setFormData({...formData, role: val})}
+              onValueChange={(val) => setFormData({...formData, role: val || "USER"})}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select role" />

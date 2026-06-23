@@ -25,7 +25,7 @@ export const POST = withAuth(async (req, ctx) => {
       gstn: body.gstn,
       contactNumber: body.contactNumber,
     });
-    return apiSuccess(store, 201);
+    return apiSuccess(store, "Success", 201);
   } catch (err: any) {
     return apiError(err.message, 500);
   }

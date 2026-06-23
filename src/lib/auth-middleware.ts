@@ -22,7 +22,7 @@ export interface AuthContext {
     email: string;
     fullName: string;
     tenantId: string;
-    role: 'ADMIN' | 'USER';
+    role: 'ADMIN' | 'USER' | 'SUPER_ADMIN';
   };
   tenant: {
     id: string;
