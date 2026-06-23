@@ -133,7 +133,7 @@ export function withAuth(handler: AuthenticatedHandler) {
 
       // 6. Role-based path restrictions
       const path = req.nextUrl.pathname;
-      if (path.startsWith('/api/admin/users') && user.role !== 'ADMIN') {
+      if (path.startsWith('/api/admin/users') && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
         return apiError('Permission denied: Admin access required', 403);
       }
 
