@@ -153,33 +153,37 @@ export function Sidebar() {
 
       {/* Main Navigation */}
       <nav className="flex-1 px-2 space-y-1 overflow-y-auto">
-        <div className="space-y-0.5">
-          {!collapsed && (
-            <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
-              Main
-            </span>
-          )}
-          {mainNavItems.map(renderNavItem)}
-        </div>
+        {user?.storeId && (
+          <>
+            <div className="space-y-0.5">
+              {!collapsed && (
+                <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
+                  Main
+                </span>
+              )}
+              {mainNavItems.map(renderNavItem)}
+            </div>
 
-        <div className="pt-4 space-y-0.5">
-          {!collapsed && (
-            <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
-              Operations
-            </span>
-          )}
-          {secondaryNavItems.map(renderNavItem)}
-        </div>
+            <div className="pt-4 space-y-0.5">
+              {!collapsed && (
+                <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
+                  Operations
+                </span>
+              )}
+              {secondaryNavItems.map(renderNavItem)}
+            </div>
 
-        {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-          <div className="pt-4 space-y-0.5">
-            {!collapsed && (
-              <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
-                Admin
-              </span>
+            {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
+              <div className="pt-4 space-y-0.5">
+                {!collapsed && (
+                  <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
+                    Admin
+                  </span>
+                )}
+                {adminNavItems.map(renderNavItem)}
+              </div>
             )}
-            {adminNavItems.map(renderNavItem)}
-          </div>
+          </>
         )}
 
         {user?.role === 'SUPER_ADMIN' && (
