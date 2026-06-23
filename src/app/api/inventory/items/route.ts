@@ -13,7 +13,7 @@ const itemSchema = z.object({
 });
 
 export const GET = withAuth(async (_req, ctx) => {
-  const items = await InventoryService.getItems(ctx.tenantId);
+  const items = await InventoryService.getItems(ctx.storeId);
   return apiSuccess(items);
 });
 
@@ -32,7 +32,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, fieldErrors);
     }
 
-    const item = await InventoryService.createItem(ctx.tenantId, ctx.userId, parsed.data);
+    const item = await InventoryService.createItem(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(item, "Item created", 201);
   } catch (err) {
     console.error("[Items API Error]", err);

@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '../supabase/service-role';
 export class SuperAdminService {
   static async getStores() {
     const { data: stores, error } = await db()
-      .from('Tenant')
+      .from('Stores')
       .select('*')
       .eq('isDeleted', false)
       .order('createdAt', { ascending: false });
@@ -15,7 +15,7 @@ export class SuperAdminService {
 
   static async getStoreById(id: string) {
     const { data: store, error } = await db()
-      .from('Tenant')
+      .from('Stores')
       .select('*')
       .eq('id', id)
       .eq('isDeleted', false)
@@ -28,7 +28,7 @@ export class SuperAdminService {
   static async createStore(data: { name: string; address?: string; gstn?: string; contactNumber?: string }) {
     const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const { data: store, error } = await db()
-      .from('Tenant')
+      .from('Stores')
       .insert({
         name: data.name,
         slug,
@@ -43,11 +43,11 @@ export class SuperAdminService {
     return store;
   }
 
-  static async getUsersForStore(tenantId: string) {
+  static async getUsersForStore(storeId: string) {
     const { data: users, error } = await db()
-      .from('User')
+      .from('ApplicationUsers')
       .select('*')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .order('createdAt', { ascending: false });
 
@@ -55,7 +55,7 @@ export class SuperAdminService {
     return users || [];
   }
 
-  static async createUserForStore(tenantId: string, data: { email: string; fullName: string; password?: string; role: 'ADMIN' | 'USER' }) {
+  static async createUserForStore(storeId: string, data: { email: string; fullName: string; password?: string; role: 'ADMIN' | 'USER' }) {
     const adminAuthClient = createServiceRoleClient();
     
     // Create the user in Supabase Auth
@@ -73,9 +73,9 @@ export class SuperAdminService {
 
     // Create the user profile in our DB
     const { data: userProfile, error: dbError } = await db()
-      .from('User')
+      .from('ApplicationUsers')
       .insert({
-        tenantId,
+        storeId,
         email: data.email,
         fullName: data.fullName,
         supabaseUid: authData.user.id,

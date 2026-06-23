@@ -13,7 +13,7 @@ const customerSchema = z.object({
 });
 
 export const GET = withAuth(async (_req, ctx) => {
-  const customers = await SalesService.getCustomers(ctx.tenantId);
+  const customers = await SalesService.getCustomers(ctx.storeId);
   return apiSuccess(customers);
 });
 
@@ -26,7 +26,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, parsed.error.flatten().fieldErrors);
     }
 
-    const customer = await SalesService.createCustomer(ctx.tenantId, ctx.userId, parsed.data);
+    const customer = await SalesService.createCustomer(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(customer, "Customer created", 201);
   } catch (err) {
     console.error("[Customers API Error]", err);

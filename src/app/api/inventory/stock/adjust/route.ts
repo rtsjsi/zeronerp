@@ -21,7 +21,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, parsed.error.flatten().fieldErrors);
     }
 
-    const result = await StockService.adjustStock(ctx.tenantId, ctx.userId, parsed.data);
+    const result = await StockService.adjustStock(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(result, "Stock adjusted", 200);
   } catch (err) {
     console.error("[Stock Adjust API Error]", err);

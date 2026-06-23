@@ -16,10 +16,10 @@ export const PATCH = withAuth(async (req, ctx) => {
   if (body.fullName) updateData.fullName = body.fullName;
 
   const { data: user, error } = await db()
-    .from('User')
+    .from('ApplicationUsers')
     .update(updateData)
     .eq('id', id)
-    .eq('tenantId', ctx.tenantId)
+    .eq('storeId', ctx.storeId)
     .select()
     .single();
 
@@ -36,10 +36,10 @@ export const DELETE = withAuth(async (_req, ctx) => {
   const { id } = ctx.params;
 
   const { error } = await db()
-    .from('User')
+    .from('ApplicationUsers')
     .update({ isDeleted: true })
     .eq('id', id)
-    .eq('tenantId', ctx.tenantId);
+    .eq('storeId', ctx.storeId);
 
   if (error) return apiError(error.message, 500);
 

@@ -20,7 +20,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, parsed.error.flatten().fieldErrors);
     }
 
-    const result = await StockService.transferStock(ctx.tenantId, ctx.userId, parsed.data);
+    const result = await StockService.transferStock(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(result, "Stock transferred", 200);
   } catch (err) {
     console.error("[Stock Transfer API Error]", err);

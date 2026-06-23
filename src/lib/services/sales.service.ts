@@ -3,25 +3,24 @@
  */
 
 import { db } from '@/lib/db';
-import { AuditService } from './audit.service';
 
 export class SalesService {
   /**
    * CUSTOMER CRUD
    */
 
-  static async getCustomers(tenantId: string) {
+  static async getCustomers(storeId: string) {
     const { data } = await db()
       .from('Customer')
       .select('*')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .order('name', { ascending: true });
 
     return data || [];
   }
 
-  static async createCustomer(tenantId: string, userId: string, data: {
+  static async createCustomer(storeId: string, userId: string, data: {
     name: string;
     contactName?: string;
     email?: string;
@@ -33,7 +32,7 @@ export class SalesService {
       .from('Customer')
       .insert({
         ...data,
-        tenantId,
+        storeId,
         createdBy: userId,
       })
       .select()
@@ -41,7 +40,7 @@ export class SalesService {
 
     if (error) throw new Error(error.message);
 
-    await AuditService.log(tenantId, userId, 'Customer', customer.id, 'create', null, customer);
+    
     return customer;
   }
 
@@ -49,18 +48,18 @@ export class SalesService {
    * SALES ORDER CRUD
    */
 
-  static async getSalesOrders(tenantId: string) {
+  static async getSalesOrders(storeId: string) {
     const { data } = await db()
       .from('SalesOrder')
       .select('*, customer:Customer(*), items:SalesOrderItem(*, item:Item(*))')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .order('createdAt', { ascending: false });
 
     return data || [];
   }
 
-  static async createSalesOrder(tenantId: string, userId: string, data: {
+  static async createSalesOrder(storeId: string, userId: string, data: {
     customerId: string;
     soNumber: string;
     notes?: string;
@@ -80,7 +79,7 @@ export class SalesService {
       .from('SalesOrder')
       .insert({
         ...soData,
-        tenantId,
+        storeId,
         totalAmount,
         createdBy: userId,
       })
@@ -100,7 +99,7 @@ export class SalesService {
 
     await supaDb.from('SalesOrderItem').insert(soItems);
 
-    await AuditService.log(tenantId, userId, 'SalesOrder', so.id, 'create', null, so);
+    
 
     // Return with items
     const { data: fullSo } = await supaDb
@@ -112,14 +111,14 @@ export class SalesService {
     return fullSo || so;
   }
 
-  static async updateOrderStatus(tenantId: string, userId: string, id: string, status: string) {
+  static async updateOrderStatus(storeId: string, userId: string, id: string, status: string) {
     const supaDb = db();
 
     const { data: oldSo } = await supaDb
       .from('SalesOrder')
       .select('*, items:SalesOrderItem(*)')
       .eq('id', id)
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .single();
 
     if (!oldSo) throw new Error('Sales Order not found');
@@ -138,7 +137,7 @@ export class SalesService {
       const { data: warehouse } = await supaDb
         .from('Warehouse')
         .select('*')
-        .eq('tenantId', tenantId)
+        .eq('storeId', storeId)
         .eq('isDeleted', false)
         .limit(1)
         .single();
@@ -162,7 +161,7 @@ export class SalesService {
             await supaDb
               .from('Stock')
               .insert({
-                tenantId,
+                storeId,
                 itemId: orderItem.itemId,
                 warehouseId: warehouse.id,
                 quantity: -Number(orderItem.quantity),
@@ -171,7 +170,7 @@ export class SalesService {
 
           // Log the stock transaction
           await supaDb.from('InventoryTransaction').insert({
-            tenantId,
+            storeId,
             itemId: orderItem.itemId,
             warehouseId: warehouse.id,
             type: 'OUT',
@@ -183,7 +182,7 @@ export class SalesService {
       }
     }
 
-    await AuditService.log(tenantId, userId, 'SalesOrder', id, 'update_status', oldSo, newSo);
+    
     return newSo;
   }
 
@@ -191,23 +190,23 @@ export class SalesService {
    * SALES INVOICE CRUD
    */
 
-  static async getSalesInvoices(tenantId: string) {
+  static async getSalesInvoices(storeId: string) {
     const { data } = await db()
       .from('SalesInvoice')
       .select('*, customer:Customer(*), items:SalesInvoiceItem(*, item:Item(*), warehouse:Warehouse(*))')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .order('createdAt', { ascending: false });
 
     return data || [];
   }
 
-  static async getOrCreateWalkInCustomer(tenantId: string, userId: string) {
+  static async getOrCreateWalkInCustomer(storeId: string, userId: string) {
     const supaDb = db();
     const { data: customer } = await supaDb
       .from('Customer')
       .select('*')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('name', 'Walk-in Customer')
       .eq('isDeleted', false)
       .maybeSingle();
@@ -217,7 +216,7 @@ export class SalesService {
     const { data: newCustomer, error } = await supaDb
       .from('Customer')
       .insert({
-        tenantId,
+        storeId,
         name: 'Walk-in Customer',
         contactName: 'Retail Buyer',
         createdBy: userId,
@@ -229,7 +228,7 @@ export class SalesService {
     return newCustomer;
   }
 
-  static async createSalesInvoice(tenantId: string, userId: string, data: {
+  static async createSalesInvoice(storeId: string, userId: string, data: {
     customerId?: string;
     invoiceNumber: string;
     financialYear: string;
@@ -250,7 +249,7 @@ export class SalesService {
     // 1. Resolve or create Walk-in Customer
     let customerId = data.customerId;
     if (!customerId || customerId === 'walkin') {
-      const walkIn = await this.getOrCreateWalkInCustomer(tenantId, userId);
+      const walkIn = await this.getOrCreateWalkInCustomer(storeId, userId);
       customerId = walkIn.id;
     }
 
@@ -258,7 +257,7 @@ export class SalesService {
     const { data: existing } = await supaDb
       .from('SalesInvoice')
       .select('id')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('invoiceNumber', data.invoiceNumber)
       .eq('financialYear', data.financialYear)
       .eq('isDeleted', false)
@@ -277,7 +276,7 @@ export class SalesService {
       .insert({
         ...invData,
         customerId,
-        tenantId,
+        storeId,
         totalAmount,
         soId: soId || null,
         status: 'COMPLETED',
@@ -333,7 +332,7 @@ export class SalesService {
         const { error: stockErr } = await supaDb
           .from('Stock')
           .insert({
-            tenantId,
+            storeId,
             itemId: item.itemId,
             warehouseId: item.warehouseId,
             quantity: -Number(item.quantity),
@@ -342,7 +341,7 @@ export class SalesService {
       }
 
       await supaDb.from('InventoryTransaction').insert({
-        tenantId,
+        storeId,
         itemId: item.itemId,
         warehouseId: item.warehouseId,
         type: 'OUT',
@@ -361,7 +360,7 @@ export class SalesService {
         .eq('id', soId);
     }
 
-    await AuditService.log(tenantId, userId, 'SalesInvoice', invoice.id, 'create', null, invoice);
+    
 
     return invoice;
   }

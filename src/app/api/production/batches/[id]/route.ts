@@ -16,9 +16,9 @@ export const PATCH = withAuth(async (req, ctx) => {
 
     let result;
     if (action === 'START') {
-      result = await ProductionService.startBatch(ctx.tenantId, ctx.userId, id);
+      result = await ProductionService.startBatch(ctx.storeId, ctx.userId, id);
     } else if (action === 'COMPLETE') {
-      result = await ProductionService.completeBatch(ctx.tenantId, ctx.userId, id);
+      result = await ProductionService.completeBatch(ctx.storeId, ctx.userId, id);
     } else {
       return apiError("Invalid action", 400);
     }

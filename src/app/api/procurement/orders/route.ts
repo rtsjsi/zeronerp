@@ -16,7 +16,7 @@ const orderSchema = z.object({
 });
 
 export const GET = withAuth(async (_req, ctx) => {
-  const orders = await ProcurementService.getPurchaseOrders(ctx.tenantId);
+  const orders = await ProcurementService.getPurchaseOrders(ctx.storeId);
   return apiSuccess(orders);
 });
 
@@ -29,7 +29,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, parsed.error.flatten().fieldErrors);
     }
 
-    const order = await ProcurementService.createPurchaseOrder(ctx.tenantId, ctx.userId, parsed.data);
+    const order = await ProcurementService.createPurchaseOrder(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(order, "Purchase Order created", 201);
   } catch (err: any) {
     console.error("[Orders API Error]", err);

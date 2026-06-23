@@ -6,14 +6,14 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 
 export const GET = withAuth(async (_req, ctx) => {
   try {
-    const tenantId = ctx.tenantId;
+    const storeId = ctx.storeId;
     const supaDb = db();
 
     // 1. Total Inventory Value
     const { data: items } = await supaDb
       .from('Item')
       .select('basePrice, stocks:Stock(quantity)')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false);
 
     let totalInventoryValue = 0;
@@ -30,7 +30,7 @@ export const GET = withAuth(async (_req, ctx) => {
     const { data: monthSalesData } = await supaDb
       .from('SalesOrder')
       .select('totalAmount')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .neq('status', 'CANCELLED')
       .gte('createdAt', startOfMonth.toISOString());
@@ -43,14 +43,14 @@ export const GET = withAuth(async (_req, ctx) => {
     const { count: pendingPOs } = await supaDb
       .from('PurchaseOrder')
       .select('*', { count: 'exact', head: true })
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .eq('status', 'DRAFT');
 
     const { count: pendingSOs } = await supaDb
       .from('SalesOrder')
       .select('*', { count: 'exact', head: true })
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .eq('status', 'DRAFT');
 
@@ -58,13 +58,13 @@ export const GET = withAuth(async (_req, ctx) => {
     const { count: vendorCount } = await supaDb
       .from('Vendor')
       .select('*', { count: 'exact', head: true })
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false);
 
     const { count: customerCount } = await supaDb
       .from('Customer')
       .select('*', { count: 'exact', head: true })
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false);
 
     return apiSuccess({

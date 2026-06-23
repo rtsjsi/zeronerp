@@ -23,7 +23,7 @@ const invoiceSchema = z.object({
 
 export const GET = withAuth(async (_req, ctx) => {
   try {
-    const invoices = await SalesService.getSalesInvoices(ctx.tenantId);
+    const invoices = await SalesService.getSalesInvoices(ctx.storeId);
     return apiSuccess(invoices);
   } catch (err: any) {
     console.error("[Sales Invoices GET API Error]", err);
@@ -40,7 +40,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, parsed.error.flatten().fieldErrors);
     }
 
-    const invoice = await SalesService.createSalesInvoice(ctx.tenantId, ctx.userId, parsed.data);
+    const invoice = await SalesService.createSalesInvoice(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(invoice, "Sales Invoice created and stock updated", 201);
   } catch (err: any) {
     console.error("[Sales Invoices POST API Error]", err);

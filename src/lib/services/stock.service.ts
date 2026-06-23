@@ -3,14 +3,13 @@
  */
 
 import { db } from '@/lib/db';
-import { AuditService } from './audit.service';
 
 export class StockService {
   /**
    * Adjust stock level (Manual IN/OUT)
    */
   static async adjustStock(
-    tenantId: string,
+    storeId: string,
     userId: string,
     data: {
       itemId: string;
@@ -44,7 +43,7 @@ export class StockService {
       const { data: created, error } = await supaDb
         .from('Stock')
         .insert({
-          tenantId,
+          storeId,
           itemId: data.itemId,
           warehouseId: data.warehouseId,
           quantity: data.quantity,
@@ -59,7 +58,7 @@ export class StockService {
     const { data: transaction, error: txErr } = await supaDb
       .from('InventoryTransaction')
       .insert({
-        tenantId,
+        storeId,
         itemId: data.itemId,
         warehouseId: data.warehouseId,
         type: data.type,
@@ -72,10 +71,7 @@ export class StockService {
 
     if (txErr) throw new Error(txErr.message);
 
-    await AuditService.log(tenantId, userId, 'Stock', stock.id, 'update', null, {
-      adjustment: data.quantity,
-      newQuantity: stock.quantity,
-    });
+    
 
     return { stock, transaction };
   }
@@ -84,7 +80,7 @@ export class StockService {
    * Transfer stock between warehouses
    */
   static async transferStock(
-    tenantId: string,
+    storeId: string,
     userId: string,
     data: {
       itemId: string;
@@ -131,7 +127,7 @@ export class StockService {
       await supaDb
         .from('Stock')
         .insert({
-          tenantId,
+          storeId,
           itemId: data.itemId,
           warehouseId: data.toWarehouseId,
           quantity: data.quantity,
@@ -141,7 +137,7 @@ export class StockService {
     // 3. Log Transactions
     await supaDb.from('InventoryTransaction').insert([
       {
-        tenantId,
+        storeId,
         itemId: data.itemId,
         warehouseId: data.fromWarehouseId,
         type: 'OUT',
@@ -150,7 +146,7 @@ export class StockService {
         performedBy: userId,
       },
       {
-        tenantId,
+        storeId,
         itemId: data.itemId,
         warehouseId: data.toWarehouseId,
         type: 'IN',

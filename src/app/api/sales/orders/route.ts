@@ -16,7 +16,7 @@ const orderSchema = z.object({
 });
 
 export const GET = withAuth(async (_req, ctx) => {
-  const orders = await SalesService.getSalesOrders(ctx.tenantId);
+  const orders = await SalesService.getSalesOrders(ctx.storeId);
   return apiSuccess(orders);
 });
 
@@ -29,7 +29,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, parsed.error.flatten().fieldErrors);
     }
 
-    const order = await SalesService.createSalesOrder(ctx.tenantId, ctx.userId, parsed.data);
+    const order = await SalesService.createSalesOrder(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(order, "Sales Order created", 201);
   } catch (err) {
     console.error("[Orders API Error]", err);

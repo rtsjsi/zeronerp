@@ -16,7 +16,7 @@ interface AppUser {
   id: string;
   email: string;
   fullName: string;
-  tenantId: string | null;
+  storeId: string | null;
   tenantName?: string;
   avatarUrl?: string;
   role: 'ADMIN' | 'USER' | 'SUPER_ADMIN';

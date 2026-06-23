@@ -19,7 +19,7 @@ export interface UploadResult {
 export async function uploadFile(
   file: Buffer,
   fileName: string,
-  tenantId: string,
+  storeId: string,
   folder = 'general',
   mimeType = 'application/octet-stream',
 ): Promise<UploadResult> {

@@ -11,7 +11,7 @@ const warehouseSchema = z.object({
 });
 
 export const GET = withAuth(async (_req, ctx) => {
-  const warehouses = await InventoryService.getWarehouses(ctx.tenantId);
+  const warehouses = await InventoryService.getWarehouses(ctx.storeId);
   return apiSuccess(warehouses);
 });
 
@@ -24,7 +24,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, parsed.error.flatten().fieldErrors);
     }
 
-    const warehouse = await InventoryService.createWarehouse(ctx.tenantId, ctx.userId, parsed.data);
+    const warehouse = await InventoryService.createWarehouse(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(warehouse, "Warehouse created", 201);
   } catch (err) {
     console.error("[Warehouses API Error]", err);

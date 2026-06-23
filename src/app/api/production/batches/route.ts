@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /** Get all batches */
 export const GET = withAuth(async (req, ctx) => {
   try {
-    const batches = await ProductionService.getBatches(ctx.tenantId);
+    const batches = await ProductionService.getBatches(ctx.storeId);
     return apiSuccess(batches);
   } catch (error: any) {
     return apiError(error.message, 500);
@@ -19,7 +19,7 @@ export const GET = withAuth(async (req, ctx) => {
 export const POST = withAuth(async (req, ctx) => {
   try {
     const body = await req.json();
-    const batch = await ProductionService.createBatch(ctx.tenantId, ctx.userId, body);
+    const batch = await ProductionService.createBatch(ctx.storeId, ctx.userId, body);
     return apiSuccess(batch, "Batch created", 201);
   } catch (error: any) {
     return apiError(error.message, 400);

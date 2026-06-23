@@ -13,7 +13,7 @@ const vendorSchema = z.object({
 });
 
 export const GET = withAuth(async (_req, ctx) => {
-  const vendors = await ProcurementService.getVendors(ctx.tenantId);
+  const vendors = await ProcurementService.getVendors(ctx.storeId);
   return apiSuccess(vendors);
 });
 
@@ -26,7 +26,7 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400, parsed.error.flatten().fieldErrors);
     }
 
-    const vendor = await ProcurementService.createVendor(ctx.tenantId, ctx.userId, parsed.data);
+    const vendor = await ProcurementService.createVendor(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(vendor, "Vendor created", 201);
   } catch (err) {
     console.error("[Vendors API Error]", err);

@@ -16,9 +16,9 @@ const userSchema = z.object({
  */
 export const GET = withAuth(async (_req, ctx) => {
   const { data: users } = await db()
-    .from('User')
+    .from('ApplicationUsers')
     .select('*')
-    .eq('tenantId', ctx.tenantId)
+    .eq('storeId', ctx.storeId)
     .eq('isDeleted', false)
     .order('createdAt', { ascending: false });
 
@@ -55,9 +55,9 @@ export const POST = withAuth(async (req, ctx) => {
 
     // 2. Create in DB
     const { data: user, error: dbError } = await db()
-      .from('User')
+      .from('ApplicationUsers')
       .insert({
-        tenantId: ctx.tenantId,
+        storeId: ctx.storeId,
         email,
         fullName,
         supabaseUid: sbUser.user.id,

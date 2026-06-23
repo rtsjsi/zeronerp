@@ -22,7 +22,7 @@ export async function GET() {
     const { db } = await import('@/lib/db');
     const supaDb = db();
     const { data, error } = await supaDb
-      .from('Tenant')
+      .from('Stores')
       .select('id, name')
       .limit(1);
 

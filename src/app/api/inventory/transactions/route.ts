@@ -8,7 +8,7 @@ export const GET = withAuth(async (_req, ctx) => {
     const { data: transactions } = await db()
       .from('InventoryTransaction')
       .select('*, item:Item(name, sku), warehouse:Warehouse(name, code)')
-      .eq('tenantId', ctx.tenantId)
+      .eq('storeId', ctx.storeId)
       .order('createdAt', { ascending: false })
       .limit(100);
 

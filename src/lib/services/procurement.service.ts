@@ -3,25 +3,24 @@
  */
 
 import { db } from '@/lib/db';
-import { AuditService } from './audit.service';
 
 export class ProcurementService {
   /**
    * VENDOR CRUD
    */
 
-  static async getVendors(tenantId: string) {
+  static async getVendors(storeId: string) {
     const { data } = await db()
       .from('Vendor')
       .select('*')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .order('name', { ascending: true });
 
     return data || [];
   }
 
-  static async createVendor(tenantId: string, userId: string, data: {
+  static async createVendor(storeId: string, userId: string, data: {
     name: string;
     contactName?: string;
     email?: string;
@@ -33,7 +32,7 @@ export class ProcurementService {
       .from('Vendor')
       .insert({
         ...data,
-        tenantId,
+        storeId,
         createdBy: userId,
       })
       .select()
@@ -41,7 +40,7 @@ export class ProcurementService {
 
     if (error) throw new Error(error.message);
 
-    await AuditService.log(tenantId, userId, 'Vendor', vendor.id, 'create', null, vendor);
+    
     return vendor;
   }
 
@@ -49,18 +48,18 @@ export class ProcurementService {
    * PURCHASE ORDER CRUD
    */
 
-  static async getPurchaseOrders(tenantId: string) {
+  static async getPurchaseOrders(storeId: string) {
     const { data } = await db()
       .from('PurchaseOrder')
       .select('*, vendor:Vendor(*), items:PurchaseOrderItem(*, item:Item(*))')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .order('createdAt', { ascending: false });
 
     return data || [];
   }
 
-  static async createPurchaseOrder(tenantId: string, userId: string, data: {
+  static async createPurchaseOrder(storeId: string, userId: string, data: {
     vendorId: string;
     poNumber: string;
     notes?: string;
@@ -80,7 +79,7 @@ export class ProcurementService {
       .from('PurchaseOrder')
       .insert({
         ...poData,
-        tenantId,
+        storeId,
         totalAmount,
         createdBy: userId,
         status: 'DRAFT',
@@ -113,7 +112,7 @@ export class ProcurementService {
       throw new Error(`Failed to add items to Purchase Order: ${itemErr.message}`);
     }
 
-    await AuditService.log(tenantId, userId, 'PurchaseOrder', po.id, 'create', null, po);
+    
 
     // Return with items
     const { data: fullPo, error: fetchErr } = await supaDb
@@ -130,14 +129,14 @@ export class ProcurementService {
     return fullPo;
   }
 
-  static async updateOrderStatus(tenantId: string, userId: string, id: string, status: string) {
+  static async updateOrderStatus(storeId: string, userId: string, id: string, status: string) {
     const supaDb = db();
 
     const { data: oldPo } = await supaDb
       .from('PurchaseOrder')
       .select('*')
       .eq('id', id)
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .single();
 
     if (!oldPo) throw new Error('Purchase Order not found');
@@ -151,7 +150,7 @@ export class ProcurementService {
 
     if (error) throw new Error(error.message);
 
-    await AuditService.log(tenantId, userId, 'PurchaseOrder', id, 'update_status', oldPo, newPo);
+    
     return newPo;
   }
 
@@ -159,18 +158,18 @@ export class ProcurementService {
    * PURCHASE INVOICE (PAYABLE INVOICE) CRUD
    */
 
-  static async getPurchaseInvoices(tenantId: string) {
+  static async getPurchaseInvoices(storeId: string) {
     const { data } = await db()
       .from('PurchaseInvoice')
       .select('*, vendor:Vendor(*), items:PurchaseInvoiceItem(*, item:Item(*), warehouse:Warehouse(*))')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .order('createdAt', { ascending: false });
 
     return data || [];
   }
 
-  static async createPurchaseInvoice(tenantId: string, userId: string, data: {
+  static async createPurchaseInvoice(storeId: string, userId: string, data: {
     vendorId: string;
     invoiceNumber: string;
     financialYear: string;
@@ -189,7 +188,7 @@ export class ProcurementService {
     const { data: existing } = await supaDb
       .from('PurchaseInvoice')
       .select('id')
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('vendorId', data.vendorId)
       .eq('invoiceNumber', data.invoiceNumber)
       .eq('financialYear', data.financialYear)
@@ -208,7 +207,7 @@ export class ProcurementService {
       .from('PurchaseInvoice')
       .insert({
         ...invData,
-        tenantId,
+        storeId,
         totalAmount,
         poId: poId || null,
         status: 'COMPLETED',
@@ -261,7 +260,7 @@ export class ProcurementService {
         const { error: stockErr } = await supaDb
           .from('Stock')
           .insert({
-            tenantId,
+            storeId,
             itemId: item.itemId,
             warehouseId: item.warehouseId,
             quantity: Number(item.quantity),
@@ -270,7 +269,7 @@ export class ProcurementService {
       }
 
       await supaDb.from('InventoryTransaction').insert({
-        tenantId,
+        storeId,
         itemId: item.itemId,
         warehouseId: item.warehouseId,
         type: 'IN',
@@ -289,7 +288,7 @@ export class ProcurementService {
         .eq('id', poId);
     }
 
-    await AuditService.log(tenantId, userId, 'PurchaseInvoice', invoice.id, 'create', null, invoice);
+    
 
     return invoice;
   }

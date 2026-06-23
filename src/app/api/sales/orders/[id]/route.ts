@@ -18,7 +18,7 @@ export const PATCH = withAuth(async (req, ctx) => {
     }
 
     const order = await SalesService.updateOrderStatus(
-      ctx.tenantId,
+      ctx.storeId,
       ctx.userId,
       id,
       parsed.data.status

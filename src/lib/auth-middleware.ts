@@ -14,14 +14,14 @@ import { apiError } from '@/lib/api-response';
 /** Context injected into authenticated route handlers */
 export interface AuthContext {
   userId: string;
-  tenantId: string;
+  storeId: string;
   email: string;
   supabaseUid: string;
   user: {
     id: string;
     email: string;
     fullName: string;
-    tenantId: string;
+    storeId: string;
     role: 'ADMIN' | 'USER' | 'SUPER_ADMIN';
   };
   tenant: {
@@ -64,7 +64,7 @@ export function withAuth(handler: AuthenticatedHandler) {
       // 3. Resolve application user via Supabase SDK
       const supaDb = db();
       const { data: user, error: userErr } = await supaDb
-        .from('User')
+        .from('ApplicationUsers')
         .select('*')
         .eq('supabaseUid', supabaseUser.id)
         .eq('isActive', true)
@@ -76,7 +76,7 @@ export function withAuth(handler: AuthenticatedHandler) {
       }
 
       // 4. Resolve tenant
-      let targetTenantId = user.tenantId;
+      let targetTenantId = user.storeId;
 
       // If user is SUPER_ADMIN, they can override the tenant via cookie
       if (user.role === 'SUPER_ADMIN') {
@@ -92,7 +92,7 @@ export function withAuth(handler: AuthenticatedHandler) {
       // Target tenant might be null if a SUPER_ADMIN has no default store and hasn't selected one
       if (targetTenantId) {
         const { data: tenantData, error: tenantErr } = await supaDb
-          .from('Tenant')
+          .from('Stores')
           .select('*')
           .eq('id', targetTenantId)
           .eq('isActive', true)
@@ -111,14 +111,14 @@ export function withAuth(handler: AuthenticatedHandler) {
       // 5. Build context
       const ctx: AuthContext = {
         userId: user.id,
-        tenantId: tenant?.id || '',
+        storeId: tenant?.id || '',
         email: user.email,
         supabaseUid: supabaseUser.id,
         user: {
           id: user.id,
           email: user.email,
           fullName: user.fullName,
-          tenantId: user.tenantId || '',
+          storeId: user.storeId || '',
           role: user.role as 'ADMIN' | 'USER' | 'SUPER_ADMIN',
         },
         tenant: tenant ? {

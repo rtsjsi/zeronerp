@@ -1,10 +1,9 @@
 import { db } from '../db';
 import { StockService } from './stock.service';
-import { AuditService } from './audit.service';
 
 export interface ProductionBatch {
   id: string;
-  tenantId: string;
+  storeId: string;
   batchNumber: string;
   status: 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   notes?: string;
@@ -25,7 +24,7 @@ export interface ProductionMaterial {
 
 export class ProductionService {
   /** Get all batches for a tenant */
-  static async getBatches(tenantId: string) {
+  static async getBatches(storeId: string) {
     const { data, error } = await db()
       .from('ProductionBatch')
       .select(`
@@ -36,7 +35,7 @@ export class ProductionService {
           warehouse:Warehouse(name)
         )
       `)
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .eq('isDeleted', false)
       .order('createdAt', { ascending: false });
 
@@ -45,7 +44,7 @@ export class ProductionService {
   }
 
   /** Create a new production batch */
-  static async createBatch(tenantId: string, userId: string, payload: {
+  static async createBatch(storeId: string, userId: string, payload: {
     batchNumber: string;
     notes?: string;
     materials: Omit<ProductionMaterial, 'id' | 'batchId'>[];
@@ -56,7 +55,7 @@ export class ProductionService {
     const { data: batch, error: batchErr } = await supa
       .from('ProductionBatch')
       .insert({
-        tenantId,
+        storeId,
         batchNumber: payload.batchNumber,
         notes: payload.notes,
         status: 'DRAFT',
@@ -71,7 +70,7 @@ export class ProductionService {
       const materials = payload.materials.map(m => ({
         ...m,
         batchId: batch.id,
-        tenantId,
+        storeId,
       }));
 
       const { error: matErr } = await supa
@@ -81,13 +80,13 @@ export class ProductionService {
       if (matErr) throw matErr;
     }
 
-    await AuditService.log(tenantId, userId, 'ProductionBatch', batch.id, 'create', null, batch);
+    
 
     return batch;
   }
 
   /** Start production (change status to IN_PROGRESS) */
-  static async startBatch(tenantId: string, userId: string, batchId: string) {
+  static async startBatch(storeId: string, userId: string, batchId: string) {
     const { data: batch, error } = await db()
       .from('ProductionBatch')
       .update({
@@ -96,19 +95,19 @@ export class ProductionService {
         updatedAt: new Date().toISOString(),
       })
       .eq('id', batchId)
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .select()
       .single();
 
     if (error) throw error;
 
-    await AuditService.log(tenantId, userId, 'ProductionBatch', batchId, 'update', { status: 'DRAFT' }, { status: 'IN_PROGRESS' });
+    
 
     return batch;
   }
 
   /** Complete production (Adjust Stocks & Finish) */
-  static async completeBatch(tenantId: string, userId: string, batchId: string) {
+  static async completeBatch(storeId: string, userId: string, batchId: string) {
     const supa = db();
 
     // 1. Get Batch and Materials
@@ -116,7 +115,7 @@ export class ProductionService {
       .from('ProductionBatch')
       .select('*, materials:ProductionMaterial(*)')
       .eq('id', batchId)
-      .eq('tenantId', tenantId)
+      .eq('storeId', storeId)
       .single();
 
     if (batchErr) throw batchErr;
@@ -128,7 +127,7 @@ export class ProductionService {
     for (const mat of batch.materials) {
       if (mat.type === 'INPUT') {
         // Consumption: Stock OUT
-        await StockService.adjustStock(tenantId, userId, {
+        await StockService.adjustStock(storeId, userId, {
           itemId: mat.itemId,
           warehouseId: mat.warehouseId,
           type: 'OUT',
@@ -137,7 +136,7 @@ export class ProductionService {
         });
       } else {
         // Production: Stock IN
-        await StockService.adjustStock(tenantId, userId, {
+        await StockService.adjustStock(storeId, userId, {
           itemId: mat.itemId,
           warehouseId: mat.warehouseId,
           type: 'IN',
@@ -161,7 +160,7 @@ export class ProductionService {
 
     if (updateErr) throw updateErr;
 
-    await AuditService.log(tenantId, userId, 'ProductionBatch', batchId, 'update', { status: 'IN_PROGRESS' }, { status: 'COMPLETED' });
+    
 
     return updatedBatch;
   }
