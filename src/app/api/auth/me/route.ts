@@ -13,8 +13,8 @@ export const GET = withAuth(async (_req, ctx) => {
     id: ctx.user.id,
     email: ctx.user.email,
     fullName: ctx.user.fullName,
-    tenantId: ctx.tenant.id,
-    tenantName: ctx.tenant.name,
+    tenantId: ctx.tenant?.id || null,
+    tenantName: ctx.tenant?.name || null,
     role: ctx.user.role,
   });
 });
