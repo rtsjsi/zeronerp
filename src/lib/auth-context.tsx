@@ -16,10 +16,10 @@ interface AppUser {
   id: string;
   email: string;
   fullName: string;
-  tenantId: string;
-  tenantName: string;
+  tenantId: string | null;
+  tenantName?: string;
   avatarUrl?: string;
-  role: 'ADMIN' | 'USER';
+  role: 'ADMIN' | 'USER' | 'SUPER_ADMIN';
 }
 
 interface AuthContextValue {

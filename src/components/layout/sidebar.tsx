@@ -53,6 +53,10 @@ const adminNavItems: NavItem[] = [
   { label: "User Management", href: "/admin/users", icon: UsersIcon },
 ];
 
+const superAdminNavItems: NavItem[] = [
+  { label: "Stores", href: "/super-admin/stores", icon: Factory }, // Using Factory or another icon
+];
+
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
@@ -167,7 +171,7 @@ export function Sidebar() {
           {secondaryNavItems.map(renderNavItem)}
         </div>
 
-        {user?.role === 'ADMIN' && (
+        {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
           <div className="pt-4 space-y-0.5">
             {!collapsed && (
               <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
@@ -175,6 +179,17 @@ export function Sidebar() {
               </span>
             )}
             {adminNavItems.map(renderNavItem)}
+          </div>
+        )}
+
+        {user?.role === 'SUPER_ADMIN' && (
+          <div className="pt-4 space-y-0.5">
+            {!collapsed && (
+              <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
+                Super Admin
+              </span>
+            )}
+            {superAdminNavItems.map(renderNavItem)}
           </div>
         )}
       </nav>

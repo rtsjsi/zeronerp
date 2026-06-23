@@ -76,38 +76,58 @@ export function withAuth(handler: AuthenticatedHandler) {
       }
 
       // 4. Resolve tenant
-      const { data: tenant, error: tenantErr } = await supaDb
-        .from('Tenant')
-        .select('*')
-        .eq('id', user.tenantId)
-        .eq('isActive', true)
-        .eq('isDeleted', false)
-        .single();
+      let targetTenantId = user.tenantId;
 
-      if (tenantErr || !tenant) {
-        return apiError(tenantErr ? `DB Error (Tenant): ${tenantErr.message}` : 'Tenant not found or inactive', 403);
+      // If user is SUPER_ADMIN, they can override the tenant via cookie
+      if (user.role === 'SUPER_ADMIN') {
+        // We will read a cookie 'zeron_superadmin_store_id' if available
+        const overrideCookie = req.cookies.get('zeron_superadmin_store_id');
+        if (overrideCookie?.value) {
+          targetTenantId = overrideCookie.value;
+        }
+      }
+
+      let tenant = null;
+      
+      // Target tenant might be null if a SUPER_ADMIN has no default store and hasn't selected one
+      if (targetTenantId) {
+        const { data: tenantData, error: tenantErr } = await supaDb
+          .from('Tenant')
+          .select('*')
+          .eq('id', targetTenantId)
+          .eq('isActive', true)
+          .eq('isDeleted', false)
+          .single();
+
+        if (tenantErr || !tenantData) {
+          return apiError(tenantErr ? `DB Error (Tenant): ${tenantErr.message}` : 'Tenant not found or inactive', 403);
+        }
+        tenant = tenantData;
+      } else if (user.role !== 'SUPER_ADMIN') {
+        // Normal users must have a valid tenant
+        return apiError('Tenant not found or inactive', 403);
       }
 
       // 5. Build context
       const ctx: AuthContext = {
         userId: user.id,
-        tenantId: user.tenantId,
+        tenantId: tenant?.id || '',
         email: user.email,
         supabaseUid: supabaseUser.id,
         user: {
           id: user.id,
           email: user.email,
           fullName: user.fullName,
-          tenantId: user.tenantId,
-          role: user.role as 'ADMIN' | 'USER',
+          tenantId: user.tenantId || '',
+          role: user.role as 'ADMIN' | 'USER' | 'SUPER_ADMIN',
         },
-        tenant: {
+        tenant: tenant ? {
           id: tenant.id,
           name: tenant.name,
           slug: tenant.slug,
           settings: tenant.settings,
           aiEnabled: tenant.aiEnabled,
-        },
+        } : null as any,
         params,
       };
 

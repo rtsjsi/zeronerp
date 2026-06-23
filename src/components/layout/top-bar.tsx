@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { StoreSelector } from "./store-selector";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,6 +61,9 @@ export function TopBar() {
 
         {/* Right — Actions */}
         <div className="flex items-center gap-2">
+          {/* Store Selector for Super Admins */}
+          <StoreSelector />
+
           {/* Theme Toggle */}
           <Button
             variant="ghost"
