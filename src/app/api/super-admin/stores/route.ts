@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth-middleware';
-import { apiResponse, apiError } from '@/lib/api-response';
+import { apiSuccess, apiError } from '@/lib/api-response';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 
 export const GET = withAuth(async (req, ctx) => {
   if (ctx.user.role !== 'SUPER_ADMIN') return apiError('Forbidden', 403);
   try {
     const stores = await SuperAdminService.getStores();
-    return apiResponse(stores);
+    return apiSuccess(stores);
   } catch (err: any) {
     return apiError(err.message, 500);
   }
@@ -25,7 +25,7 @@ export const POST = withAuth(async (req, ctx) => {
       gstn: body.gstn,
       contactNumber: body.contactNumber,
     });
-    return apiResponse(store, 201);
+    return apiSuccess(store, 201);
   } catch (err: any) {
     return apiError(err.message, 500);
   }
