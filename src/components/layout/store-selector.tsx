@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Store } from "lucide-react";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
 
 interface Tenant {
   id: string;
@@ -22,11 +23,20 @@ export function StoreSelector() {
     const match = document.cookie.match(new RegExp('(^| )zeron_superadmin_store_id=([^;]+)'));
     if (match) setSelectedId(match[2]);
 
-    fetch('/api/super-admin/stores')
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) setStores(json.data);
+    const loadStores = async () => {
+      const supabase = getSupabaseBrowser();
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch('/api/super-admin/stores', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
+      const json = await res.json();
+      if (json.success) setStores(json.data);
+    };
+
+    loadStores();
   }, [user]);
 
   if (user?.role !== 'SUPER_ADMIN') return null;
