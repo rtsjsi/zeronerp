@@ -2,6 +2,9 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
 	"name": "zeronerp",
+	// Disable esbuild keep_names — prevents "__name is not defined" in client bundles
+	// https://opennext.js.org/cloudflare/howtos/keep_names
+	"keep_names": false,
 	"compatibility_date": "2026-05-11",
 	"compatibility_flags": [
 		"nodejs_compat",

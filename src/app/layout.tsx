@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, JetBrains_Mono } from "next/font/google";
-import Script from "next/script";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -55,9 +54,6 @@ export default function RootLayout({
       className={`${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <Script id="name-polyfill" strategy="beforeInteractive">
-          {`if (typeof window !== 'undefined') { window.__name = window.__name || function (f, n) { return f; }; }`}
-        </Script>
         <Providers>{children}</Providers>
       </body>
     </html>
