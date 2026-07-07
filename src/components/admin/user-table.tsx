@@ -13,7 +13,7 @@ import { format } from "date-fns";
 
 interface User {
   id: string;
-  email: string;
+  username: string;
   fullName: string;
   isActive: boolean;
   createdAt: string;
@@ -33,7 +33,7 @@ export function UserTable({ users, onToggleStatus, onDelete }: UserTableProps) {
           <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-wider">
             <tr>
               <th className="px-6 py-4">User</th>
-              <th className="px-6 py-4">Email</th>
+              <th className="px-6 py-4">Username</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Joined</th>
               <th className="px-6 py-4 text-right">Actions</th>
@@ -50,7 +50,7 @@ export function UserTable({ users, onToggleStatus, onDelete }: UserTableProps) {
                     <span className="font-medium text-foreground">{user.fullName}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-muted-foreground">{user.email}</td>
+                <td className="px-6 py-4 text-muted-foreground">{user.username}</td>
                 <td className="px-6 py-4">
                   <Badge variant={user.isActive ? "success" : "secondary"}>
                     {user.isActive ? "Active" : "Inactive"}

@@ -15,10 +15,10 @@ import { apiError } from '@/lib/api-response';
 export interface AuthContext {
   userId: string;
   storeId: string;
-  email: string;
+  username: string;
   user: {
     id: string;
-    email: string;
+    username: string;
     fullName: string;
     storeId: string;
     role: 'ADMIN' | 'USER' | 'SUPER_ADMIN';
@@ -97,10 +97,10 @@ export function withAuth(handler: AuthenticatedHandler) {
       const ctx: AuthContext = {
         userId: user.id,
         storeId: tenant?.id || '',
-        email: user.email,
+        username: user.username,
         user: {
           id: user.id,
-          email: user.email,
+          username: user.username,
           fullName: user.fullName,
           storeId: user.storeId || '',
           role: user.role as 'ADMIN' | 'USER' | 'SUPER_ADMIN',

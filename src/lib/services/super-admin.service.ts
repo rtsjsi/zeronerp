@@ -58,11 +58,11 @@ export class SuperAdminService {
 
   static async createUserForStore(
     storeId: string,
-    data: { email: string; fullName: string; password?: string; role: 'ADMIN' | 'USER' },
+    data: { username: string; fullName: string; password?: string; role: 'ADMIN' | 'USER' },
   ) {
     return AuthService.createUser({
       storeId,
-      email: data.email,
+      username: data.username,
       fullName: data.fullName,
       password: data.password || 'Temporary123!',
       role: data.role,

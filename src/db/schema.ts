@@ -39,7 +39,7 @@ export const applicationUsers = sqliteTable(
   {
     id: text('id').primaryKey(),
     storeId: text('storeId').references(() => stores.id),
-    email: text('email').notNull(),
+    username: text('username').notNull(),
     fullName: text('fullName').notNull(),
     passwordHash: text('passwordHash').notNull(),
     role: text('role').notNull().default('USER'),
@@ -47,7 +47,7 @@ export const applicationUsers = sqliteTable(
     isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
     ...timestamps,
   },
-  (table) => [uniqueIndex('ApplicationUsers_storeId_email').on(table.storeId, table.email)],
+  (table) => [uniqueIndex('ApplicationUsers_storeId_username').on(table.storeId, table.username)],
 );
 
 export const items = sqliteTable(

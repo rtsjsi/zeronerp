@@ -4,11 +4,12 @@ import { withAuth } from "@/lib/auth-middleware";
 import { db } from "@/lib/db";
 import { applicationUsers } from '@/db/schema';
 import { AuthService } from '@/lib/auth/service';
+import { usernameSchema } from '@/lib/auth/constants';
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { z } from "zod";
 
 const userSchema = z.object({
-  email: z.string().email(),
+  username: usernameSchema,
   fullName: z.string().min(2),
   password: z.string().min(6),
 });
@@ -34,11 +35,11 @@ export const POST = withAuth(async (req, ctx) => {
       return apiError("Invalid data", 400);
     }
 
-    const { email, fullName, password } = parsed.data;
+    const { username, fullName, password } = parsed.data;
 
     const user = await AuthService.createUser({
       storeId: ctx.storeId,
-      email,
+      username,
       fullName,
       password,
       role: 'USER',

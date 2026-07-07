@@ -38,8 +38,10 @@ npm run db:migrate:remote
 
 ## Step 4: Seed Admin (first-time setup)
 ```bash
-npm run db:seed-admin -- --remote --email admin@example.com --password yourpassword --name "Super Admin"
+npm run db:seed-admin -- --remote --password yourpassword --name "Super Admin"
 ```
 
+Super admin always signs in with username `super_admin`.
+
 ## Auth
-Authentication uses D1 (`ApplicationUsers.passwordHash`) and JWT signed with `JWT_SECRET` (Cloudflare Worker secret).
+Authentication uses D1 (`ApplicationUsers.passwordHash`) and JWT signed with `JWT_SECRET` (Cloudflare Worker secret). Users sign in with `username`, not email.

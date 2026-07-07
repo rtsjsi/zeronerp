@@ -90,7 +90,7 @@ export default function MorePage() {
       {user && (
         <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border">
           <p className="text-sm font-medium text-foreground">{user.fullName}</p>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
+          <p className="text-xs text-muted-foreground">{user.username}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{user.tenantName}</p>
         </div>
       )}

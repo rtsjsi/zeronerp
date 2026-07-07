@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { UserPlus, User, Mail, Shield } from "lucide-react";
+import { UserPlus, User, Shield } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
@@ -14,7 +14,7 @@ import { CreateStoreUserDialog } from "./create-store-user-dialog";
 
 interface AppUser {
   id: string;
-  email: string;
+  username: string;
   fullName: string;
   role: string;
   createdAt: string;
@@ -63,7 +63,7 @@ export default function SuperAdminStoreDetailsPage() {
             <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Joined</TableHead>
               </TableRow>
@@ -90,7 +90,7 @@ export default function SuperAdminStoreDetailsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Mail className="w-3 h-3" /> {user.email}
+                        <User className="w-3 h-3" /> {user.username}
                       </div>
                     </TableCell>
                     <TableCell>

@@ -1,7 +1,7 @@
 /**
  * Login Form Component
  * 
- * Handles email/password sign-in with D1-backed auth.
+ * Handles username/password sign-in with D1-backed auth.
  * Uses React Hook Form + Zod for validation.
  */
 
@@ -18,9 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
+import { usernameSchema } from "@/lib/auth/constants";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  username: usernameSchema,
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -37,11 +38,11 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { username: "", password: "" },
   });
 
   const onSubmit = async (values: LoginValues) => {
-    const { error } = await signIn(values.email.trim(), values.password);
+    const { error } = await signIn(values.username.trim(), values.password);
     if (error) {
       toast.error("Sign in failed", { description: error });
       return;
@@ -52,26 +53,23 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {/* Email */}
       <div className="space-y-2">
-        <Label htmlFor="login-email" className="text-sm font-medium">
-          Email address
+        <Label htmlFor="login-username" className="text-sm font-medium">
+          Username
         </Label>
         <Input
-          id="login-email"
+          id="login-username"
           type="text"
-          inputMode="email"
-          placeholder="you@company.com"
+          placeholder="your.username"
           autoComplete="username"
           className="h-11"
-          {...register("email")}
+          {...register("username")}
         />
-        {errors.email && (
-          <p className="text-xs text-destructive mt-1">{errors.email.message}</p>
+        {errors.username && (
+          <p className="text-xs text-destructive mt-1">{errors.username.message}</p>
         )}
       </div>
 
-      {/* Password */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="login-password" className="text-sm font-medium">
@@ -108,7 +106,6 @@ export function LoginForm() {
         )}
       </div>
 
-      {/* Submit */}
       <Button
         type="submit"
         disabled={isSubmitting}

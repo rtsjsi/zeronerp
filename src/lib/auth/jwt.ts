@@ -5,13 +5,13 @@ const TOKEN_TTL = '7d';
 
 export interface AuthTokenClaims {
   sub: string;
-  email: string;
+  username: string;
   role: 'ADMIN' | 'USER' | 'SUPER_ADMIN';
 }
 
 export interface AuthTokenPayload extends JWTPayload {
   sub: string;
-  email: string;
+  username: string;
   role: 'ADMIN' | 'USER' | 'SUPER_ADMIN';
 }
 
@@ -25,7 +25,7 @@ function getSecret(): Uint8Array {
 
 export async function signAuthToken(payload: AuthTokenClaims): Promise<string> {
   return new SignJWT({
-    email: payload.email,
+    username: payload.username,
     role: payload.role,
   })
     .setProtectedHeader({ alg: 'HS256' })
@@ -40,7 +40,7 @@ export async function verifyAuthToken(token: string): Promise<AuthTokenPayload> 
     algorithms: ['HS256'],
   });
 
-  if (!payload.sub || typeof payload.email !== 'string' || typeof payload.role !== 'string') {
+  if (!payload.sub || typeof payload.username !== 'string' || typeof payload.role !== 'string') {
     throw new Error('Invalid token payload');
   }
 

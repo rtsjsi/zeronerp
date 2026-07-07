@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth-middleware';
 import { apiSuccess, apiError, parseRequestJson } from '@/lib/api-response';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
+import { usernameSchema } from '@/lib/auth/constants';
 
 export const GET = withAuth(async (req, ctx) => {
   if (ctx.user.role !== 'SUPER_ADMIN') return apiError('Forbidden', 403);
@@ -17,15 +18,18 @@ export const POST = withAuth(async (req, ctx) => {
   if (ctx.user.role !== 'SUPER_ADMIN') return apiError('Forbidden', 403);
   try {
     const body = await parseRequestJson<{
-      email: string;
+      username: string;
       fullName: string;
       password?: string;
       role?: 'ADMIN' | 'USER';
     }>(req);
-    if (!body.email || !body.fullName) return apiError('Email and full name are required', 400);
+    const usernameResult = usernameSchema.safeParse(body.username);
+    if (!usernameResult.success || !body.fullName) {
+      return apiError('Username and full name are required', 400);
+    }
 
     const user = await SuperAdminService.createUserForStore(ctx.params.id, {
-      email: body.email,
+      username: usernameResult.data,
       fullName: body.fullName,
       password: body.password,
       role: body.role || 'USER',

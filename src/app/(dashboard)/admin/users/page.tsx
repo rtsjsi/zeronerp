@@ -28,7 +28,7 @@ export default function UserManagementPage() {
 
   const filteredUsers = users?.filter((user: any) =>
     user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {

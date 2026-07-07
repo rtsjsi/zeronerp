@@ -19,7 +19,7 @@ interface CreateStoreUserDialogProps {
 export function CreateStoreUserDialog({ storeId, open, onOpenChange, onSuccess }: CreateStoreUserDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     fullName: "",
     password: "",
     role: "USER",
@@ -37,7 +37,7 @@ export function CreateStoreUserDialog({ storeId, open, onOpenChange, onSuccess }
       
       if (json.success) {
         toast.success("User created successfully");
-        setFormData({ email: "", fullName: "", password: "", role: "USER" });
+        setFormData({ username: "", fullName: "", password: "", role: "USER" });
         onSuccess();
         onOpenChange(false);
       } else {
@@ -72,14 +72,13 @@ export function CreateStoreUserDialog({ storeId, open, onOpenChange, onSuccess }
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address <span className="text-destructive">*</span></Label>
+            <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
             <Input 
-              id="email" 
-              type="email"
+              id="username" 
               required
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              placeholder="user@example.com"
+              value={formData.username}
+              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              placeholder="john.doe"
             />
           </div>
 
@@ -114,7 +113,7 @@ export function CreateStoreUserDialog({ storeId, open, onOpenChange, onSuccess }
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !formData.email || !formData.fullName}>
+            <Button type="submit" disabled={loading || !formData.username || !formData.fullName}>
               {loading ? "Creating..." : "Create User"}
             </Button>
           </DialogFooter>

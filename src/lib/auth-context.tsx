@@ -14,7 +14,7 @@ import {
 
 interface AppUser {
   id: string;
-  email: string;
+  username: string;
   fullName: string;
   storeId: string | null;
   tenantName?: string;
@@ -27,7 +27,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   accessToken: string | null;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (username: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -87,12 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchAppUser]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (username: string, password: string) => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const json = (await res.json()) as {

@@ -1,9 +1,9 @@
 /**
- * Bootstrap script: create the first SUPER_ADMIN user in local D1.
+ * Bootstrap script: create the first SUPER_ADMIN user in D1.
  *
  * Usage:
- *   npm run db:seed-admin -- --email admin@example.com --password secret123 --name "Super Admin"
- *   npm run db:seed-admin -- --remote --email admin@example.com --password secret123
+ *   npm run db:seed-admin -- --password secret123 --name "Super Admin"
+ *   npm run db:seed-admin -- --remote --password secret123
  */
 
 import { execSync } from 'node:child_process';
@@ -15,6 +15,7 @@ import { loadEnvLocal } from './load-env.mjs';
 
 loadEnvLocal();
 
+const SUPER_ADMIN_USERNAME = 'super_admin';
 const PBKDF2_ITERATIONS = 100_000;
 const SALT_BYTES = 16;
 const KEY_BYTES = 32;
@@ -66,7 +67,6 @@ function sqlEscape(value) {
 }
 
 const args = parseArgs(process.argv.slice(2));
-const email = args.email || 'admin@zeronerp.local';
 const password = args.password || 'Admin123!';
 const fullName = args.name || 'Super Admin';
 
@@ -74,13 +74,13 @@ const id = randomUUID();
 const now = new Date().toISOString();
 const passwordHash = await hashPassword(password);
 
-const sql = `INSERT INTO ApplicationUsers (id, storeId, email, fullName, passwordHash, role, isActive, isDeleted, createdAt, updatedAt) VALUES ('${sqlEscape(id)}', NULL, '${sqlEscape(email)}', '${sqlEscape(fullName)}', '${sqlEscape(passwordHash)}', 'SUPER_ADMIN', 1, 0, '${now}', '${now}');`;
+const sql = `INSERT INTO ApplicationUsers (id, storeId, username, fullName, passwordHash, role, isActive, isDeleted, createdAt, updatedAt) VALUES ('${sqlEscape(id)}', NULL, '${SUPER_ADMIN_USERNAME}', '${sqlEscape(fullName)}', '${sqlEscape(passwordHash)}', 'SUPER_ADMIN', 1, 0, '${now}', '${now}');`;
 
 const file = join(tmpdir(), `zeronerp-seed-${Date.now()}.sql`);
 writeFileSync(file, sql, 'utf8');
 
 const target = args.remote ? 'zeronerpdb --remote' : 'zeronerpdb --local';
-console.log(`Creating SUPER_ADMIN on ${args.remote ? 'remote' : 'local'} D1: ${email}`);
+console.log(`Creating SUPER_ADMIN on ${args.remote ? 'remote' : 'local'} D1: ${SUPER_ADMIN_USERNAME}`);
 try {
   execSync(`npx wrangler d1 execute ${target} --file "${file}"`, { stdio: 'inherit' });
   console.log('Done.');

@@ -11,12 +11,13 @@ import { loadEnvLocal } from './load-env.mjs';
 
 loadEnvLocal();
 
+const SUPER_ADMIN_USERNAME = 'super_admin';
 const PBKDF2_ITERATIONS = 100_000;
 const SALT_BYTES = 16;
 const KEY_BYTES = 32;
 
 function parseArgs(argv) {
-  const args = { remote: true, email: 'admin@zeronerp.local' };
+  const args = { remote: true };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--local') args.remote = false;
     if (argv[i].startsWith('--')) {
@@ -54,17 +55,16 @@ function sqlEscape(value) {
 }
 
 const args = parseArgs(process.argv.slice(2));
-const email = args.email;
 const password = args.password || 'ZeronAdmin2026';
 const passwordHash = await hashPassword(password);
 const now = new Date().toISOString();
 
-const sql = `UPDATE ApplicationUsers SET passwordHash = '${sqlEscape(passwordHash)}', updatedAt = '${now}' WHERE email = '${sqlEscape(email)}';`;
+const sql = `UPDATE ApplicationUsers SET passwordHash = '${sqlEscape(passwordHash)}', updatedAt = '${now}' WHERE username = '${SUPER_ADMIN_USERNAME}' AND role = 'SUPER_ADMIN';`;
 const file = join(tmpdir(), `zeronerp-reset-${Date.now()}.sql`);
 writeFileSync(file, sql, 'utf8');
 
 const target = args.remote ? 'zeronerpdb --remote' : 'zeronerpdb --local';
-console.log(`Resetting password for ${email} on ${args.remote ? 'remote' : 'local'} D1...`);
+console.log(`Resetting password for ${SUPER_ADMIN_USERNAME} on ${args.remote ? 'remote' : 'local'} D1...`);
 
 try {
   execSync(`npx wrangler d1 execute ${target} --file "${file}"`, { stdio: 'inherit' });

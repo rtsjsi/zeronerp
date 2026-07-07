@@ -92,7 +92,7 @@ export function TopBar() {
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-3 py-2">
                 <p className="text-sm font-medium">{user?.fullName || "User"}</p>
-                <p className="text-xs text-muted-foreground">{user?.email || ""}</p>
+                <p className="text-xs text-muted-foreground">{user?.username || ""}</p>
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Profile</DropdownMenuItem>

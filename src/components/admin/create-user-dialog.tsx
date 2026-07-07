@@ -16,9 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
+import { usernameSchema } from "@/lib/auth/constants";
 
 const createSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  username: usernameSchema,
   fullName: z.string().min(2, "Full name is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
@@ -35,7 +36,7 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
   const form = useForm<CreateFormValues>({
     resolver: zodResolver(createSchema),
     defaultValues: {
-      email: "",
+      username: "",
       fullName: "",
       password: "",
     },
@@ -81,10 +82,10 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input id="email" type="email" placeholder="john@example.com" {...form.register("email")} />
-            {form.formState.errors.email && (
-              <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+            <Label htmlFor="username">Username</Label>
+            <Input id="username" placeholder="john.doe" {...form.register("username")} />
+            {form.formState.errors.username && (
+              <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>
             )}
           </div>
 

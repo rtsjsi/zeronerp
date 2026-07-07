@@ -11,7 +11,7 @@ import { apiSuccess } from "@/lib/api-response";
 export const GET = withAuth(async (_req, ctx) => {
   return apiSuccess({
     id: ctx.user.id,
-    email: ctx.user.email,
+    username: ctx.user.username,
     fullName: ctx.user.fullName,
     storeId: ctx.tenant?.id || null,
     tenantName: ctx.tenant?.name || null,
