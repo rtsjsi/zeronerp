@@ -14,10 +14,6 @@ const nextConfig: NextConfig = {
   // Turbopack config (Next.js 16 default bundler)
   turbopack: {},
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   // Headers for security
   async headers() {
     return [
