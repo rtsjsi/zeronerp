@@ -39,7 +39,11 @@ type AuthenticatedHandler = (
 ) => Promise<Response>;
 
 export function withAuth(handler: AuthenticatedHandler) {
-  return async (req: NextRequest, { params }: { params: any }) => {
+  return async (
+    req: NextRequest,
+    routeContext: { params: Promise<Record<string, string>> | Record<string, string> },
+  ) => {
+    const params = await routeContext.params;
     try {
       const authHeader = req.headers.get('authorization');
       if (!authHeader?.startsWith('Bearer ')) {
