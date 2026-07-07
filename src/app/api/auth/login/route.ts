@@ -7,7 +7,7 @@ import { usernameSchema } from '@/lib/auth/constants';
 
 const loginSchema = z.object({
   username: usernameSchema,
-  password: z.string().min(6),
+  password: z.string().min(1),
 });
 
 export async function POST(req: Request) {
