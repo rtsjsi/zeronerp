@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Store } from "lucide-react";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 
 interface Tenant {
   id: string;
@@ -19,21 +19,12 @@ export function StoreSelector() {
   useEffect(() => {
     if (user?.role !== 'SUPER_ADMIN') return;
 
-    // Read cookie
     const match = document.cookie.match(new RegExp('(^| )zeron_superadmin_store_id=([^;]+)'));
     if (match) setSelectedId(match[2]);
 
     const loadStores = async () => {
-      const supabase = getSupabaseBrowser();
-      if (!supabase) return;
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch('/api/super-admin/stores', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
-      const json = await res.json();
-      if (json.success) setStores(json.data);
+      const json = await apiFetch<Tenant[]>('/api/super-admin/stores');
+      if (json.success && json.data) setStores(json.data);
     };
 
     loadStores();
@@ -45,11 +36,10 @@ export function StoreSelector() {
     if (!val) return;
     setSelectedId(val);
     if (val === 'none') {
-      document.cookie = "zeron_superadmin_store_id=; path=/; max-age=0"; // Delete cookie
+      document.cookie = "zeron_superadmin_store_id=; path=/; max-age=0";
     } else {
       document.cookie = `zeron_superadmin_store_id=${val}; path=/; max-age=86400`;
     }
-    // Reload to re-evaluate withAuth and data
     window.location.reload();
   };
 

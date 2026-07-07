@@ -1,22 +1,21 @@
 /**
- * Auth Middleware (Supabase SDK)
- * 
- * Extracts and validates the JWT from the Authorization header,
- * resolves the User + Tenant from the database via Supabase SDK,
- * and injects an AuthContext into route handler callbacks.
+ * Auth Middleware
+ *
+ * Validates JWT and resolves user + store from D1.
  */
 
 import { NextRequest } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { applicationUsers, stores } from '@/db/schema';
+import { parseJson } from '@/db/helpers';
+import { verifyAuthToken } from '@/lib/auth/jwt';
 import { apiError } from '@/lib/api-response';
 
-/** Context injected into authenticated route handlers */
 export interface AuthContext {
   userId: string;
   storeId: string;
   email: string;
-  supabaseUid: string;
   user: {
     id: string;
     email: string;
@@ -39,48 +38,33 @@ type AuthenticatedHandler = (
   ctx: AuthContext,
 ) => Promise<Response>;
 
-/**
- * HOF that wraps a route handler with auth validation.
- * Extracts JWT, validates via Supabase, resolves user & tenant.
- */
 export function withAuth(handler: AuthenticatedHandler) {
   return async (req: NextRequest, { params }: { params: any }) => {
     try {
-      // 1. Extract token
       const authHeader = req.headers.get('authorization');
       if (!authHeader?.startsWith('Bearer ')) {
         return apiError('Missing or invalid authorization header', 401);
       }
       const token = authHeader.replace('Bearer ', '');
 
-      // 2. Validate with Supabase
-      const supabase = createServerClient();
-      const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
+      const payload = await verifyAuthToken(token);
 
-      if (error || !supabaseUser) {
-        return apiError('Invalid or expired token', 401);
+      const database = db();
+      const user = await database.query.applicationUsers.findFirst({
+        where: and(
+          eq(applicationUsers.id, payload.sub),
+          eq(applicationUsers.isActive, true),
+          eq(applicationUsers.isDeleted, false),
+        ),
+      });
+
+      if (!user) {
+        return apiError('User not found in application', 403);
       }
 
-      // 3. Resolve application user via Supabase SDK
-      const supaDb = db();
-      const { data: user, error: userErr } = await supaDb
-        .from('ApplicationUsers')
-        .select('*')
-        .eq('supabaseUid', supabaseUser.id)
-        .eq('isActive', true)
-        .eq('isDeleted', false)
-        .single();
-
-      if (userErr || !user) {
-        return apiError(userErr ? `DB Error (User): ${userErr.message}` : 'User not found in application', 403);
-      }
-
-      // 4. Resolve tenant
       let targetTenantId = user.storeId;
 
-      // If user is SUPER_ADMIN, they can override the tenant via cookie
       if (user.role === 'SUPER_ADMIN') {
-        // We will read a cookie 'zeron_superadmin_store_id' if available
         const overrideCookie = req.cookies.get('zeron_superadmin_store_id');
         if (overrideCookie?.value) {
           targetTenantId = overrideCookie.value;
@@ -88,32 +72,28 @@ export function withAuth(handler: AuthenticatedHandler) {
       }
 
       let tenant = null;
-      
-      // Target tenant might be null if a SUPER_ADMIN has no default store and hasn't selected one
-      if (targetTenantId) {
-        const { data: tenantData, error: tenantErr } = await supaDb
-          .from('Stores')
-          .select('*')
-          .eq('id', targetTenantId)
-          .eq('isActive', true)
-          .eq('isDeleted', false)
-          .single();
 
-        if (tenantErr || !tenantData) {
-          return apiError(tenantErr ? `DB Error (Tenant): ${tenantErr.message}` : 'Tenant not found or inactive', 403);
+      if (targetTenantId) {
+        const tenantData = await database.query.stores.findFirst({
+          where: and(
+            eq(stores.id, targetTenantId),
+            eq(stores.isActive, true),
+            eq(stores.isDeleted, false),
+          ),
+        });
+
+        if (!tenantData) {
+          return apiError('Tenant not found or inactive', 403);
         }
         tenant = tenantData;
       } else if (user.role !== 'SUPER_ADMIN') {
-        // Normal users must have a valid tenant
         return apiError('Tenant not found or inactive', 403);
       }
 
-      // 5. Build context
       const ctx: AuthContext = {
         userId: user.id,
         storeId: tenant?.id || '',
         email: user.email,
-        supabaseUid: supabaseUser.id,
         user: {
           id: user.id,
           email: user.email,
@@ -121,17 +101,18 @@ export function withAuth(handler: AuthenticatedHandler) {
           storeId: user.storeId || '',
           role: user.role as 'ADMIN' | 'USER' | 'SUPER_ADMIN',
         },
-        tenant: tenant ? {
-          id: tenant.id,
-          name: tenant.name,
-          slug: tenant.slug,
-          settings: tenant.settings,
-          aiEnabled: tenant.aiEnabled,
-        } : null as any,
+        tenant: tenant
+          ? {
+              id: tenant.id,
+              name: tenant.name,
+              slug: tenant.slug,
+              settings: parseJson(tenant.settings, {}),
+              aiEnabled: tenant.aiEnabled,
+            }
+          : (null as any),
         params,
       };
 
-      // 6. Role-based path restrictions
       const path = req.nextUrl.pathname;
 
       if (!ctx.storeId && !path.startsWith('/api/super-admin') && !path.startsWith('/api/auth/me')) {
@@ -145,7 +126,7 @@ export function withAuth(handler: AuthenticatedHandler) {
       return handler(req, ctx);
     } catch (err) {
       console.error('[Auth Middleware Error]', err);
-      return apiError('Authentication failed', 500);
+      return apiError('Authentication failed', 401);
     }
   };
 }

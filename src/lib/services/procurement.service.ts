@@ -1,288 +1,273 @@
 /**
- * Procurement Service (Supabase SDK)
+ * Procurement Service (Cloudflare D1 / Drizzle)
  */
 
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import {
+  inventoryTransactions,
+  purchaseInvoiceItems,
+  purchaseInvoices,
+  purchaseOrderItems,
+  purchaseOrders,
+  stocks,
+  vendors,
+} from '@/db/schema';
+import { newId, now, toJson, withTimestamps } from '@/db/helpers';
 
 export class ProcurementService {
-  /**
-   * VENDOR CRUD
-   */
-
   static async getVendors(storeId: string) {
-    const { data } = await db()
-      .from('Vendor')
-      .select('*')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .order('name', { ascending: true });
-
-    return data || [];
+    return db().query.vendors.findMany({
+      where: and(eq(vendors.storeId, storeId), eq(vendors.isDeleted, false)),
+      orderBy: vendors.name,
+    });
   }
 
-  static async createVendor(storeId: string, userId: string, data: {
-    name: string;
-    contactName?: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    customFields?: Record<string, unknown>;
-  }) {
-    const { data: vendor, error } = await db()
-      .from('Vendor')
-      .insert({
-        ...data,
-        storeId,
-        createdBy: userId,
-      })
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
-
-    
-    return vendor;
-  }
-
-  static async deleteVendor(storeId: string, userId: string, id: string) {
-    const { data: vendor, error } = await db()
-      .from('Vendor')
-      .update({ isDeleted: true })
-      .eq('id', id)
-      .eq('storeId', storeId)
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
+  static async createVendor(
+    storeId: string,
+    userId: string,
+    data: {
+      name: string;
+      contactName?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      customFields?: Record<string, unknown>;
+    },
+  ) {
+    const [vendor] = await db()
+      .insert(vendors)
+      .values(
+        withTimestamps({
+          id: newId(),
+          ...data,
+          customFields: toJson(data.customFields),
+          storeId,
+          createdBy: userId,
+        }),
+      )
+      .returning();
 
     return vendor;
   }
 
-  /**
-   * PURCHASE ORDER CRUD
-   */
+  static async deleteVendor(storeId: string, _userId: string, id: string) {
+    const [vendor] = await db()
+      .update(vendors)
+      .set({ isDeleted: true, updatedAt: now() })
+      .where(and(eq(vendors.id, id), eq(vendors.storeId, storeId)))
+      .returning();
+
+    if (!vendor) throw new Error('Vendor not found');
+    return vendor;
+  }
 
   static async getPurchaseOrders(storeId: string) {
-    const { data } = await db()
-      .from('PurchaseOrder')
-      .select('*, vendor:Vendor(*), items:PurchaseOrderItem(*, item:Item(*))')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .order('createdAt', { ascending: false });
-
-    return data || [];
+    return db().query.purchaseOrders.findMany({
+      where: and(eq(purchaseOrders.storeId, storeId), eq(purchaseOrders.isDeleted, false)),
+      with: {
+        vendor: true,
+        items: {
+          with: { item: true },
+        },
+      },
+      orderBy: desc(purchaseOrders.createdAt),
+    });
   }
 
-  static async createPurchaseOrder(storeId: string, userId: string, data: {
-    vendorId: string;
-    poNumber: string;
-    notes?: string;
-    items: {
-      itemId: string;
-      quantity: number;
-      unitPrice: number;
-    }[];
-  }) {
-    const { items, ...poData } = data;
-    const totalAmount = Number(items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2));
+  static async createPurchaseOrder(
+    storeId: string,
+    userId: string,
+    data: {
+      vendorId: string;
+      poNumber: string;
+      notes?: string;
+      items: {
+        itemId: string;
+        quantity: number;
+        unitPrice: number;
+      }[];
+    },
+  ) {
+    const { items: lineItems, ...poData } = data;
+    const totalAmount = Number(
+      lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0).toFixed(2),
+    );
+    const database = db();
+    const poId = newId();
+    const ts = now();
 
-    const supaDb = db();
-
-    // 1. Create PO
-    const { data: po, error: poErr } = await supaDb
-      .from('PurchaseOrder')
-      .insert({
+    const [po] = await database
+      .insert(purchaseOrders)
+      .values({
+        id: poId,
         ...poData,
         storeId,
         totalAmount,
         createdBy: userId,
         status: 'DRAFT',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: ts,
+        updatedAt: ts,
       })
-      .select()
-      .single();
+      .returning();
 
-    if (poErr) {
-      console.error("[ProcurementService] PO Insert Error:", poErr);
-      throw new Error(`Failed to create Purchase Order: ${poErr.message}`);
+    try {
+      await database.insert(purchaseOrderItems).values(
+        lineItems.map((item) => ({
+          id: newId(),
+          poId,
+          itemId: item.itemId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+        })),
+      );
+    } catch (itemErr) {
+      await database.delete(purchaseOrders).where(eq(purchaseOrders.id, poId));
+      throw new Error(
+        `Failed to add items to Purchase Order: ${itemErr instanceof Error ? itemErr.message : 'Unknown error'}`,
+      );
     }
 
-    // 2. Create PO Items
-    const poItems = items.map(item => ({
-      poId: po.id,
-      itemId: item.itemId,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
-    }));
-
-    const { error: itemErr } = await supaDb.from('PurchaseOrderItem').insert(poItems);
-    
-    if (itemErr) {
-      console.error("[ProcurementService] PO Items Insert Error:", itemErr);
-      // Rollback PO? (Manual cleanup since no transaction here)
-      await supaDb.from('PurchaseOrder').delete().eq('id', po.id);
-      throw new Error(`Failed to add items to Purchase Order: ${itemErr.message}`);
-    }
-
-    
-
-    // Return with items
-    const { data: fullPo, error: fetchErr } = await supaDb
-      .from('PurchaseOrder')
-      .select('*, items:PurchaseOrderItem(*)')
-      .eq('id', po.id)
-      .single();
-
-    if (fetchErr) {
-      console.warn("[ProcurementService] PO Fetch Error after creation:", fetchErr);
-      return po;
-    }
-
-    return fullPo;
+    return (
+      (await database.query.purchaseOrders.findFirst({
+        where: eq(purchaseOrders.id, poId),
+        with: { items: true },
+      })) ?? po
+    );
   }
 
-  static async updateOrderStatus(storeId: string, userId: string, id: string, status: string) {
-    const supaDb = db();
-
-    const { data: oldPo } = await supaDb
-      .from('PurchaseOrder')
-      .select('*')
-      .eq('id', id)
-      .eq('storeId', storeId)
-      .single();
+  static async updateOrderStatus(storeId: string, _userId: string, id: string, status: string) {
+    const oldPo = await db().query.purchaseOrders.findFirst({
+      where: and(eq(purchaseOrders.id, id), eq(purchaseOrders.storeId, storeId)),
+    });
 
     if (!oldPo) throw new Error('Purchase Order not found');
 
-    const { data: newPo, error } = await supaDb
-      .from('PurchaseOrder')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
+    const [newPo] = await db()
+      .update(purchaseOrders)
+      .set({ status, updatedAt: now() })
+      .where(eq(purchaseOrders.id, id))
+      .returning();
 
-    if (error) throw new Error(error.message);
-
-    
     return newPo;
   }
 
-  /**
-   * PURCHASE INVOICE (PAYABLE INVOICE) CRUD
-   */
-
   static async getPurchaseInvoices(storeId: string) {
-    const { data } = await db()
-      .from('PurchaseInvoice')
-      .select('*, vendor:Vendor(*), items:PurchaseInvoiceItem(*, item:Item(*), warehouse:Warehouse(*))')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .order('createdAt', { ascending: false });
-
-    return data || [];
+    return db().query.purchaseInvoices.findMany({
+      where: and(eq(purchaseInvoices.storeId, storeId), eq(purchaseInvoices.isDeleted, false)),
+      with: {
+        vendor: true,
+        items: {
+          with: { item: true, warehouse: true },
+        },
+      },
+      orderBy: desc(purchaseInvoices.createdAt),
+    });
   }
 
-  static async createPurchaseInvoice(storeId: string, userId: string, data: {
-    vendorId: string;
-    invoiceNumber: string;
-    financialYear: string;
-    notes?: string;
-    poId?: string | null;
-    items: {
-      itemId: string;
-      warehouseId: string;
-      quantity: number;
-      unitPrice: number;
-    }[];
-  }) {
-    const supaDb = db();
+  static async createPurchaseInvoice(
+    storeId: string,
+    userId: string,
+    data: {
+      vendorId: string;
+      invoiceNumber: string;
+      financialYear: string;
+      notes?: string;
+      poId?: string | null;
+      items: {
+        itemId: string;
+        warehouseId: string;
+        quantity: number;
+        unitPrice: number;
+      }[];
+    },
+  ) {
+    const database = db();
 
-    // 1. Check for duplicates
-    const { data: existing } = await supaDb
-      .from('PurchaseInvoice')
-      .select('id')
-      .eq('storeId', storeId)
-      .eq('vendorId', data.vendorId)
-      .eq('invoiceNumber', data.invoiceNumber)
-      .eq('financialYear', data.financialYear)
-      .eq('isDeleted', false)
-      .maybeSingle();
+    const existing = await database.query.purchaseInvoices.findFirst({
+      where: and(
+        eq(purchaseInvoices.storeId, storeId),
+        eq(purchaseInvoices.vendorId, data.vendorId),
+        eq(purchaseInvoices.invoiceNumber, data.invoiceNumber),
+        eq(purchaseInvoices.financialYear, data.financialYear),
+        eq(purchaseInvoices.isDeleted, false),
+      ),
+    });
 
     if (existing) {
-      throw new Error("Duplicate Supplier Invoice number is not allowed for the same supplier in the same financial year.");
+      throw new Error(
+        'Duplicate Supplier Invoice number is not allowed for the same supplier in the same financial year.',
+      );
     }
 
-    const { items, poId, ...invData } = data;
-    const totalAmount = Number(items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2));
+    const { items: lineItems, poId, ...invData } = data;
+    const totalAmount = Number(
+      lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0).toFixed(2),
+    );
+    const invoiceId = newId();
+    const ts = now();
 
-    // 2. Insert invoice
-    const { data: invoice, error: invErr } = await supaDb
-      .from('PurchaseInvoice')
-      .insert({
+    const [invoice] = await database
+      .insert(purchaseInvoices)
+      .values({
+        id: invoiceId,
         ...invData,
         storeId,
         totalAmount,
         poId: poId || null,
         status: 'COMPLETED',
         createdBy: userId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: ts,
+        updatedAt: ts,
       })
-      .select()
-      .single();
+      .returning();
 
-    if (invErr) {
-      console.error("[ProcurementService] Invoice Insert Error:", invErr);
-      throw new Error(`Failed to create Payable Invoice: ${invErr.message}`);
+    try {
+      await database.insert(purchaseInvoiceItems).values(
+        lineItems.map((item) => ({
+          id: newId(),
+          invoiceId,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+        })),
+      );
+    } catch (itemErr) {
+      await database.delete(purchaseInvoices).where(eq(purchaseInvoices.id, invoiceId));
+      throw new Error(
+        `Failed to add items to Payable Invoice: ${itemErr instanceof Error ? itemErr.message : 'Unknown error'}`,
+      );
     }
 
-    // 3. Create items and adjust stock
-    const invItems = items.map(item => ({
-      invoiceId: invoice.id,
-      itemId: item.itemId,
-      warehouseId: item.warehouseId,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
-    }));
-
-    const { error: itemErr } = await supaDb.from('PurchaseInvoiceItem').insert(invItems);
-
-    if (itemErr) {
-      console.error("[ProcurementService] Invoice Items Insert Error:", itemErr);
-      await supaDb.from('PurchaseInvoice').delete().eq('id', invoice.id);
-      throw new Error(`Failed to add items to Payable Invoice: ${itemErr.message}`);
-    }
-
-    // 4. Update Stock & Log transactions
-    for (const item of items) {
-      const { data: existingStock } = await supaDb
-        .from('Stock')
-        .select('*')
-        .eq('itemId', item.itemId)
-        .eq('warehouseId', item.warehouseId)
-        .maybeSingle();
+    for (const item of lineItems) {
+      const existingStock = await database.query.stocks.findFirst({
+        where: and(eq(stocks.itemId, item.itemId), eq(stocks.warehouseId, item.warehouseId)),
+      });
 
       if (existingStock) {
-        const { error: stockErr } = await supaDb
-          .from('Stock')
-          .update({ quantity: Number(existingStock.quantity) + Number(item.quantity) })
-          .eq('id', existingStock.id);
-        if (stockErr) console.error("Stock update error:", stockErr);
+        await database
+          .update(stocks)
+          .set({
+            quantity: Number(existingStock.quantity) + Number(item.quantity),
+            updatedAt: now(),
+          })
+          .where(eq(stocks.id, existingStock.id));
       } else {
-        const { error: stockErr } = await supaDb
-          .from('Stock')
-          .insert({
-            storeId,
-            itemId: item.itemId,
-            warehouseId: item.warehouseId,
-            quantity: Number(item.quantity),
-          });
-        if (stockErr) console.error("Stock insert error:", stockErr);
+        await database.insert(stocks).values({
+          id: newId(),
+          storeId,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: Number(item.quantity),
+          updatedAt: now(),
+        });
       }
 
-      await supaDb.from('InventoryTransaction').insert({
+      await database.insert(inventoryTransactions).values({
+        id: newId(),
         storeId,
         itemId: item.itemId,
         warehouseId: item.warehouseId,
@@ -290,19 +275,16 @@ export class ProcurementService {
         quantity: Number(item.quantity),
         reference: `Supplier Invoice ${data.invoiceNumber}`,
         performedBy: userId,
-        createdAt: new Date().toISOString(),
+        createdAt: now(),
       });
     }
 
-    // 5. Update PO status if linked
     if (poId) {
-      await supaDb
-        .from('PurchaseOrder')
-        .update({ status: 'COMPLETED' })
-        .eq('id', poId);
+      await database
+        .update(purchaseOrders)
+        .set({ status: 'COMPLETED', updatedAt: now() })
+        .where(eq(purchaseOrders.id, poId));
     }
-
-    
 
     return invoice;
   }

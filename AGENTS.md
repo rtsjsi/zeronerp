@@ -1,25 +1,45 @@
-# Supabase Database Standard Operating Procedure (SOP)
+# Cloudflare D1 Database Standard Operating Procedure (SOP)
 
-For **ANY** database operation, schema modification, or data manipulation, you **MUST** follow this proactive SOP workflow exclusively to avoid conflicts and authentication errors.
+For **ANY** database operation, schema modification, or data manipulation, follow this workflow.
 
-## Step 1: Create Migration
-Generate a new migration file for your changes:
+## Credentials
+
+**`.env.local`** (gitignored) — Cloudflare API token only:
+
+```env
+CLOUDFLARE_API_TOKEN=your-token
+```
+
+Remote Wrangler commands load this via `scripts/run-with-env.mjs`.
+
+**`JWT_SECRET`** — Cloudflare Worker secret only (not in repo):
+
 ```bash
-npx supabase migration new <name>
-```
-*Proactive Note:* This command creates the file instantly but may hang in the background. **Do NOT wait indefinitely** for the process to exit. Verify the file exists in `supabase/migrations/` and proceed.
-
-## Step 2: Write SQL
-Open the newly generated migration file and write your SQL queries (CREATE, ALTER, DROP, etc.).
-
-## Step 3: Proactive Push
-Push the migration to the remote database. You do NOT need to run `supabase link`. By providing the project ID natively, the CLI works entirely stateless (like in CI/CD). To avoid the CLI silently failing to read `.env.local`, you **MUST** explicitly inject the credentials into the environment dynamically:
-```powershell
-$env:SUPABASE_DB_PASSWORD=(Get-Content .env.local | ConvertFrom-StringData).SUPABASE_DB_PASSWORD.Trim('"'); $env:SUPABASE_PROJECT_ID=(Get-Content .env.local | ConvertFrom-StringData).SUPABASE_PROJECT_ID.Trim('"'); npx supabase db push
+npm run secrets:jwt
 ```
 
-## (Bonus) Remote Read-Only Queries
-If you need to quickly inspect tables or run a `db query` directly against the remote database without pushing a migration, you **MUST** append the `--linked` flag to prevent the CLI from defaulting to `127.0.0.1`:
+To rotate: run the same command again (generates a new secret; existing login tokens will stop working).
+
+## Step 1: Update Schema
+Edit `src/db/schema.ts` with your Drizzle table/column changes.
+
+## Step 2: Generate Migration (optional)
 ```bash
-npx supabase db query "<your-query>" --linked
+npm run db:generate
 ```
+Or write SQL manually in `drizzle/migrations/`.
+
+## Step 3: Apply Migrations
+
+**Remote (production):**
+```bash
+npm run db:migrate:remote
+```
+
+## Step 4: Seed Admin (first-time setup)
+```bash
+npm run db:seed-admin -- --remote --email admin@example.com --password yourpassword --name "Super Admin"
+```
+
+## Auth
+Authentication uses D1 (`ApplicationUsers.passwordHash`) and JWT signed with `JWT_SECRET` (Cloudflare Worker secret).

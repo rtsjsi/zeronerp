@@ -1,38 +1,31 @@
-// Deployment: 2026-05-16T10:03:00Z
 /**
- * Supabase Database Client
- * 
- * Replaces Prisma with direct Supabase SDK calls.
- * Uses the service role key to bypass RLS for server-side operations.
- * Works natively on Cloudflare Workers via HTTPS (no TCP required).
+ * Cloudflare D1 Database Client (Drizzle ORM)
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { getEnv } from './env';
+import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import * as schema from '@/db/schema';
 
-let _db: SupabaseClient | null = null;
+export type AppDatabase = DrizzleD1Database<typeof schema>;
 
-/** 
- * Get the Supabase admin client for database operations.
- * Uses service_role key to bypass RLS.
- */
-export function db(): SupabaseClient {
-  if (_db) return _db;
+let _db: AppDatabase | null = null;
 
-  const url = getEnv('NEXT_PUBLIC_SUPABASE_URL');
-  const key = getEnv('SUPABASE_SERVICE_ROLE_KEY');
+function getD1Binding(): D1Database {
+  const context = getCloudflareContext();
+  const binding = context?.env?.DB;
 
-  if (!url || !key) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  if (!binding) {
+    throw new Error(
+      'D1 binding "DB" not found. Add d1_databases to wrangler.jsonc and run db:migrate:local.',
+    );
   }
 
-  _db = createClient(url, key, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  return binding;
+}
 
+export function db(): AppDatabase {
+  if (_db) return _db;
+  _db = drizzle(getD1Binding(), { schema });
   return _db;
 }
 

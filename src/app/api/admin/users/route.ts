@@ -1,9 +1,11 @@
 export const dynamic = "force-dynamic";
+import { and, desc, eq } from 'drizzle-orm';
 import { withAuth } from "@/lib/auth-middleware";
 import { db } from "@/lib/db";
+import { applicationUsers } from '@/db/schema';
+import { AuthService } from '@/lib/auth/service';
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/server";
 
 const userSchema = z.object({
   email: z.string().email(),
@@ -11,24 +13,18 @@ const userSchema = z.object({
   password: z.string().min(6),
 });
 
-/**
- * GET /api/admin/users
- */
 export const GET = withAuth(async (_req, ctx) => {
-  const { data: users } = await db()
-    .from('ApplicationUsers')
-    .select('*')
-    .eq('storeId', ctx.storeId)
-    .eq('isDeleted', false)
-    .order('createdAt', { ascending: false });
+  const users = await db().query.applicationUsers.findMany({
+    where: and(
+      eq(applicationUsers.storeId, ctx.storeId),
+      eq(applicationUsers.isDeleted, false),
+    ),
+    orderBy: desc(applicationUsers.createdAt),
+  });
 
-  return apiSuccess(users || []);
+  return apiSuccess(users);
 });
 
-/**
- * POST /api/admin/users
- * Directly create a new user (DB + Supabase).
- */
 export const POST = withAuth(async (req, ctx) => {
   try {
     const body = await req.json();
@@ -40,35 +36,13 @@ export const POST = withAuth(async (req, ctx) => {
 
     const { email, fullName, password } = parsed.data;
 
-    // 1. Create in Supabase Auth Directly
-    const supabase = createAdminClient();
-    const { data: sbUser, error: sbError } = await supabase.auth.admin.createUser({
+    const user = await AuthService.createUser({
+      storeId: ctx.storeId,
       email,
+      fullName,
       password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName },
+      role: 'USER',
     });
-
-    if (sbError) {
-      return apiError(`Supabase Error: ${sbError.message}`, 400);
-    }
-
-    // 2. Create in DB
-    const { data: user, error: dbError } = await db()
-      .from('ApplicationUsers')
-      .insert({
-        storeId: ctx.storeId,
-        email,
-        fullName,
-        supabaseUid: sbUser.user.id,
-        isActive: true,
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      return apiError(`Database Error: ${dbError.message}`, 500);
-    }
 
     return apiSuccess(user, "User created successfully", 201);
   } catch (err: any) {

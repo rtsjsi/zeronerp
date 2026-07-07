@@ -1,16 +1,16 @@
 /**
  * Auth Context — Client-side authentication state
- * 
- * Provides user session, tenant info, and auth actions (login, logout)
- * to all client components via React context.
  */
 
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseBrowser } from '@/lib/supabase/client';
-import type { Session, User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js';
+import {
+  clearStoredAuthToken,
+  getStoredAuthToken,
+  setStoredAuthToken,
+} from '@/lib/auth-token';
 
 interface AppUser {
   id: string;
@@ -23,12 +23,9 @@ interface AppUser {
 }
 
 interface AuthContextValue {
-  session: Session | null;
-  supabaseUser: SupabaseUser | null;
   user: AppUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  isConfigured: boolean;
   accessToken: string | null;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -38,128 +35,106 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const supabase: SupabaseClient | null = getSupabaseBrowser();
-  const isConfigured = !!supabase;
-
-  /** Fetch the application user profile from our API */
   const fetchAppUser = useCallback(async (token: string) => {
     try {
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
+        const json = (await res.json()) as { success: boolean; data?: AppUser; message?: string };
+        if (json.success && json.data) {
           setUser(json.data);
         } else {
           console.error('[Auth] Profile fetch failed:', json.message);
+          clearStoredAuthToken();
+          setAccessToken(null);
+          setUser(null);
         }
       } else {
-        console.error('[Auth] Profile fetch HTTP error:', res.status);
+        clearStoredAuthToken();
+        setAccessToken(null);
+        setUser(null);
       }
     } catch (err) {
       console.error('[Auth] Failed to fetch user profile', err);
     }
   }, []);
 
-  /** Initialise auth state on mount */
   useEffect(() => {
-    const sb = supabase;
-    if (!sb) {
-      setIsLoading(false);
-      return undefined;
-    }
-
     let cancelled = false;
 
     const init = async () => {
-      try {
-        const { data: { session: currentSession } } = await sb.auth.getSession();
-        if (cancelled) return;
-        setSession(currentSession);
-        setSupabaseUser(currentSession?.user ?? null);
-
-        if (currentSession?.access_token) {
-          await fetchAppUser(currentSession.access_token);
-        }
-      } catch (err) {
-        console.error('[Auth] Init failed', err);
+      const token = getStoredAuthToken();
+      if (!token) {
+        if (!cancelled) setIsLoading(false);
+        return;
       }
+
+      setAccessToken(token);
+      await fetchAppUser(token);
       if (!cancelled) setIsLoading(false);
     };
 
     init();
 
-    // Listen for auth changes
-    const { data: { subscription } } = sb.auth.onAuthStateChange(
-      async (event, newSession) => {
-        if (cancelled) return;
-        setSession(newSession);
-        setSupabaseUser(newSession?.user ?? null);
-
-        if (newSession?.access_token) {
-          await fetchAppUser(newSession.access_token);
-        } else {
-          setUser(null);
-          if (event === 'SIGNED_OUT') {
-            router.push('/login');
-          }
-        }
-      },
-    );
-
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
     };
-  }, [supabase, fetchAppUser, router]);
+  }, [fetchAppUser]);
 
-  /** Email + password sign in */
   const signIn = useCallback(async (email: string, password: string) => {
-    if (!supabase) {
-      return { error: 'Supabase is not configured.' };
-    }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      return { error: error.message };
-    }
-    return { error: null };
-  }, [supabase]);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-  /** Sign out */
+      const json = (await res.json()) as {
+        success: boolean;
+        data?: { token: string };
+        message?: string;
+      };
+
+      if (!res.ok || !json.success || !json.data?.token) {
+        return { error: json.message || 'Sign in failed' };
+      }
+
+      setStoredAuthToken(json.data.token);
+      setAccessToken(json.data.token);
+      await fetchAppUser(json.data.token);
+      return { error: null };
+    } catch {
+      return { error: 'Sign in failed' };
+    }
+  }, [fetchAppUser]);
+
   const signOut = useCallback(async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+    clearStoredAuthToken();
     setUser(null);
-    setSession(null);
-    setSupabaseUser(null);
+    setAccessToken(null);
     router.push('/login');
-  }, [supabase, router]);
+  }, [router]);
 
-  /** Manually refresh user data */
   const refreshUser = useCallback(async () => {
-    if (session?.access_token) {
-      await fetchAppUser(session.access_token);
+    const token = getStoredAuthToken();
+    if (token) {
+      await fetchAppUser(token);
     }
-  }, [session, fetchAppUser]);
+  }, [fetchAppUser]);
 
   return (
     <AuthContext.Provider
       value={{
-        session,
-        supabaseUser,
         user,
         isLoading,
-        isAuthenticated: !!session && !!user,
-        isConfigured,
-        accessToken: session?.access_token ?? null,
+        isAuthenticated: !!accessToken && !!user,
+        accessToken,
         signIn,
         signOut,
         refreshUser,

@@ -1,13 +1,13 @@
 /**
- * Stock Service (Supabase SDK)
+ * Stock Service (Cloudflare D1 / Drizzle)
  */
 
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { inventoryTransactions, stocks } from '@/db/schema';
+import { newId, now } from '@/db/helpers';
 
 export class StockService {
-  /**
-   * Adjust stock level (Manual IN/OUT)
-   */
   static async adjustStock(
     storeId: string,
     userId: string,
@@ -17,47 +17,42 @@ export class StockService {
       quantity: number;
       type: 'IN' | 'OUT';
       reference?: string;
-    }
+    },
   ) {
-    const supaDb = db();
+    const database = db();
 
-    // 1. Check if stock record exists
-    const { data: existing } = await supaDb
-      .from('Stock')
-      .select('*')
-      .eq('itemId', data.itemId)
-      .eq('warehouseId', data.warehouseId)
-      .single();
+    const existing = await database.query.stocks.findFirst({
+      where: and(eq(stocks.itemId, data.itemId), eq(stocks.warehouseId, data.warehouseId)),
+    });
 
     let stock;
     if (existing) {
-      const { data: updated, error } = await supaDb
-        .from('Stock')
-        .update({ quantity: Number(existing.quantity) + data.quantity })
-        .eq('id', existing.id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      stock = updated;
+      [stock] = await database
+        .update(stocks)
+        .set({
+          quantity: Number(existing.quantity) + data.quantity,
+          updatedAt: now(),
+        })
+        .where(eq(stocks.id, existing.id))
+        .returning();
     } else {
-      const { data: created, error } = await supaDb
-        .from('Stock')
-        .insert({
+      [stock] = await database
+        .insert(stocks)
+        .values({
+          id: newId(),
           storeId,
           itemId: data.itemId,
           warehouseId: data.warehouseId,
           quantity: data.quantity,
+          updatedAt: now(),
         })
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      stock = created;
+        .returning();
     }
 
-    // 2. Log Transaction
-    const { data: transaction, error: txErr } = await supaDb
-      .from('InventoryTransaction')
-      .insert({
+    const [transaction] = await database
+      .insert(inventoryTransactions)
+      .values({
+        id: newId(),
         storeId,
         itemId: data.itemId,
         warehouseId: data.warehouseId,
@@ -65,20 +60,13 @@ export class StockService {
         quantity: data.quantity,
         reference: data.reference || 'Manual Adjustment',
         performedBy: userId,
+        createdAt: now(),
       })
-      .select()
-      .single();
-
-    if (txErr) throw new Error(txErr.message);
-
-    
+      .returning();
 
     return { stock, transaction };
   }
 
-  /**
-   * Transfer stock between warehouses
-   */
   static async transferStock(
     storeId: string,
     userId: string,
@@ -87,56 +75,55 @@ export class StockService {
       fromWarehouseId: string;
       toWarehouseId: string;
       quantity: number;
-    }
+    },
   ) {
     if (data.quantity <= 0) throw new Error('Quantity must be positive');
 
-    const supaDb = db();
+    const database = db();
 
-    // 1. Decrease from source
-    const { data: sourceStock } = await supaDb
-      .from('Stock')
-      .select('*')
-      .eq('itemId', data.itemId)
-      .eq('warehouseId', data.fromWarehouseId)
-      .single();
+    const sourceStock = await database.query.stocks.findFirst({
+      where: and(eq(stocks.itemId, data.itemId), eq(stocks.warehouseId, data.fromWarehouseId)),
+    });
 
     if (!sourceStock || Number(sourceStock.quantity) < data.quantity) {
       throw new Error('Insufficient stock in source warehouse');
     }
 
-    await supaDb
-      .from('Stock')
-      .update({ quantity: Number(sourceStock.quantity) - data.quantity })
-      .eq('id', sourceStock.id);
+    await database
+      .update(stocks)
+      .set({
+        quantity: Number(sourceStock.quantity) - data.quantity,
+        updatedAt: now(),
+      })
+      .where(eq(stocks.id, sourceStock.id));
 
-    // 2. Increase at destination
-    const { data: destStock } = await supaDb
-      .from('Stock')
-      .select('*')
-      .eq('itemId', data.itemId)
-      .eq('warehouseId', data.toWarehouseId)
-      .single();
+    const destStock = await database.query.stocks.findFirst({
+      where: and(eq(stocks.itemId, data.itemId), eq(stocks.warehouseId, data.toWarehouseId)),
+    });
 
     if (destStock) {
-      await supaDb
-        .from('Stock')
-        .update({ quantity: Number(destStock.quantity) + data.quantity })
-        .eq('id', destStock.id);
+      await database
+        .update(stocks)
+        .set({
+          quantity: Number(destStock.quantity) + data.quantity,
+          updatedAt: now(),
+        })
+        .where(eq(stocks.id, destStock.id));
     } else {
-      await supaDb
-        .from('Stock')
-        .insert({
-          storeId,
-          itemId: data.itemId,
-          warehouseId: data.toWarehouseId,
-          quantity: data.quantity,
-        });
+      await database.insert(stocks).values({
+        id: newId(),
+        storeId,
+        itemId: data.itemId,
+        warehouseId: data.toWarehouseId,
+        quantity: data.quantity,
+        updatedAt: now(),
+      });
     }
 
-    // 3. Log Transactions
-    await supaDb.from('InventoryTransaction').insert([
+    const ts = now();
+    await database.insert(inventoryTransactions).values([
       {
+        id: newId(),
         storeId,
         itemId: data.itemId,
         warehouseId: data.fromWarehouseId,
@@ -144,8 +131,10 @@ export class StockService {
         quantity: -data.quantity,
         reference: `Transfer to ${data.toWarehouseId}`,
         performedBy: userId,
+        createdAt: ts,
       },
       {
+        id: newId(),
         storeId,
         itemId: data.itemId,
         warehouseId: data.toWarehouseId,
@@ -153,6 +142,7 @@ export class StockService {
         quantity: data.quantity,
         reference: `Transfer from ${data.fromWarehouseId}`,
         performedBy: userId,
+        createdAt: ts,
       },
     ]);
 

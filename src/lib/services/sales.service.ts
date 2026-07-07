@@ -1,189 +1,183 @@
 /**
- * Sales Service (Supabase SDK)
+ * Sales Service (Cloudflare D1 / Drizzle)
  */
 
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import {
+  customers,
+  inventoryTransactions,
+  salesInvoiceItems,
+  salesInvoices,
+  salesOrderItems,
+  salesOrders,
+  stocks,
+  warehouses,
+} from '@/db/schema';
+import { newId, now, toJson, withTimestamps } from '@/db/helpers';
 
 export class SalesService {
-  /**
-   * CUSTOMER CRUD
-   */
-
   static async getCustomers(storeId: string) {
-    const { data } = await db()
-      .from('Customer')
-      .select('*')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .order('name', { ascending: true });
-
-    return data || [];
+    return db().query.customers.findMany({
+      where: and(eq(customers.storeId, storeId), eq(customers.isDeleted, false)),
+      orderBy: customers.name,
+    });
   }
 
-  static async createCustomer(storeId: string, userId: string, data: {
-    name: string;
-    contactName?: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    customFields?: Record<string, unknown>;
-  }) {
-    const { data: customer, error } = await db()
-      .from('Customer')
-      .insert({
-        ...data,
-        storeId,
-        createdBy: userId,
-      })
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
-
-    
-    return customer;
-  }
-
-  static async deleteCustomer(storeId: string, userId: string, id: string) {
-    const { data: customer, error } = await db()
-      .from('Customer')
-      .update({ isDeleted: true })
-      .eq('id', id)
-      .eq('storeId', storeId)
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
+  static async createCustomer(
+    storeId: string,
+    userId: string,
+    data: {
+      name: string;
+      contactName?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      customFields?: Record<string, unknown>;
+    },
+  ) {
+    const [customer] = await db()
+      .insert(customers)
+      .values(
+        withTimestamps({
+          id: newId(),
+          ...data,
+          customFields: toJson(data.customFields),
+          storeId,
+          createdBy: userId,
+        }),
+      )
+      .returning();
 
     return customer;
   }
 
-  /**
-   * SALES ORDER CRUD
-   */
+  static async deleteCustomer(storeId: string, _userId: string, id: string) {
+    const [customer] = await db()
+      .update(customers)
+      .set({ isDeleted: true, updatedAt: now() })
+      .where(and(eq(customers.id, id), eq(customers.storeId, storeId)))
+      .returning();
+
+    if (!customer) throw new Error('Customer not found');
+    return customer;
+  }
 
   static async getSalesOrders(storeId: string) {
-    const { data } = await db()
-      .from('SalesOrder')
-      .select('*, customer:Customer(*), items:SalesOrderItem(*, item:Item(*))')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .order('createdAt', { ascending: false });
-
-    return data || [];
+    return db().query.salesOrders.findMany({
+      where: and(eq(salesOrders.storeId, storeId), eq(salesOrders.isDeleted, false)),
+      with: {
+        customer: true,
+        items: {
+          with: { item: true },
+        },
+      },
+      orderBy: desc(salesOrders.createdAt),
+    });
   }
 
-  static async createSalesOrder(storeId: string, userId: string, data: {
-    customerId: string;
-    soNumber: string;
-    notes?: string;
-    items: {
-      itemId: string;
-      quantity: number;
-      unitPrice: number;
-    }[];
-  }) {
-    const { items, ...soData } = data;
-    const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  static async createSalesOrder(
+    storeId: string,
+    userId: string,
+    data: {
+      customerId: string;
+      soNumber: string;
+      notes?: string;
+      items: {
+        itemId: string;
+        quantity: number;
+        unitPrice: number;
+      }[];
+    },
+  ) {
+    const { items: lineItems, ...soData } = data;
+    const totalAmount = lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const database = db();
+    const soId = newId();
 
-    const supaDb = db();
+    const [so] = await database
+      .insert(salesOrders)
+      .values(
+        withTimestamps({
+          id: soId,
+          ...soData,
+          storeId,
+          totalAmount,
+          createdBy: userId,
+        }),
+      )
+      .returning();
 
-    // 1. Create SO
-    const { data: so, error: soErr } = await supaDb
-      .from('SalesOrder')
-      .insert({
-        ...soData,
-        storeId,
-        totalAmount,
-        createdBy: userId,
-      })
-      .select()
-      .single();
+    await database.insert(salesOrderItems).values(
+      lineItems.map((item) => ({
+        id: newId(),
+        soId,
+        itemId: item.itemId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.quantity * item.unitPrice,
+      })),
+    );
 
-    if (soErr) throw new Error(soErr.message);
-
-    // 2. Create SO Items
-    const soItems = items.map(item => ({
-      soId: so.id,
-      itemId: item.itemId,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: item.quantity * item.unitPrice,
-    }));
-
-    await supaDb.from('SalesOrderItem').insert(soItems);
-
-    
-
-    // Return with items
-    const { data: fullSo } = await supaDb
-      .from('SalesOrder')
-      .select('*, items:SalesOrderItem(*)')
-      .eq('id', so.id)
-      .single();
-
-    return fullSo || so;
+    return (
+      (await database.query.salesOrders.findFirst({
+        where: eq(salesOrders.id, soId),
+        with: { items: true },
+      })) ?? so
+    );
   }
 
   static async updateOrderStatus(storeId: string, userId: string, id: string, status: string) {
-    const supaDb = db();
+    const database = db();
 
-    const { data: oldSo } = await supaDb
-      .from('SalesOrder')
-      .select('*, items:SalesOrderItem(*)')
-      .eq('id', id)
-      .eq('storeId', storeId)
-      .single();
+    const oldSo = await database.query.salesOrders.findFirst({
+      where: and(eq(salesOrders.id, id), eq(salesOrders.storeId, storeId)),
+      with: { items: true },
+    });
 
     if (!oldSo) throw new Error('Sales Order not found');
 
-    const { data: newSo, error } = await supaDb
-      .from('SalesOrder')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
+    const [newSo] = await database
+      .update(salesOrders)
+      .set({ status, updatedAt: now() })
+      .where(eq(salesOrders.id, id))
+      .returning();
 
-    if (error) throw new Error(error.message);
-
-    // If order is CONFIRMED, deduct stock
     if (status === 'CONFIRMED' && oldSo.status === 'DRAFT') {
-      const { data: warehouse } = await supaDb
-        .from('Warehouse')
-        .select('*')
-        .eq('storeId', storeId)
-        .eq('isDeleted', false)
-        .limit(1)
-        .single();
+      const warehouse = await database.query.warehouses.findFirst({
+        where: and(eq(warehouses.storeId, storeId), eq(warehouses.isDeleted, false)),
+      });
 
       if (warehouse && oldSo.items) {
         for (const orderItem of oldSo.items) {
-          // Check existing stock
-          const { data: existingStock } = await supaDb
-            .from('Stock')
-            .select('*')
-            .eq('itemId', orderItem.itemId)
-            .eq('warehouseId', warehouse.id)
-            .single();
+          const existingStock = await database.query.stocks.findFirst({
+            where: and(
+              eq(stocks.itemId, orderItem.itemId),
+              eq(stocks.warehouseId, warehouse.id),
+            ),
+          });
 
           if (existingStock) {
-            await supaDb
-              .from('Stock')
-              .update({ quantity: Number(existingStock.quantity) - Number(orderItem.quantity) })
-              .eq('id', existingStock.id);
+            await database
+              .update(stocks)
+              .set({
+                quantity: Number(existingStock.quantity) - Number(orderItem.quantity),
+                updatedAt: now(),
+              })
+              .where(eq(stocks.id, existingStock.id));
           } else {
-            await supaDb
-              .from('Stock')
-              .insert({
-                storeId,
-                itemId: orderItem.itemId,
-                warehouseId: warehouse.id,
-                quantity: -Number(orderItem.quantity),
-              });
+            await database.insert(stocks).values({
+              id: newId(),
+              storeId,
+              itemId: orderItem.itemId,
+              warehouseId: warehouse.id,
+              quantity: -Number(orderItem.quantity),
+              updatedAt: now(),
+            });
           }
 
-          // Log the stock transaction
-          await supaDb.from('InventoryTransaction').insert({
+          await database.insert(inventoryTransactions).values({
+            id: newId(),
             storeId,
             itemId: orderItem.itemId,
             warehouseId: warehouse.id,
@@ -191,103 +185,109 @@ export class SalesService {
             quantity: -Number(orderItem.quantity),
             reference: `Sales Order ${oldSo.soNumber}`,
             performedBy: userId,
+            createdAt: now(),
           });
         }
       }
     }
 
-    
     return newSo;
   }
 
-  /**
-   * SALES INVOICE CRUD
-   */
-
   static async getSalesInvoices(storeId: string) {
-    const { data } = await db()
-      .from('SalesInvoice')
-      .select('*, customer:Customer(*), items:SalesInvoiceItem(*, item:Item(*), warehouse:Warehouse(*))')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .order('createdAt', { ascending: false });
-
-    return data || [];
+    return db().query.salesInvoices.findMany({
+      where: and(eq(salesInvoices.storeId, storeId), eq(salesInvoices.isDeleted, false)),
+      with: {
+        customer: true,
+        items: {
+          with: { item: true, warehouse: true },
+        },
+      },
+      orderBy: desc(salesInvoices.createdAt),
+    });
   }
 
   static async getOrCreateWalkInCustomer(storeId: string, userId: string) {
-    const supaDb = db();
-    const { data: customer } = await supaDb
-      .from('Customer')
-      .select('*')
-      .eq('storeId', storeId)
-      .eq('name', 'Walk-in Customer')
-      .eq('isDeleted', false)
-      .maybeSingle();
+    const database = db();
+
+    const customer = await database.query.customers.findFirst({
+      where: and(
+        eq(customers.storeId, storeId),
+        eq(customers.name, 'Walk-in Customer'),
+        eq(customers.isDeleted, false),
+      ),
+    });
 
     if (customer) return customer;
 
-    const { data: newCustomer, error } = await supaDb
-      .from('Customer')
-      .insert({
-        storeId,
-        name: 'Walk-in Customer',
-        contactName: 'Retail Buyer',
-        createdBy: userId,
-      })
-      .select()
-      .single();
+    const [newCustomer] = await database
+      .insert(customers)
+      .values(
+        withTimestamps({
+          id: newId(),
+          storeId,
+          name: 'Walk-in Customer',
+          contactName: 'Retail Buyer',
+          createdBy: userId,
+        }),
+      )
+      .returning();
 
-    if (error) throw new Error(`Failed to seed Walk-in Customer: ${error.message}`);
     return newCustomer;
   }
 
-  static async createSalesInvoice(storeId: string, userId: string, data: {
-    customerId?: string;
-    invoiceNumber: string;
-    financialYear: string;
-    notes?: string;
-    soId?: string | null;
-    paymentMethod?: string;
-    amountReceived?: number;
-    amountReturned?: number;
-    items: {
-      itemId: string;
-      warehouseId: string;
-      quantity: number;
-      unitPrice: number;
-    }[];
-  }) {
-    const supaDb = db();
+  static async createSalesInvoice(
+    storeId: string,
+    userId: string,
+    data: {
+      customerId?: string;
+      invoiceNumber: string;
+      financialYear: string;
+      notes?: string;
+      soId?: string | null;
+      paymentMethod?: string;
+      amountReceived?: number;
+      amountReturned?: number;
+      items: {
+        itemId: string;
+        warehouseId: string;
+        quantity: number;
+        unitPrice: number;
+      }[];
+    },
+  ) {
+    const database = db();
 
-    // 1. Resolve or create Walk-in Customer
     let customerId = data.customerId;
     if (!customerId || customerId === 'walkin') {
       const walkIn = await this.getOrCreateWalkInCustomer(storeId, userId);
       customerId = walkIn.id;
     }
 
-    // 2. Check for duplicates
-    const { data: existing } = await supaDb
-      .from('SalesInvoice')
-      .select('id')
-      .eq('storeId', storeId)
-      .eq('invoiceNumber', data.invoiceNumber)
-      .eq('financialYear', data.financialYear)
-      .eq('isDeleted', false)
-      .maybeSingle();
+    const existing = await database.query.salesInvoices.findFirst({
+      where: and(
+        eq(salesInvoices.storeId, storeId),
+        eq(salesInvoices.invoiceNumber, data.invoiceNumber),
+        eq(salesInvoices.financialYear, data.financialYear),
+        eq(salesInvoices.isDeleted, false),
+      ),
+    });
 
     if (existing) {
-      throw new Error("Duplicate Sales Invoice number is not allowed in the same financial year.");
+      throw new Error('Duplicate Sales Invoice number is not allowed in the same financial year.');
     }
 
-    const { items, soId, customerId: oldCustomerId, ...invData } = data;
-    const totalAmount = Number(items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2));
+    const { items: lineItems, soId, customerId: _ignored, ...invData } = data;
+    const totalAmount = Number(
+      lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0).toFixed(2),
+    );
+    const invoiceId = newId();
+    const ts = now();
 
-    // 3. Insert invoice
-    const { data: invoice, error: invErr } = await supaDb
-      .from('SalesInvoice')
-      .insert({
+    const [invoice] = await database
+      .insert(salesInvoices)
+      .values({
+        id: invoiceId,
         ...invData,
         customerId,
         storeId,
@@ -298,63 +298,56 @@ export class SalesService {
         amountReceived: data.amountReceived !== undefined ? data.amountReceived : totalAmount,
         amountReturned: data.amountReturned !== undefined ? data.amountReturned : 0,
         createdBy: userId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: ts,
+        updatedAt: ts,
       })
-      .select()
-      .single();
+      .returning();
 
-    if (invErr) {
-      console.error("[SalesService] Invoice Insert Error:", invErr);
-      throw new Error(`Failed to create Sales Invoice: ${invErr.message}`);
+    try {
+      await database.insert(salesInvoiceItems).values(
+        lineItems.map((item) => ({
+          id: newId(),
+          invoiceId,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+        })),
+      );
+    } catch (itemErr) {
+      await database.delete(salesInvoices).where(eq(salesInvoices.id, invoiceId));
+      throw new Error(
+        `Failed to add items to Sales Invoice: ${itemErr instanceof Error ? itemErr.message : 'Unknown error'}`,
+      );
     }
 
-    // 3. Create items
-    const invItems = items.map(item => ({
-      invoiceId: invoice.id,
-      itemId: item.itemId,
-      warehouseId: item.warehouseId,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
-    }));
-
-    const { error: itemErr } = await supaDb.from('SalesInvoiceItem').insert(invItems);
-
-    if (itemErr) {
-      console.error("[SalesService] Invoice Items Insert Error:", itemErr);
-      await supaDb.from('SalesInvoice').delete().eq('id', invoice.id);
-      throw new Error(`Failed to add items to Sales Invoice: ${itemErr.message}`);
-    }
-
-    // 4. Update Stock & Log transactions
-    for (const item of items) {
-      const { data: existingStock } = await supaDb
-        .from('Stock')
-        .select('*')
-        .eq('itemId', item.itemId)
-        .eq('warehouseId', item.warehouseId)
-        .maybeSingle();
+    for (const item of lineItems) {
+      const existingStock = await database.query.stocks.findFirst({
+        where: and(eq(stocks.itemId, item.itemId), eq(stocks.warehouseId, item.warehouseId)),
+      });
 
       if (existingStock) {
-        const { error: stockErr } = await supaDb
-          .from('Stock')
-          .update({ quantity: Number(existingStock.quantity) - Number(item.quantity) })
-          .eq('id', existingStock.id);
-        if (stockErr) console.error("Stock update error:", stockErr);
+        await database
+          .update(stocks)
+          .set({
+            quantity: Number(existingStock.quantity) - Number(item.quantity),
+            updatedAt: now(),
+          })
+          .where(eq(stocks.id, existingStock.id));
       } else {
-        const { error: stockErr } = await supaDb
-          .from('Stock')
-          .insert({
-            storeId,
-            itemId: item.itemId,
-            warehouseId: item.warehouseId,
-            quantity: -Number(item.quantity),
-          });
-        if (stockErr) console.error("Stock insert error:", stockErr);
+        await database.insert(stocks).values({
+          id: newId(),
+          storeId,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: -Number(item.quantity),
+          updatedAt: now(),
+        });
       }
 
-      await supaDb.from('InventoryTransaction').insert({
+      await database.insert(inventoryTransactions).values({
+        id: newId(),
         storeId,
         itemId: item.itemId,
         warehouseId: item.warehouseId,
@@ -362,19 +355,16 @@ export class SalesService {
         quantity: -Number(item.quantity),
         reference: `Sales Invoice ${data.invoiceNumber}`,
         performedBy: userId,
-        createdAt: new Date().toISOString(),
+        createdAt: now(),
       });
     }
 
-    // 5. Update SO status if linked
     if (soId) {
-      await supaDb
-        .from('SalesOrder')
-        .update({ status: 'COMPLETED' })
-        .eq('id', soId);
+      await database
+        .update(salesOrders)
+        .set({ status: 'COMPLETED', updatedAt: now() })
+        .where(eq(salesOrders.id, soId));
     }
-
-    
 
     return invoice;
   }

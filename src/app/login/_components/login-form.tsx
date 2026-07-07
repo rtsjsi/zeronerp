@@ -1,7 +1,7 @@
 /**
  * Login Form Component
  * 
- * Handles email/password sign-in with Supabase Auth.
+ * Handles email/password sign-in with D1-backed auth.
  * Uses React Hook Form + Zod for validation.
  */
 

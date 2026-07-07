@@ -1,78 +1,89 @@
 export const dynamic = "force-dynamic";
 
+import { and, count, eq, gte, ne } from 'drizzle-orm';
 import { withAuth } from "@/lib/auth-middleware";
 import { db } from "@/lib/db";
+import {
+  customers,
+  items,
+  purchaseOrders,
+  salesOrders,
+  vendors,
+} from '@/db/schema';
 import { apiSuccess, apiError } from "@/lib/api-response";
 
 export const GET = withAuth(async (_req, ctx) => {
   try {
     const storeId = ctx.storeId;
-    const supaDb = db();
+    const database = db();
 
-    // 1. Total Inventory Value
-    const { data: items } = await supaDb
-      .from('Item')
-      .select('basePrice, stocks:Stock(quantity)')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false);
-
-    let totalInventoryValue = 0;
-    (items || []).forEach((item: any) => {
-      const totalQty = (item.stocks || []).reduce((sum: number, s: any) => sum + Number(s.quantity), 0);
-      totalInventoryValue += Number(item.basePrice) * totalQty;
+    const storeItems = await database.query.items.findMany({
+      where: and(eq(items.storeId, storeId), eq(items.isDeleted, false)),
+      with: { stocks: true },
     });
 
-    // 2. This Month Sales
+    let totalInventoryValue = 0;
+    for (const item of storeItems) {
+      const totalQty = (item.stocks || []).reduce((sum, s) => sum + Number(s.quantity), 0);
+      totalInventoryValue += Number(item.basePrice) * totalQty;
+    }
+
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const { data: monthSalesData } = await supaDb
-      .from('SalesOrder')
-      .select('totalAmount')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .neq('status', 'CANCELLED')
-      .gte('createdAt', startOfMonth.toISOString());
+    const monthSalesData = await database
+      .select({ totalAmount: salesOrders.totalAmount })
+      .from(salesOrders)
+      .where(
+        and(
+          eq(salesOrders.storeId, storeId),
+          eq(salesOrders.isDeleted, false),
+          ne(salesOrders.status, 'CANCELLED'),
+          gte(salesOrders.createdAt, startOfMonth.toISOString()),
+        ),
+      );
 
-    const monthSales = (monthSalesData || []).reduce(
-      (sum: number, o: any) => sum + Number(o.totalAmount || 0), 0
-    );
+    const monthSales = monthSalesData.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
 
-    // 3. Pending Orders
-    const { count: pendingPOs } = await supaDb
-      .from('PurchaseOrder')
-      .select('*', { count: 'exact', head: true })
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .eq('status', 'DRAFT');
+    const [{ value: pendingPOs = 0 }] = await database
+      .select({ value: count() })
+      .from(purchaseOrders)
+      .where(
+        and(
+          eq(purchaseOrders.storeId, storeId),
+          eq(purchaseOrders.isDeleted, false),
+          eq(purchaseOrders.status, 'DRAFT'),
+        ),
+      );
 
-    const { count: pendingSOs } = await supaDb
-      .from('SalesOrder')
-      .select('*', { count: 'exact', head: true })
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .eq('status', 'DRAFT');
+    const [{ value: pendingSOs = 0 }] = await database
+      .select({ value: count() })
+      .from(salesOrders)
+      .where(
+        and(
+          eq(salesOrders.storeId, storeId),
+          eq(salesOrders.isDeleted, false),
+          eq(salesOrders.status, 'DRAFT'),
+        ),
+      );
 
-    // 4. Counts
-    const { count: vendorCount } = await supaDb
-      .from('Vendor')
-      .select('*', { count: 'exact', head: true })
-      .eq('storeId', storeId)
-      .eq('isDeleted', false);
+    const [{ value: vendorCount = 0 }] = await database
+      .select({ value: count() })
+      .from(vendors)
+      .where(and(eq(vendors.storeId, storeId), eq(vendors.isDeleted, false)));
 
-    const { count: customerCount } = await supaDb
-      .from('Customer')
-      .select('*', { count: 'exact', head: true })
-      .eq('storeId', storeId)
-      .eq('isDeleted', false);
+    const [{ value: customerCount = 0 }] = await database
+      .select({ value: count() })
+      .from(customers)
+      .where(and(eq(customers.storeId, storeId), eq(customers.isDeleted, false)));
 
     return apiSuccess({
       inventoryValue: totalInventoryValue,
       monthSales,
-      pendingOrders: (pendingPOs || 0) + (pendingSOs || 0),
-      vendorCount: vendorCount || 0,
-      customerCount: customerCount || 0,
+      pendingOrders: pendingPOs + pendingSOs,
+      vendorCount,
+      customerCount,
     });
   } catch (err) {
     console.error("[Dashboard Stats API Error]", err);

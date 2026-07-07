@@ -1,140 +1,125 @@
 /**
- * Inventory Service (Supabase SDK)
+ * Inventory Service (Cloudflare D1 / Drizzle)
  */
 
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { items, warehouses } from '@/db/schema';
+import { newId, now, withTimestamps } from '@/db/helpers';
 
 export class InventoryService {
-  /**
-   * ITEM CRUD
-   */
-
   static async getItems(storeId: string) {
-    const { data: items } = await db()
-      .from('Item')
-      .select('*, stocks:Stock(*, warehouse:Warehouse(*))')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .order('updatedAt', { ascending: false });
-
-    return items || [];
+    return db().query.items.findMany({
+      where: and(eq(items.storeId, storeId), eq(items.isDeleted, false)),
+      with: {
+        stocks: {
+          with: { warehouse: true },
+        },
+      },
+      orderBy: desc(items.updatedAt),
+    });
   }
 
   static async getItemById(storeId: string, id: string) {
-    const { data } = await db()
-      .from('Item')
-      .select('*, stocks:Stock(*, warehouse:Warehouse(*))')
-      .eq('id', id)
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .single();
-
-    return data;
+    return db().query.items.findFirst({
+      where: and(eq(items.id, id), eq(items.storeId, storeId), eq(items.isDeleted, false)),
+      with: {
+        stocks: {
+          with: { warehouse: true },
+        },
+      },
+    });
   }
 
-  static async createItem(storeId: string, userId: string, data: {
-    sku: string;
-    name: string;
-    description?: string;
-    uom?: string;
-    basePrice?: number;
-  }) {
-    const { data: item, error } = await db()
-      .from('Item')
-      .insert({
-        ...data,
-        storeId,
-        createdBy: userId,
-      })
-      .select()
-      .single();
+  static async createItem(
+    storeId: string,
+    userId: string,
+    data: {
+      sku: string;
+      name: string;
+      description?: string;
+      uom?: string;
+      basePrice?: number;
+    },
+  ) {
+    const [item] = await db()
+      .insert(items)
+      .values(
+        withTimestamps({
+          id: newId(),
+          ...data,
+          storeId,
+          createdBy: userId,
+        }),
+      )
+      .returning();
 
-    if (error) throw new Error(error.message);
-
-    
     return item;
   }
 
-  static async updateItem(storeId: string, userId: string, id: string, updateData: any) {
+  static async updateItem(storeId: string, _userId: string, id: string, updateData: Record<string, unknown>) {
     const oldItem = await this.getItemById(storeId, id);
     if (!oldItem) throw new Error('Item not found');
 
-    const { data: newItem, error } = await db()
-      .from('Item')
-      .update(updateData)
-      .eq('id', id)
-      .eq('storeId', storeId)
-      .select()
-      .single();
+    const [newItem] = await db()
+      .update(items)
+      .set({ ...updateData, updatedAt: now() })
+      .where(and(eq(items.id, id), eq(items.storeId, storeId)))
+      .returning();
 
-    if (error) throw new Error(error.message);
-
-    
     return newItem;
   }
 
-  static async deleteItem(storeId: string, userId: string, id: string) {
-    const { data: item, error } = await db()
-      .from('Item')
-      .update({ isDeleted: true })
-      .eq('id', id)
-      .eq('storeId', storeId)
-      .select()
-      .single();
+  static async deleteItem(storeId: string, _userId: string, id: string) {
+    const [item] = await db()
+      .update(items)
+      .set({ isDeleted: true, updatedAt: now() })
+      .where(and(eq(items.id, id), eq(items.storeId, storeId)))
+      .returning();
 
-    if (error) throw new Error(error.message);
-
-    
+    if (!item) throw new Error('Item not found');
     return item;
   }
 
-  /**
-   * WAREHOUSE CRUD
-   */
-
   static async getWarehouses(storeId: string) {
-    const { data } = await db()
-      .from('Warehouse')
-      .select('*')
-      .eq('storeId', storeId)
-      .eq('isDeleted', false)
-      .order('name', { ascending: true });
-
-    return data || [];
+    return db().query.warehouses.findMany({
+      where: and(eq(warehouses.storeId, storeId), eq(warehouses.isDeleted, false)),
+      orderBy: warehouses.name,
+    });
   }
 
-  static async createWarehouse(storeId: string, userId: string, data: {
-    name: string;
-    code: string;
-    location?: string;
-  }) {
-    const { data: warehouse, error } = await db()
-      .from('Warehouse')
-      .insert({
-        ...data,
-        storeId,
-        createdBy: userId,
-      })
-      .select()
-      .single();
+  static async createWarehouse(
+    storeId: string,
+    userId: string,
+    data: {
+      name: string;
+      code: string;
+      location?: string;
+    },
+  ) {
+    const [warehouse] = await db()
+      .insert(warehouses)
+      .values(
+        withTimestamps({
+          id: newId(),
+          ...data,
+          storeId,
+          createdBy: userId,
+        }),
+      )
+      .returning();
 
-    if (error) throw new Error(error.message);
-
-    
     return warehouse;
   }
 
-  static async deleteWarehouse(storeId: string, userId: string, id: string) {
-    const { data: warehouse, error } = await db()
-      .from('Warehouse')
-      .update({ isDeleted: true })
-      .eq('id', id)
-      .eq('storeId', storeId)
-      .select()
-      .single();
+  static async deleteWarehouse(storeId: string, _userId: string, id: string) {
+    const [warehouse] = await db()
+      .update(warehouses)
+      .set({ isDeleted: true, updatedAt: now() })
+      .where(and(eq(warehouses.id, id), eq(warehouses.storeId, storeId)))
+      .returning();
 
-    if (error) throw new Error(error.message);
-
+    if (!warehouse) throw new Error('Warehouse not found');
     return warehouse;
   }
 }

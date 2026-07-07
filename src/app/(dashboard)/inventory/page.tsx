@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 
 export default function InventoryPage() {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("items");
   const [isItemOpen, setIsItemOpen] = useState(false);
   const [isWarehouseOpen, setIsWarehouseOpen] = useState(false);
