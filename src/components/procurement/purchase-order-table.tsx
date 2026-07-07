@@ -102,9 +102,11 @@ export function PurchaseOrderTable({ orders, onViewDetails, onUpdateStatus }: Pu
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>PO Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onViewDetails?.(order)}>
-                      View Details
-                    </DropdownMenuItem>
+                    {onViewDetails && (
+                      <DropdownMenuItem onClick={() => onViewDetails(order)}>
+                        View Details
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => onUpdateStatus?.(order.id, "RECEIVED")}>
                       Mark as Received
                     </DropdownMenuItem>

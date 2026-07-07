@@ -91,9 +91,11 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Customer Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onEdit?.(customer)}>
-                      Edit Details
-                    </DropdownMenuItem>
+                    {onEdit && (
+                      <DropdownMenuItem onClick={() => onEdit(customer)}>
+                        Edit Details
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(customer.id)}>
                       Delete Customer
                     </DropdownMenuItem>

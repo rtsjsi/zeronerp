@@ -44,6 +44,20 @@ export class ProcurementService {
     return vendor;
   }
 
+  static async deleteVendor(storeId: string, userId: string, id: string) {
+    const { data: vendor, error } = await db()
+      .from('Vendor')
+      .update({ isDeleted: true })
+      .eq('id', id)
+      .eq('storeId', storeId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return vendor;
+  }
+
   /**
    * PURCHASE ORDER CRUD
    */

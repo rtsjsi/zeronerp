@@ -22,7 +22,7 @@ interface Item {
 
 interface ItemTableProps {
   items: Item[];
-  onEdit: (item: Item) => void;
+  onEdit?: (item: Item) => void;
   onDelete: (id: string) => void;
   onViewHistory: (item: Item) => void;
 }
@@ -77,9 +77,11 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
                         <MoreVertical className="w-4 h-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem onClick={() => onEdit(item)}>
-                          <Edit2 className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
+                        {onEdit && (
+                          <DropdownMenuItem onClick={() => onEdit(item)}>
+                            <Edit2 className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => onViewHistory(item)}>
                           <History className="mr-2 h-4 w-4" /> History
                         </DropdownMenuItem>

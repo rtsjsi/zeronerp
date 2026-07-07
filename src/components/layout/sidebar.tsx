@@ -45,10 +45,6 @@ const mainNavItems: NavItem[] = [
   { label: "Reports", href: "/reports", icon: BarChart3 },
 ];
 
-const secondaryNavItems: NavItem[] = [
-  { label: "Production", href: "/production", icon: Factory },
-];
-
 const adminNavItems: NavItem[] = [
   { label: "User Management", href: "/admin/users", icon: UsersIcon },
 ];
@@ -162,15 +158,6 @@ export function Sidebar() {
                 </span>
               )}
               {mainNavItems.map(renderNavItem)}
-            </div>
-
-            <div className="pt-4 space-y-0.5">
-              {!collapsed && (
-                <span className="px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 mb-1 block">
-                  Operations
-                </span>
-              )}
-              {secondaryNavItems.map(renderNavItem)}
             </div>
 
             {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (

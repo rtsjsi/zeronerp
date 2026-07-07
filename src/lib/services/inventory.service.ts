@@ -123,4 +123,18 @@ export class InventoryService {
     
     return warehouse;
   }
+
+  static async deleteWarehouse(storeId: string, userId: string, id: string) {
+    const { data: warehouse, error } = await db()
+      .from('Warehouse')
+      .update({ isDeleted: true })
+      .eq('id', id)
+      .eq('storeId', storeId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return warehouse;
+  }
 }

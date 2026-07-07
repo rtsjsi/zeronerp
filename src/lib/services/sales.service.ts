@@ -44,6 +44,20 @@ export class SalesService {
     return customer;
   }
 
+  static async deleteCustomer(storeId: string, userId: string, id: string) {
+    const { data: customer, error } = await db()
+      .from('Customer')
+      .update({ isDeleted: true })
+      .eq('id', id)
+      .eq('storeId', storeId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return customer;
+  }
+
   /**
    * SALES ORDER CRUD
    */

@@ -149,7 +149,6 @@ export default function ProcurementPage() {
           ) : filteredOrders && filteredOrders.length > 0 ? (
             <PurchaseOrderTable
               orders={filteredOrders}
-              onViewDetails={() => {}}
               onUpdateStatus={(id, status) => {
                 toast.promise(
                   apiFetch(`/api/procurement/orders/${id}`, { 
@@ -190,7 +189,6 @@ export default function ProcurementPage() {
           ) : filteredVendors && filteredVendors.length > 0 ? (
             <VendorTable
               vendors={filteredVendors}
-              onEdit={() => {}}
               onDelete={async (id) => {
                 if (!confirm("Are you sure?")) return;
                 const res = await apiFetch(`/api/procurement/vendors/${id}`, { method: "DELETE" });

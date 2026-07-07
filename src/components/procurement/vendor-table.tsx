@@ -88,9 +88,11 @@ export function VendorTable({ vendors, onEdit, onDelete }: VendorTableProps) {
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Vendor Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onEdit?.(vendor)}>
-                      Edit Details
-                    </DropdownMenuItem>
+                    {onEdit && (
+                      <DropdownMenuItem onClick={() => onEdit(vendor)}>
+                        Edit Details
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(vendor.id)}>
                       Delete Vendor
                     </DropdownMenuItem>

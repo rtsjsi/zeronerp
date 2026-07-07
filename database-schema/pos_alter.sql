@@ -1,5 +1,0 @@
--- Alter SalesInvoice for POS (B2C)
-ALTER TABLE "SalesInvoice" 
-ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT DEFAULT 'CASH',
-ADD COLUMN IF NOT EXISTS "amountReceived" DECIMAL(12,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS "amountReturned" DECIMAL(12,2) DEFAULT 0;

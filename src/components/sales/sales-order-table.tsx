@@ -102,9 +102,11 @@ export function SalesOrderTable({ orders, onViewDetails, onUpdateStatus }: Sales
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>SO Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onViewDetails?.(order)}>
-                      View Details
-                    </DropdownMenuItem>
+                    {onViewDetails && (
+                      <DropdownMenuItem onClick={() => onViewDetails(order)}>
+                        View Details
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => onUpdateStatus?.(order.id, "CONFIRMED")}>
                       Confirm Order
                     </DropdownMenuItem>

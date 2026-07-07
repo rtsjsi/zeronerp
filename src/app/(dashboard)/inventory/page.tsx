@@ -136,7 +136,6 @@ export default function InventoryPage() {
           ) : filteredItems && filteredItems.length > 0 ? (
             <ItemTable
               items={filteredItems}
-              onEdit={() => {}} // TODO: Implement edit logic
               onDelete={handleDeleteItem}
               onViewHistory={() => setActiveTab("history")}
             />
@@ -163,7 +162,6 @@ export default function InventoryPage() {
           ) : filteredWarehouses && filteredWarehouses.length > 0 ? (
             <WarehouseTable
               warehouses={filteredWarehouses}
-              onEdit={() => {}} // TODO: Implement edit logic
               onDelete={async (id) => {
                 if (!confirm("Are you sure?")) return;
                 const res = await apiFetch(`/api/inventory/warehouses/${id}`, { method: "DELETE" });

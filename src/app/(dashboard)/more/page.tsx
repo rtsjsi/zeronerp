@@ -11,8 +11,6 @@ import {
   TrendingUp,
   BarChart3,
   Settings,
-  Factory,
-  Users,
   ChevronRight,
   Moon,
   Sun,
@@ -25,7 +23,6 @@ import { Separator } from "@/components/ui/separator";
 const menuItems = [
   { label: "Finance", href: "/finance", icon: TrendingUp, description: "Accounts & GST" },
   { label: "Reports", href: "/reports", icon: BarChart3, description: "Business analytics" },
-  { label: "Production", href: "/production", icon: Factory, description: "BOM & batches" },
   { label: "Settings", href: "/settings", icon: Settings, description: "Configuration" },
 ];
 

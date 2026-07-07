@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+ag-stop-probe.json
+supabase/.temp/
 
 # debug
 npm-debug.log*
@@ -39,8 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-/src/generated/prisma
 
 # OpenNext
 .open-next

@@ -72,9 +72,11 @@ export function WarehouseTable({ warehouses, onEdit, onDelete }: WarehouseTableP
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Warehouse Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onEdit?.(warehouse)}>
-                      Edit Warehouse
-                    </DropdownMenuItem>
+                    {onEdit && (
+                      <DropdownMenuItem onClick={() => onEdit(warehouse)}>
+                        Edit Warehouse
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(warehouse.id)}>
                       Delete Warehouse
                     </DropdownMenuItem>
