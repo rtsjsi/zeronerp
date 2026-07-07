@@ -87,3 +87,8 @@ export function buildPagination(
     totalPages: Math.ceil(total / limit),
   };
 }
+
+/** Parse JSON request body with a typed result (Next.js 16 returns unknown from req.json()). */
+export async function parseRequestJson<T>(req: Request): Promise<T> {
+  return req.json() as Promise<T>;
+}

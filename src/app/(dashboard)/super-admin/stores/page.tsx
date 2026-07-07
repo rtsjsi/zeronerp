@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CreateStoreDialog } from "./create-store-dialog";
 import Link from "next/link";
 import { format } from "date-fns";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 interface Tenant {
@@ -32,9 +33,8 @@ export default function SuperAdminStoresPage() {
 
   const fetchStores = async () => {
     try {
-      const res = await fetch("/api/super-admin/stores");
-      const json = await res.json();
-      if (json.success) {
+      const json = await apiFetch<Tenant[]>("/api/super-admin/stores");
+      if (json.success && json.data) {
         setStores(json.data);
       } else {
         toast.error(json.message || "Failed to fetch stores");

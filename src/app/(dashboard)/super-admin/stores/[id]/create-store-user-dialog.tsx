@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 interface CreateStoreUserDialogProps {
@@ -29,13 +30,10 @@ export function CreateStoreUserDialog({ storeId, open, onOpenChange, onSuccess }
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/super-admin/stores/${storeId}/users`, {
+      const json = await apiFetch(`/api/super-admin/stores/${storeId}/users`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
-      const json = await res.json();
       
       if (json.success) {
         toast.success("User created successfully");

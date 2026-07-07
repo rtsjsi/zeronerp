@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -28,13 +29,10 @@ export function CreateStoreDialog({ open, onOpenChange, onSuccess }: CreateStore
     setLoading(true);
 
     try {
-      const res = await fetch("/api/super-admin/stores", {
+      const json = await apiFetch("/api/super-admin/stores", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
-      const json = await res.json();
       
       if (json.success) {
         toast.success("Store created successfully");

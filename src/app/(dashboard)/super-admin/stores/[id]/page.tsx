@@ -8,6 +8,7 @@ import { UserPlus, User, Mail, Shield } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CreateStoreUserDialog } from "./create-store-user-dialog";
 
@@ -31,9 +32,8 @@ export default function SuperAdminStoreDetailsPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`/api/super-admin/stores/${id}/users`);
-      const json = await res.json();
-      if (json.success) {
+      const json = await apiFetch<AppUser[]>(`/api/super-admin/stores/${id}/users`);
+      if (json.success && json.data) {
         setUsers(json.data);
       } else {
         toast.error(json.message || "Failed to fetch users");

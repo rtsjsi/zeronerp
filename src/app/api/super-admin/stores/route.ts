@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth-middleware';
-import { apiSuccess, apiError } from '@/lib/api-response';
+import { apiSuccess, apiError, parseRequestJson } from '@/lib/api-response';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 
 export const GET = withAuth(async (req, ctx) => {
@@ -16,7 +16,12 @@ export const GET = withAuth(async (req, ctx) => {
 export const POST = withAuth(async (req, ctx) => {
   if (ctx.user.role !== 'SUPER_ADMIN') return apiError('Forbidden', 403);
   try {
-    const body = await req.json();
+    const body = await parseRequestJson<{
+      name: string;
+      address?: string;
+      gstn?: string;
+      contactNumber?: string;
+    }>(req);
     if (!body.name) return apiError('Store name is required', 400);
 
     const store = await SuperAdminService.createStore({
