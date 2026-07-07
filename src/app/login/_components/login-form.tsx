@@ -41,7 +41,7 @@ export function LoginForm() {
   });
 
   const onSubmit = async (values: LoginValues) => {
-    const { error } = await signIn(values.email, values.password);
+    const { error } = await signIn(values.email.trim(), values.password);
     if (error) {
       toast.error("Sign in failed", { description: error });
       return;
@@ -59,9 +59,10 @@ export function LoginForm() {
         </Label>
         <Input
           id="login-email"
-          type="email"
+          type="text"
+          inputMode="email"
           placeholder="you@company.com"
-          autoComplete="email"
+          autoComplete="username"
           className="h-11"
           {...register("email")}
         />

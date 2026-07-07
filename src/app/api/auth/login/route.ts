@@ -1,18 +1,21 @@
 export const dynamic = "force-dynamic";
 
 import { z } from 'zod';
-import { apiError, apiSuccess } from '@/lib/api-response';
+import { apiError, apiSuccess, parseRequestJson } from '@/lib/api-response';
 import { AuthService } from '@/lib/auth/service';
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   password: z.string().min(6),
 });
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const parsed = loginSchema.safeParse(body);
+    const body = await parseRequestJson<{ email?: string; password?: string }>(req);
+    const parsed = loginSchema.safeParse({
+      email: body.email?.trim(),
+      password: body.password,
+    });
 
     if (!parsed.success) {
       return apiError('Invalid email or password', 400);
