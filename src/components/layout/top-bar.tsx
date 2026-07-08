@@ -60,7 +60,7 @@ export function TopBar() {
         </div>
 
         {/* Right — Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 shrink">
           {/* Store Selector for Super Admins */}
           <StoreSelector />
 

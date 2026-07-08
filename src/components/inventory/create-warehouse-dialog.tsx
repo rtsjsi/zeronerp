@@ -76,7 +76,7 @@ export function CreateWarehouseDialog({ open, onOpenChange, onSuccess }: CreateW
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="code">Warehouse Code</Label>
               <Input id="code" {...form.register("code")} placeholder="e.g. WH-01" />

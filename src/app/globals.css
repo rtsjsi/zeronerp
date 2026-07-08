@@ -244,4 +244,12 @@
     background: oklch(0.15 0.01 260 / 70%);
     border: 1px solid oklch(1 0 0 / 8%);
   }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, Search, Filter, Box, History, ArrowRightLeft } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
+import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ItemTable } from "@/components/inventory/item-table";
 import { CreateItemDialog } from "@/components/inventory/create-item-dialog";
@@ -82,51 +83,51 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in min-w-0">
       <PageHeader
         title="Inventory"
         description="Manage items, warehouses, and stock levels"
         breadcrumbs={[{ label: "Inventory" }]}
       >
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsMovementOpen(true)} className="gap-2">
-            <ArrowRightLeft className="w-4 h-4" /> Move Stock
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full">
+          <Button variant="outline" onClick={() => setIsMovementOpen(true)} className="gap-2 w-full sm:w-auto">
+            <ArrowRightLeft className="w-4 h-4 shrink-0" /> Move Stock
           </Button>
-          <Button onClick={() => setIsItemOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Add Item
+          <Button onClick={() => setIsItemOpen(true)} className="gap-2 w-full sm:w-auto">
+            <Plus className="w-4 h-4 shrink-0" /> Add Item
           </Button>
         </div>
       </PageHeader>
 
-      <Tabs defaultValue="items" className="w-full" onValueChange={setActiveTab}>
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card/30 p-4 rounded-xl border backdrop-blur-sm">
-          <TabsList className="bg-background/50">
-            <TabsTrigger value="items" className="gap-2">
-              <Package className="w-4 h-4" /> Items
-            </TabsTrigger>
-            <TabsTrigger value="warehouses" className="gap-2">
-              <Box className="w-4 h-4" /> Warehouses
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <History className="w-4 h-4" /> Movements
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder={`Search ${activeTab}...`}
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="icon" className="shrink-0">
-              <Filter className="w-4 h-4" />
-            </Button>
+      <Tabs defaultValue="items" className="w-full min-w-0" onValueChange={setActiveTab}>
+        <TabToolbar
+          tabs={
+            <TabsList className="bg-background/50 w-max min-w-full sm:min-w-0">
+              <TabsTrigger value="items" className="gap-2 shrink-0">
+                <Package className="w-4 h-4 shrink-0" /> Items
+              </TabsTrigger>
+              <TabsTrigger value="warehouses" className="gap-2 shrink-0">
+                <Box className="w-4 h-4 shrink-0" /> Warehouses
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-2 shrink-0">
+                <History className="w-4 h-4 shrink-0" /> Movements
+              </TabsTrigger>
+            </TabsList>
+          }
+        >
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder={`Search ${activeTab}...`}
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        </div>
+          <Button variant="outline" size="icon" className="shrink-0">
+            <Filter className="w-4 h-4" />
+          </Button>
+        </TabToolbar>
 
         <TabsContent value="items" className="mt-6">
           {isLoadingItems ? (

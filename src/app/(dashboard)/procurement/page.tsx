@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, ShoppingCart, Search, Filter, ShoppingBag, Users, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
+import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { VendorTable } from "@/components/procurement/vendor-table";
 import { CreateVendorDialog } from "@/components/procurement/create-vendor-dialog";
@@ -70,54 +71,61 @@ export default function ProcurementPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in min-w-0">
       <PageHeader
         title="Procurement"
         description="Manage suppliers, purchase orders, and payable invoices"
         breadcrumbs={[{ label: "Procurement" }]}
       >
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsVendorOpen(true)} className="gap-2">
-            <Users className="w-4 h-4" /> Add Vendor
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full">
+          <Button variant="outline" onClick={() => setIsVendorOpen(true)} className="gap-2 w-full sm:w-auto">
+            <Users className="w-4 h-4 shrink-0" />
+            <span>Add Vendor</span>
           </Button>
-          <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2">
-            <ShoppingCart className="w-4 h-4" /> Create PO (Optional)
+          <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2 w-full sm:w-auto">
+            <ShoppingCart className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden">Create PO</span>
+            <span className="hidden sm:inline">Create PO (Optional)</span>
           </Button>
-          <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Record Supplier Invoice
+          <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2 w-full sm:w-auto">
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden">Record Invoice</span>
+            <span className="hidden sm:inline">Record Supplier Invoice</span>
           </Button>
         </div>
       </PageHeader>
 
-      <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card/30 p-4 rounded-xl border backdrop-blur-sm">
-          <TabsList className="bg-background/50">
-            <TabsTrigger value="invoices" className="gap-2">
-              <Receipt className="w-4 h-4" /> Payable Invoices
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="gap-2">
-              <ShoppingBag className="w-4 h-4" /> Orders
-            </TabsTrigger>
-            <TabsTrigger value="vendors" className="gap-2">
-              <Users className="w-4 h-4" /> Vendors
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder={`Search ${activeTab}...`}
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="icon" className="shrink-0">
-              <Filter className="w-4 h-4" />
-            </Button>
+      <Tabs value={activeTab} className="w-full min-w-0" onValueChange={setActiveTab}>
+        <TabToolbar
+          tabs={
+            <TabsList className="bg-background/50 w-max min-w-full sm:min-w-0">
+              <TabsTrigger value="invoices" className="gap-2 shrink-0">
+                <Receipt className="w-4 h-4 shrink-0" />
+                <span className="sm:hidden">Invoices</span>
+                <span className="hidden sm:inline">Payable Invoices</span>
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="gap-2 shrink-0">
+                <ShoppingBag className="w-4 h-4 shrink-0" /> Orders
+              </TabsTrigger>
+              <TabsTrigger value="vendors" className="gap-2 shrink-0">
+                <Users className="w-4 h-4 shrink-0" /> Vendors
+              </TabsTrigger>
+            </TabsList>
+          }
+        >
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder={`Search ${activeTab}...`}
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        </div>
+          <Button variant="outline" size="icon" className="shrink-0">
+            <Filter className="w-4 h-4" />
+          </Button>
+        </TabToolbar>
 
         <TabsContent value="invoices" className="mt-6">
           {isLoadingInvoices ? (

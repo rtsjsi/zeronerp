@@ -36,11 +36,11 @@ interface VendorTableProps {
 
 export function VendorTable({ vendors, onEdit, onDelete }: VendorTableProps) {
   return (
-    <div className="rounded-xl border bg-card/50 backdrop-blur-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="rounded-xl border bg-card/50 backdrop-blur-sm min-w-0 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[300px]">Vendor Name</TableHead>
+            <TableHead className="min-w-[140px] max-w-[220px]">Vendor Name</TableHead>
             <TableHead>Contact Person</TableHead>
             <TableHead>Contact Details</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -49,9 +49,9 @@ export function VendorTable({ vendors, onEdit, onDelete }: VendorTableProps) {
         <TableBody>
           {vendors.map((vendor) => (
             <TableRow key={vendor.id} className="group transition-colors">
-              <TableCell className="font-medium">
-                <div className="flex flex-col">
-                  <span>{vendor.name}</span>
+              <TableCell className="font-medium max-w-[220px]">
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate">{vendor.name}</span>
                   {vendor.address && (
                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
                       <MapPin className="w-3 h-3" />

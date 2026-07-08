@@ -44,9 +44,9 @@ export function StoreSelector() {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 min-w-0 max-w-full">
       <Select value={selectedId} onValueChange={handleSelect}>
-        <SelectTrigger className="w-[180px] h-9">
+        <SelectTrigger className="w-full max-w-[180px] min-w-0 h-9">
           <Store className="w-4 h-4 mr-2" />
           <SelectValue placeholder="Select Store" />
         </SelectTrigger>

@@ -309,24 +309,27 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[1100px] h-[90vh] flex flex-col p-0 overflow-hidden bg-background/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl animate-in fade-in zoom-in-95 duration-200">
+      <DialogContent className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-[1100px] h-[90vh] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl animate-in fade-in zoom-in-95 duration-200">
         
         {/* Modern Glass Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b bg-muted/40 shrink-0 min-w-0">
+          <div className="flex items-start sm:items-center gap-2 min-w-0">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
               <ShoppingBag className="w-5 h-5" />
             </div>
-            <div>
-              <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                Express Retail POS Checkout <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono font-semibold">B2C Walk-in Mode</span>
+            <div className="min-w-0">
+              <DialogTitle className="text-base sm:text-lg font-bold flex flex-wrap items-center gap-2">
+                Express Retail POS Checkout
+                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-mono font-semibold whitespace-nowrap">
+                  B2C Walk-in Mode
+                </span>
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
                 Rapid barcode/manual scanning checkout terminal with F8 keyboard shortcut pay-out.
               </DialogDescription>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4 shrink-0">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md border border-border">
               <Keyboard className="w-3.5 h-3.5 text-primary" />
               <span>Press <kbd className="font-sans font-bold bg-background px-1.5 py-0.5 rounded border shadow-sm">F8</kbd> to Finalize Pay & Print</span>
@@ -335,11 +338,11 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
         </div>
 
         {/* Two-Column Grid Area */}
-        <div className="flex-1 min-h-0 flex flex-col md:flex-row">
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row min-w-0">
           
           {/* Left Column: Product Search & Quick Add */}
-          <div className="flex-1 flex flex-col p-6 border-r overflow-y-auto space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="flex-1 flex flex-col p-4 sm:p-6 md:border-r overflow-y-auto space-y-4 min-w-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Source Warehouse</Label>
                 <select
@@ -409,8 +412,8 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
             )}
 
             {/* Cart Table list */}
-            <div className="flex-1 flex flex-col min-h-[250px] border rounded-xl overflow-hidden bg-card/40">
-              <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 border-b text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="flex-1 flex flex-col min-h-[250px] border rounded-xl overflow-hidden bg-card/40 min-w-0">
+              <div className="hidden sm:grid grid-cols-12 gap-2 p-3 bg-muted/50 border-b text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <div className="col-span-5">Product Description</div>
                 <div className="col-span-3 text-center">Quantity</div>
                 <div className="col-span-2 text-right">Price</div>
@@ -426,46 +429,55 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
                   </div>
                 ) : (
                   cart.map((item) => (
-                    <div key={`${item.id}-${item.warehouseId}`} className="grid grid-cols-12 gap-2 p-3 items-center hover:bg-muted/30 transition-colors text-sm">
-                      <div className="col-span-5">
-                        <div className="font-medium line-clamp-1">{item.name}</div>
+                    <div key={`${item.id}-${item.warehouseId}`} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-2 p-3 items-stretch sm:items-center hover:bg-muted/30 transition-colors text-sm">
+                      <div className="sm:col-span-5 min-w-0">
+                        <div className="font-medium line-clamp-2 sm:line-clamp-1">{item.name}</div>
                         <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
                           <span>{item.sku}</span> • <span>{warehouses.find(w => w.id === item.warehouseId)?.code}</span>
                         </div>
                       </div>
 
-                      <div className="col-span-3 flex items-center justify-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="w-7 h-7 shrink-0 rounded-md"
-                          onClick={() => updateQuantity(item.id, item.warehouseId, -1)}
-                        >
-                          <Minus className="w-3 h-3" />
-                        </Button>
-                        <span className="font-bold text-center w-8">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="w-7 h-7 shrink-0 rounded-md"
-                          onClick={() => addToCart(item)}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
+                      <div className="sm:col-span-3 flex items-center justify-between sm:justify-center gap-2">
+                        <span className="text-xs font-semibold uppercase text-muted-foreground sm:hidden">Qty</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="w-7 h-7 shrink-0 rounded-md"
+                            onClick={() => updateQuantity(item.id, item.warehouseId, -1)}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="font-bold text-center w-8">{item.quantity}</span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="w-7 h-7 shrink-0 rounded-md"
+                            onClick={() => addToCart(item)}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
 
-                      <div className="col-span-2 text-right font-medium text-muted-foreground">
-                        {formatCurrency(item.basePrice)}
+                      <div className="flex items-center justify-between sm:contents">
+                        <span className="text-xs font-semibold uppercase text-muted-foreground sm:hidden">Price</span>
+                        <div className="sm:col-span-2 text-right font-medium text-muted-foreground">
+                          {formatCurrency(item.basePrice)}
+                        </div>
                       </div>
 
-                      <div className="col-span-2 text-right font-semibold text-primary flex items-center justify-end gap-2">
-                        <span>{formatCurrency(item.basePrice * item.quantity)}</span>
-                        <button 
-                          onClick={() => removeFromCart(item.id, item.warehouseId)}
-                          className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="flex items-center justify-between sm:contents">
+                        <span className="text-xs font-semibold uppercase text-muted-foreground sm:hidden">Total</span>
+                        <div className="sm:col-span-2 text-right font-semibold text-primary flex items-center justify-end gap-2">
+                          <span>{formatCurrency(item.basePrice * item.quantity)}</span>
+                          <button 
+                            onClick={() => removeFromCart(item.id, item.warehouseId)}
+                            className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -475,7 +487,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
           </div>
 
           {/* Right Column: Checkout Summary & Payment Panel */}
-          <div className="w-full md:w-[380px] bg-muted/20 p-6 flex flex-col shrink-0 justify-between">
+          <div className="w-full md:w-[380px] bg-muted/20 p-4 sm:p-6 flex flex-col shrink-0 justify-between min-w-0 border-t md:border-t-0">
             <div className="space-y-6">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b pb-2">Checkout Pay-out</h3>
 
@@ -498,7 +510,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
               {/* Payment Mode Selector */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Method</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setPaymentMethod("CASH")}

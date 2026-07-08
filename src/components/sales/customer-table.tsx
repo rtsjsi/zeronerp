@@ -36,11 +36,11 @@ interface CustomerTableProps {
 
 export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProps) {
   return (
-    <div className="rounded-xl border bg-card/50 backdrop-blur-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="rounded-xl border bg-card/50 backdrop-blur-sm min-w-0 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[300px]">Customer Name</TableHead>
+            <TableHead className="min-w-[140px] max-w-[220px]">Customer Name</TableHead>
             <TableHead>Contact Person</TableHead>
             <TableHead>Contact Details</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -49,11 +49,11 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
         <TableBody>
           {customers.map((customer) => (
             <TableRow key={customer.id} className="group transition-colors">
-              <TableCell className="font-medium">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <UserCircle className="w-4 h-4 text-primary/70" />
-                    <span>{customer.name}</span>
+              <TableCell className="font-medium max-w-[220px]">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <UserCircle className="w-4 h-4 text-primary/70 shrink-0" />
+                    <span className="truncate">{customer.name}</span>
                   </div>
                   {customer.address && (
                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5 ml-6">
