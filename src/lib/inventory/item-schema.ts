@@ -36,7 +36,6 @@ const priceField = z.number().min(0, 'Must be zero or positive');
 const percentField = z.number().min(0).max(100, 'Must be between 0 and 100');
 
 export const itemFormSchema = z.object({
-  sku: z.string().trim().min(2, 'SKU must be at least 2 characters'),
   name: z.string().trim().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
   category: itemCategorySchema,
@@ -82,7 +81,6 @@ export function isLowStock(
 }
 
 export const defaultItemFormValues: ItemFormValues = {
-  sku: '',
   name: '',
   description: '',
   category: 'RAW_MATERIAL',
@@ -102,7 +100,6 @@ export const defaultItemFormValues: ItemFormValues = {
 };
 
 export function itemToFormValues(item: {
-  sku: string;
   name: string;
   description?: string | null;
   category: string;
@@ -121,7 +118,6 @@ export function itemToFormValues(item: {
   isActive: boolean;
 }): ItemFormValues {
   return {
-    sku: item.sku,
     name: item.name,
     description: item.description ?? '',
     category: item.category as ItemFormValues['category'],

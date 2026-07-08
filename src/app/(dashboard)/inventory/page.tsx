@@ -66,8 +66,7 @@ export default function InventoryPage() {
 
   // Filters
   const filteredItems = items?.filter((item: any) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.sku.toLowerCase().includes(searchQuery.toLowerCase())
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredWarehouses = warehouses?.filter((wh: any) =>
@@ -77,7 +76,6 @@ export default function InventoryPage() {
 
   const filteredTransactions = transactions?.filter((tx: any) =>
     tx.item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tx.item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
     tx.reference?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

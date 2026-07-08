@@ -10,7 +10,7 @@ export const GET = withAuth(async (_req, ctx) => {
     const transactions = await db().query.inventoryTransactions.findMany({
       where: eq(inventoryTransactions.storeId, ctx.storeId),
       with: {
-        item: { columns: { name: true, sku: true } },
+        item: { columns: { name: true } },
         warehouse: { columns: { name: true, code: true } },
       },
       orderBy: desc(inventoryTransactions.createdAt),

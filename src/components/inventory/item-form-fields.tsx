@@ -16,7 +16,6 @@ import {
 
 interface ItemFormFieldsProps {
   form: UseFormReturn<ItemFormValues>;
-  skuReadOnly?: boolean;
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -24,7 +23,7 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-[10px] text-destructive">{message}</p>;
 }
 
-export function ItemFormFields({ form, skuReadOnly = false }: ItemFormFieldsProps) {
+export function ItemFormFields({ form }: ItemFormFieldsProps) {
   const { register, control, formState, watch } = form;
   const itemType = watch("itemType");
   const errors = formState.errors;
@@ -36,19 +35,7 @@ export function ItemFormFields({ form, skuReadOnly = false }: ItemFormFieldsProp
           Basic Details
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="sku">SKU / Item Code</Label>
-            <Input
-              id="sku"
-              {...register("sku")}
-              placeholder="e.g. RM-STEEL-01"
-              readOnly={skuReadOnly}
-              className={skuReadOnly ? "bg-muted" : undefined}
-            />
-            <FieldError message={errors.sku?.message} />
-          </div>
-
-          <div className="space-y-2">
+          <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="name">Item Name</Label>
             <Input id="name" {...register("name")} placeholder="e.g. Mild Steel Rod" />
             <FieldError message={errors.name?.message} />

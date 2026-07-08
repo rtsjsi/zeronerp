@@ -2,20 +2,12 @@
  * Inventory Service (Cloudflare D1 / Drizzle)
  */
 
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { items, warehouses } from '@/db/schema';
 import { newId, now, withTimestamps } from '@/db/helpers';
 
-export class DuplicateSkuError extends Error {
-  constructor(sku: string) {
-    super(`SKU "${sku}" already exists`);
-    this.name = 'DuplicateSkuError';
-  }
-}
-
 export type ItemInput = {
-  sku: string;
   name: string;
   description?: string;
   category?: string;
@@ -37,7 +29,6 @@ export type ItemInput = {
 function normalizeItemInput(data: ItemInput) {
   return {
     ...data,
-    sku: data.sku.trim(),
     name: data.name.trim(),
     description: data.description?.trim() || null,
     hsnSacCode: data.hsnSacCode?.trim() || null,
@@ -68,21 +59,8 @@ export class InventoryService {
     });
   }
 
-  private static async assertSkuAvailable(storeId: string, sku: string, excludeId?: string) {
-    const existing = await db().query.items.findFirst({
-      where: excludeId
-        ? and(eq(items.storeId, storeId), eq(items.sku, sku), ne(items.id, excludeId))
-        : and(eq(items.storeId, storeId), eq(items.sku, sku)),
-      columns: { id: true },
-    });
-    if (existing) {
-      throw new DuplicateSkuError(sku);
-    }
-  }
-
   static async createItem(storeId: string, userId: string, data: ItemInput) {
     const normalized = normalizeItemInput(data);
-    await this.assertSkuAvailable(storeId, normalized.sku);
 
     const [item] = await db()
       .insert(items)
@@ -116,12 +94,6 @@ export class InventoryService {
     if (!oldItem) throw new Error('Item not found');
 
     const updateData: Record<string, unknown> = { ...data };
-    if (data.sku !== undefined) {
-      updateData.sku = data.sku.trim();
-      if (updateData.sku !== oldItem.sku) {
-        await this.assertSkuAvailable(storeId, updateData.sku as string, id);
-      }
-    }
     if (data.name !== undefined) updateData.name = data.name.trim();
     if (data.description !== undefined) {
       updateData.description = data.description?.trim() || null;

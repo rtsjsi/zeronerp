@@ -51,7 +51,6 @@ export const items = sqliteTable(
   {
     id: text('id').primaryKey(),
     storeId: text('storeId').notNull().references(() => stores.id),
-    sku: text('sku').notNull(),
     name: text('name').notNull(),
     description: text('description'),
     category: text('category').notNull().default('RAW_MATERIAL'),
@@ -72,7 +71,6 @@ export const items = sqliteTable(
     createdBy: text('createdBy'),
     ...timestamps,
   },
-  (table) => [uniqueIndex('Item_storeId_sku').on(table.storeId, table.sku)],
 );
 
 export const warehouses = sqliteTable(

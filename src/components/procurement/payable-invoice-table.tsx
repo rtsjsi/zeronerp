@@ -27,7 +27,6 @@ interface PurchaseInvoice {
     id: string;
     item: {
       name: string;
-      sku: string;
     };
     warehouse: {
       name: string;

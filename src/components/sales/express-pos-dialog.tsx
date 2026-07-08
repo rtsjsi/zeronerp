@@ -26,9 +26,8 @@ interface ExpressPOSDialogProps {
 }
 
 interface CartItem {
-  id: string; // Item UUID
+  id: string;
   name: string;
-  sku: string;
   basePrice: number;
   quantity: number;
   warehouseId: string;
@@ -112,7 +111,6 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
         {
           id: item.id,
           name: item.name,
-          sku: item.sku,
           basePrice: Number(item.basePrice),
           quantity: 1,
           warehouseId: selectedWarehouseId,
@@ -144,12 +142,10 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
     setCart((prev) => prev.filter((item) => !(item.id === itemId && item.warehouseId === warehouseId)));
   };
 
-  // Filtering items based on SKU or Name
+  // Filtering items based on name
   const filteredProducts = searchQuery
-    ? inventoryItems.filter(
-        (i) =>
-          i.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ? inventoryItems.filter((i) =>
+        i.name.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : [];
 
@@ -359,12 +355,12 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Item SKU / Name Search</Label>
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Item Name Search</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     ref={searchInputRef}
-                    placeholder="Scan Barcode or Search SKU/Name..."
+                    placeholder="Search item name..."
                     className="pl-10 h-10 rounded-lg"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -397,7 +393,6 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
                     >
                       <div>
                         <div className="font-semibold text-sm">{item.name}</div>
-                        <div className="text-xs text-muted-foreground font-mono">{item.sku}</div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-primary">{formatCurrency(item.basePrice)}</span>
@@ -432,8 +427,8 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
                     <div key={`${item.id}-${item.warehouseId}`} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-2 p-3 items-stretch sm:items-center hover:bg-muted/30 transition-colors text-sm">
                       <div className="sm:col-span-5 min-w-0">
                         <div className="font-medium line-clamp-2 sm:line-clamp-1">{item.name}</div>
-                        <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
-                          <span>{item.sku}</span> • <span>{warehouses.find(w => w.id === item.warehouseId)?.code}</span>
+                        <div className="text-[10px] text-muted-foreground font-mono">
+                          {warehouses.find(w => w.id === item.warehouseId)?.code}
                         </div>
                       </div>
 

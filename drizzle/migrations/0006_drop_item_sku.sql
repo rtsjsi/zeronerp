@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS `Item_storeId_sku`;
+ALTER TABLE `Item` DROP COLUMN `sku`;

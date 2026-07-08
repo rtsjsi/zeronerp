@@ -222,7 +222,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                       }}
                     >
                       <option value="">Select Product...</option>
-                      {inventoryItems.map(i => <option key={i.id} value={i.id}>{i.sku} | {i.name}</option>)}
+                      {inventoryItems.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                     </select>
                   </div>
 

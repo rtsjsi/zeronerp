@@ -13,7 +13,6 @@ import { getCategoryLabel, isLowStock } from "@/lib/inventory/item-schema";
 
 interface Item {
   id: string;
-  sku: string;
   name: string;
   category: string;
   itemType: string;
@@ -43,7 +42,6 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
           <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-wider">
             <tr>
               <th className="px-6 py-4">Item Details</th>
-              <th className="px-6 py-4">SKU</th>
               <th className="px-6 py-4">Stock</th>
               <th className="px-6 py-4">Pricing</th>
               <th className="px-6 py-4">GST</th>
@@ -81,7 +79,6 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">{item.sku}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {item.itemType === "NON_STOCKABLE" ? (
                       <span className="text-muted-foreground text-xs">N/A</span>

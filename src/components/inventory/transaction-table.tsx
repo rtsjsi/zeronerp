@@ -19,7 +19,6 @@ interface Transaction {
   createdAt: string;
   item: {
     name: string;
-    sku: string;
   };
   warehouse: {
     name: string;
@@ -80,10 +79,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex flex-col">
-                  <span className="font-medium">{tx.item.name}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">{tx.item.sku}</span>
-                </div>
+                <span className="font-medium">{tx.item.name}</span>
               </TableCell>
               <TableCell>
                 <div className="flex flex-col">

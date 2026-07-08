@@ -157,7 +157,7 @@ export function StockMovementDialog({ open, onOpenChange, onSuccess }: StockMove
                 className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <option value="">Select Item</option>
-                {items.map(i => <option key={i.id} value={i.id}>{i.sku} - {i.name}</option>)}
+                {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
               </select>
               {form.formState.errors.itemId && (
                 <p className="text-[10px] text-destructive">{form.formState.errors.itemId.message}</p>

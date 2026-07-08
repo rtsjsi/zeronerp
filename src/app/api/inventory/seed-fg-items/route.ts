@@ -54,11 +54,6 @@ const FG_PACKS: Array<{
   },
 ];
 
-function toSkuSize(packSize: string) {
-  // "500ml" => "500ML", "1L" => "1L"
-  return packSize.toUpperCase().replace(/\s+/g, "");
-}
-
 export const POST = withAuth(async (_req, ctx) => {
   try {
     if (ctx.user.role === "USER") {
@@ -70,22 +65,21 @@ export const POST = withAuth(async (_req, ctx) => {
     const existing = await database.query.items.findMany({
       where: eq(items.storeId, ctx.storeId),
     });
-    const existingSkus = new Set(existing.map((i) => i.sku));
+    const existingNames = new Set(existing.map((i) => i.name));
 
     let created = 0;
     let skipped = 0;
 
     for (const group of FG_PACKS) {
       for (const packSize of group.packSizes) {
-        const sku = `${group.productKey}_${toSkuSize(packSize)}`;
-        if (existingSkus.has(sku)) {
+        const name = `${group.productName} - ${packSize}`;
+        if (existingNames.has(name)) {
           skipped++;
           continue;
         }
 
         await InventoryService.createItem(ctx.storeId, ctx.userId, {
-          sku,
-          name: `${group.productName} - ${packSize}`,
+          name,
           description: `${group.productName} (${packSize})`,
           category: "FINISHED_GOODS",
           itemType: "STOCKABLE",
@@ -93,7 +87,7 @@ export const POST = withAuth(async (_req, ctx) => {
           basePrice: 0,
         });
 
-        existingSkus.add(sku);
+        existingNames.add(name);
         created++;
       }
     }

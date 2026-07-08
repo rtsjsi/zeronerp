@@ -64,7 +64,7 @@ export function CreateItemDialog({ open, onOpenChange, onSuccess }: CreateItemDi
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
           <DialogDescription>
-            Create a new item in your inventory master. Enter a meaningful SKU for easy identification.
+            Create a new item in your inventory master.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
