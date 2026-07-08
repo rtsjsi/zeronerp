@@ -8,8 +8,6 @@ import {
   inventoryTransactions,
   purchaseInvoiceItems,
   purchaseInvoices,
-  purchaseOrderItems,
-  purchaseOrders,
   stocks,
   vendors,
 } from '@/db/schema';
@@ -62,97 +60,6 @@ export class ProcurementService {
     return vendor;
   }
 
-  static async getPurchaseOrders(storeId: string) {
-    return db().query.purchaseOrders.findMany({
-      where: and(eq(purchaseOrders.storeId, storeId), eq(purchaseOrders.isDeleted, false)),
-      with: {
-        vendor: true,
-        items: {
-          with: { item: true },
-        },
-      },
-      orderBy: desc(purchaseOrders.createdAt),
-    });
-  }
-
-  static async createPurchaseOrder(
-    storeId: string,
-    userId: string,
-    data: {
-      vendorId: string;
-      poNumber: string;
-      notes?: string;
-      items: {
-        itemId: string;
-        quantity: number;
-        unitPrice: number;
-      }[];
-    },
-  ) {
-    const { items: lineItems, ...poData } = data;
-    const totalAmount = Number(
-      lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0).toFixed(2),
-    );
-    const database = db();
-    const poId = newId();
-    const ts = now();
-
-    const [po] = await database
-      .insert(purchaseOrders)
-      .values({
-        id: poId,
-        ...poData,
-        storeId,
-        totalAmount,
-        createdBy: userId,
-        status: 'DRAFT',
-        createdAt: ts,
-        updatedAt: ts,
-      })
-      .returning();
-
-    try {
-      await database.insert(purchaseOrderItems).values(
-        lineItems.map((item) => ({
-          id: newId(),
-          poId,
-          itemId: item.itemId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
-        })),
-      );
-    } catch (itemErr) {
-      await database.delete(purchaseOrders).where(eq(purchaseOrders.id, poId));
-      throw new Error(
-        `Failed to add items to Purchase Order: ${itemErr instanceof Error ? itemErr.message : 'Unknown error'}`,
-      );
-    }
-
-    return (
-      (await database.query.purchaseOrders.findFirst({
-        where: eq(purchaseOrders.id, poId),
-        with: { items: true },
-      })) ?? po
-    );
-  }
-
-  static async updateOrderStatus(storeId: string, _userId: string, id: string, status: string) {
-    const oldPo = await db().query.purchaseOrders.findFirst({
-      where: and(eq(purchaseOrders.id, id), eq(purchaseOrders.storeId, storeId)),
-    });
-
-    if (!oldPo) throw new Error('Purchase Order not found');
-
-    const [newPo] = await db()
-      .update(purchaseOrders)
-      .set({ status, updatedAt: now() })
-      .where(eq(purchaseOrders.id, id))
-      .returning();
-
-    return newPo;
-  }
-
   static async getPurchaseInvoices(storeId: string) {
     return db().query.purchaseInvoices.findMany({
       where: and(eq(purchaseInvoices.storeId, storeId), eq(purchaseInvoices.isDeleted, false)),
@@ -174,7 +81,6 @@ export class ProcurementService {
       invoiceNumber: string;
       financialYear: string;
       notes?: string;
-      poId?: string | null;
       items: {
         itemId: string;
         warehouseId: string;
@@ -201,7 +107,7 @@ export class ProcurementService {
       );
     }
 
-    const { items: lineItems, poId, ...invData } = data;
+    const { items: lineItems, ...invData } = data;
     const totalAmount = Number(
       lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0).toFixed(2),
     );
@@ -215,7 +121,6 @@ export class ProcurementService {
         ...invData,
         storeId,
         totalAmount,
-        poId: poId || null,
         status: 'COMPLETED',
         createdBy: userId,
         createdAt: ts,
@@ -277,13 +182,6 @@ export class ProcurementService {
         performedBy: userId,
         createdAt: now(),
       });
-    }
-
-    if (poId) {
-      await database
-        .update(purchaseOrders)
-        .set({ status: 'COMPLETED', updatedAt: now() })
-        .where(eq(purchaseOrders.id, poId));
     }
 
     return invoice;

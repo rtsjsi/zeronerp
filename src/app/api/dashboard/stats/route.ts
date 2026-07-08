@@ -1,13 +1,12 @@
 export const dynamic = "force-dynamic";
 
-import { and, count, eq, gte, ne } from 'drizzle-orm';
+import { and, count, eq, gte } from 'drizzle-orm';
 import { withAuth } from "@/lib/auth-middleware";
 import { db } from "@/lib/db";
 import {
   customers,
   items,
-  purchaseOrders,
-  salesOrders,
+  salesInvoices,
   vendors,
 } from '@/db/schema';
 import { apiSuccess, apiError } from "@/lib/api-response";
@@ -33,40 +32,17 @@ export const GET = withAuth(async (_req, ctx) => {
     startOfMonth.setHours(0, 0, 0, 0);
 
     const monthSalesData = await database
-      .select({ totalAmount: salesOrders.totalAmount })
-      .from(salesOrders)
+      .select({ totalAmount: salesInvoices.totalAmount })
+      .from(salesInvoices)
       .where(
         and(
-          eq(salesOrders.storeId, storeId),
-          eq(salesOrders.isDeleted, false),
-          ne(salesOrders.status, 'CANCELLED'),
-          gte(salesOrders.createdAt, startOfMonth.toISOString()),
+          eq(salesInvoices.storeId, storeId),
+          eq(salesInvoices.isDeleted, false),
+          gte(salesInvoices.createdAt, startOfMonth.toISOString()),
         ),
       );
 
     const monthSales = monthSalesData.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-
-    const [{ value: pendingPOs = 0 }] = await database
-      .select({ value: count() })
-      .from(purchaseOrders)
-      .where(
-        and(
-          eq(purchaseOrders.storeId, storeId),
-          eq(purchaseOrders.isDeleted, false),
-          eq(purchaseOrders.status, 'DRAFT'),
-        ),
-      );
-
-    const [{ value: pendingSOs = 0 }] = await database
-      .select({ value: count() })
-      .from(salesOrders)
-      .where(
-        and(
-          eq(salesOrders.storeId, storeId),
-          eq(salesOrders.isDeleted, false),
-          eq(salesOrders.status, 'DRAFT'),
-        ),
-      );
 
     const [{ value: vendorCount = 0 }] = await database
       .select({ value: count() })
@@ -81,7 +57,7 @@ export const GET = withAuth(async (_req, ctx) => {
     return apiSuccess({
       inventoryValue: totalInventoryValue,
       monthSales,
-      pendingOrders: pendingPOs + pendingSOs,
+      pendingOrders: 0,
       vendorCount,
       customerCount,
     });

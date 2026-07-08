@@ -131,32 +131,6 @@ export const vendors = sqliteTable(
   (table) => [uniqueIndex('Vendor_storeId_name').on(table.storeId, table.name)],
 );
 
-export const purchaseOrders = sqliteTable(
-  'PurchaseOrder',
-  {
-    id: text('id').primaryKey(),
-    storeId: text('storeId').notNull().references(() => stores.id),
-    vendorId: text('vendorId').notNull().references(() => vendors.id),
-    poNumber: text('poNumber').notNull(),
-    status: text('status').notNull().default('DRAFT'),
-    totalAmount: real('totalAmount').notNull().default(0),
-    notes: text('notes'),
-    isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
-    createdBy: text('createdBy'),
-    ...timestamps,
-  },
-  (table) => [uniqueIndex('PurchaseOrder_storeId_poNumber').on(table.storeId, table.poNumber)],
-);
-
-export const purchaseOrderItems = sqliteTable('PurchaseOrderItem', {
-  id: text('id').primaryKey(),
-  poId: text('poId').notNull().references(() => purchaseOrders.id, { onDelete: 'cascade' }),
-  itemId: text('itemId').notNull().references(() => items.id),
-  quantity: real('quantity').notNull(),
-  unitPrice: real('unitPrice').notNull(),
-  totalPrice: real('totalPrice').notNull(),
-});
-
 export const customers = sqliteTable(
   'Customer',
   {
@@ -176,32 +150,6 @@ export const customers = sqliteTable(
   (table) => [uniqueIndex('Customer_storeId_name').on(table.storeId, table.name)],
 );
 
-export const salesOrders = sqliteTable(
-  'SalesOrder',
-  {
-    id: text('id').primaryKey(),
-    storeId: text('storeId').notNull().references(() => stores.id),
-    customerId: text('customerId').notNull().references(() => customers.id),
-    soNumber: text('soNumber').notNull(),
-    status: text('status').notNull().default('DRAFT'),
-    totalAmount: real('totalAmount').notNull().default(0),
-    notes: text('notes'),
-    isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
-    createdBy: text('createdBy'),
-    ...timestamps,
-  },
-  (table) => [uniqueIndex('SalesOrder_storeId_soNumber').on(table.storeId, table.soNumber)],
-);
-
-export const salesOrderItems = sqliteTable('SalesOrderItem', {
-  id: text('id').primaryKey(),
-  soId: text('soId').notNull().references(() => salesOrders.id, { onDelete: 'cascade' }),
-  itemId: text('itemId').notNull().references(() => items.id),
-  quantity: real('quantity').notNull(),
-  unitPrice: real('unitPrice').notNull(),
-  totalPrice: real('totalPrice').notNull(),
-});
-
 export const purchaseInvoices = sqliteTable(
   'PurchaseInvoice',
   {
@@ -213,7 +161,6 @@ export const purchaseInvoices = sqliteTable(
     status: text('status').notNull().default('COMPLETED'),
     totalAmount: real('totalAmount').notNull().default(0),
     notes: text('notes'),
-    poId: text('poId').references(() => purchaseOrders.id, { onDelete: 'set null' }),
     isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
     createdBy: text('createdBy'),
     ...timestamps,
@@ -249,7 +196,6 @@ export const salesInvoices = sqliteTable(
     status: text('status').notNull().default('COMPLETED'),
     totalAmount: real('totalAmount').notNull().default(0),
     notes: text('notes'),
-    soId: text('soId').references(() => salesOrders.id, { onDelete: 'set null' }),
     paymentMethod: text('paymentMethod').notNull().default('CASH'),
     amountReceived: real('amountReceived').notNull().default(0),
     amountReturned: real('amountReturned').notNull().default(0),
@@ -319,24 +265,6 @@ export const stocksRelations = relations(stocks, ({ one }) => ({
   warehouse: one(warehouses, { fields: [stocks.warehouseId], references: [warehouses.id] }),
 }));
 
-export const purchaseOrdersRelations = relations(purchaseOrders, ({ one, many }) => ({
-  vendor: one(vendors, { fields: [purchaseOrders.vendorId], references: [vendors.id] }),
-  items: many(purchaseOrderItems),
-}));
-
-export const purchaseOrderItemsRelations = relations(purchaseOrderItems, ({ one }) => ({
-  item: one(items, { fields: [purchaseOrderItems.itemId], references: [items.id] }),
-}));
-
-export const salesOrdersRelations = relations(salesOrders, ({ one, many }) => ({
-  customer: one(customers, { fields: [salesOrders.customerId], references: [customers.id] }),
-  items: many(salesOrderItems),
-}));
-
-export const salesOrderItemsRelations = relations(salesOrderItems, ({ one }) => ({
-  item: one(items, { fields: [salesOrderItems.itemId], references: [items.id] }),
-}));
-
 export const purchaseInvoicesRelations = relations(purchaseInvoices, ({ one, many }) => ({
   vendor: one(vendors, { fields: [purchaseInvoices.vendorId], references: [vendors.id] }),
   items: many(purchaseInvoiceItems),
@@ -379,11 +307,7 @@ export const schema = {
   stocks,
   inventoryTransactions,
   vendors,
-  purchaseOrders,
-  purchaseOrderItems,
   customers,
-  salesOrders,
-  salesOrderItems,
   purchaseInvoices,
   purchaseInvoiceItems,
   salesInvoices,

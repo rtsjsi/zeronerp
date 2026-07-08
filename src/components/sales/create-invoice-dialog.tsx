@@ -31,7 +31,6 @@ const invoiceSchema = z.object({
   customerId: z.string().uuid("Please select a customer"),
   invoiceNumber: z.string().min(2, "Invoice number is required"),
   financialYear: z.string().min(4, "Financial year is required"),
-  soId: z.string().uuid().optional().nullable(),
   notes: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
 });
@@ -42,10 +41,9 @@ interface CreateInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  salesOrders: any[];
 }
 
-export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, salesOrders = [] }: CreateInvoiceDialogProps) {
+export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInvoiceDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
@@ -93,43 +91,18 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, salesOrders
       customerId: "",
       invoiceNumber: "",
       financialYear: getCurrentFinancialYear(),
-      soId: "",
       notes: "",
       items: [{ itemId: "", warehouseId: "", quantity: 1, unitPrice: 0 }],
     },
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
   });
 
   const watchItems = form.watch("items");
-  const watchSoId = form.watch("soId");
   const total = watchItems ? watchItems.reduce((acc, item) => acc + (Number(item?.quantity || 0) * Number(item?.unitPrice || 0)), 0) : 0;
-
-  // Handle SO selection and auto-populating items
-  useEffect(() => {
-    if (watchSoId) {
-      const selectedSo = salesOrders.find(so => so.id === watchSoId);
-      if (selectedSo) {
-        form.setValue("customerId", selectedSo.customerId);
-        form.setValue("notes", selectedSo.notes || "");
-        
-        // Auto map items from the SO
-        const mappedItems = selectedSo.items.map((si: any) => ({
-          itemId: si.itemId,
-          warehouseId: warehouses[0]?.id || "", // Default to first warehouse
-          quantity: Number(si.quantity),
-          unitPrice: Number(si.unitPrice),
-        }));
-
-        if (mappedItems.length > 0) {
-          replace(mappedItems);
-        }
-      }
-    }
-  }, [watchSoId, salesOrders, warehouses, form, replace]);
 
   useEffect(() => {
     if (open) {
@@ -140,14 +113,9 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, salesOrders
   async function onSubmit(data: InvoiceFormValues) {
     setIsSubmitting(true);
     try {
-      const payload = {
-        ...data,
-        soId: data.soId || null,
-      };
-
       const res = await apiFetch("/api/sales/invoices", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
       });
 
       if (res.success) {
@@ -165,9 +133,6 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, salesOrders
     }
   }
 
-  // Filter orders that are not completed
-  const eligibleOrders = salesOrders.filter(so => so.status !== "COMPLETED");
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] flex flex-col">
@@ -183,26 +148,11 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, salesOrders
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 overflow-y-auto pr-2 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/20 p-4 rounded-lg border border-border shadow-sm">
             <div className="space-y-2">
-              <Label htmlFor="soId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Link Sales Order (Optional)</Label>
-              <select
-                id="soId"
-                {...form.register("soId")}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/25 outline-none"
-              >
-                <option value="">Direct Entry (No Sales Order)</option>
-                {eligibleOrders.map(so => (
-                  <option key={so.id} value={so.id}>{so.soNumber} ({so.customer?.name})</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="customerId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Customer</Label>
               <select
                 id="customerId"
                 {...form.register("customerId")}
-                disabled={!!watchSoId}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/25 outline-none disabled:opacity-75 disabled:bg-muted"
+                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/25 outline-none"
               >
                 <option value="">Select Customer</option>
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}

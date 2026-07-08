@@ -19,12 +19,26 @@ export function StoreSelector() {
   useEffect(() => {
     if (user?.role !== 'SUPER_ADMIN') return;
 
-    const match = document.cookie.match(new RegExp('(^| )zeron_superadmin_store_id=([^;]+)'));
-    if (match) setSelectedId(match[2]);
+    // Important: wait until `stores` are loaded before setting `selectedId`.
+    // Otherwise, the Select control may not find a matching SelectItem yet and fall back to showing the raw `id`.
+    const match = document.cookie.match(
+      new RegExp('(^| )zeron_superadmin_store_id=([^;]+)'),
+    );
+    const cookieStoreId = match?.[2];
 
     const loadStores = async () => {
       const json = await apiFetch<Tenant[]>('/api/super-admin/stores');
-      if (json.success && json.data) setStores(json.data);
+      if (json.success && json.data) {
+        setStores(json.data);
+
+        if (cookieStoreId && json.data.some(s => String(s.id) === cookieStoreId)) {
+          setSelectedId(cookieStoreId);
+        } else {
+          setSelectedId('none');
+        }
+      } else {
+        setSelectedId('none');
+      }
     };
 
     loadStores();
@@ -53,7 +67,7 @@ export function StoreSelector() {
         <SelectContent>
           <SelectItem value="none">Super Admin View</SelectItem>
           {stores.map(store => (
-            <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+            <SelectItem key={store.id} value={String(store.id)}>{store.name}</SelectItem>
           ))}
         </SelectContent>
       </Select>

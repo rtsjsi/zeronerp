@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, ShoppingCart, Search, Filter, ShoppingBag, Users, Receipt } from "lucide-react";
+import { Plus, Search, Filter, Users, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { VendorTable } from "@/components/procurement/vendor-table";
 import { CreateVendorDialog } from "@/components/procurement/create-vendor-dialog";
-import { PurchaseOrderTable } from "@/components/procurement/purchase-order-table";
-import { CreatePurchaseOrderDialog } from "@/components/procurement/create-purchase-order-dialog";
 import { PayableInvoiceTable } from "@/components/procurement/payable-invoice-table";
 import { CreateInvoiceDialog } from "@/components/procurement/create-invoice-dialog";
 import { Button } from "@/components/ui/button";
@@ -21,20 +19,9 @@ import { toast } from "sonner";
 export default function ProcurementPage() {
   const [activeTab, setActiveTab] = useState("invoices");
   const [isVendorOpen, setIsVendorOpen] = useState(false);
-  const [isOrderOpen, setIsOrderOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
-
-  // Queries
-  const { data: orders, isLoading: isLoadingOrders } = useQuery({
-    queryKey: ["purchase-orders"],
-    queryFn: async () => {
-      const res = await apiFetch<any[]>("/api/procurement/orders");
-      if (!res.success) throw new Error(res.message);
-      return res.data;
-    },
-  });
 
   const { data: invoices, isLoading: isLoadingInvoices } = useQuery({
     queryKey: ["purchase-invoices"],
@@ -60,11 +47,6 @@ export default function ProcurementPage() {
     invoice.vendor?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredOrders = orders?.filter((order) =>
-    order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.vendor?.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const filteredVendors = vendors?.filter((vendor) =>
     vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     vendor.contactName?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -74,18 +56,13 @@ export default function ProcurementPage() {
     <div className="space-y-6 animate-fade-in min-w-0">
       <PageHeader
         title="Procurement"
-        description="Manage suppliers, purchase orders, and payable invoices"
+        description="Manage suppliers and payable invoices"
         breadcrumbs={[{ label: "Procurement" }]}
       >
         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full">
           <Button variant="outline" onClick={() => setIsVendorOpen(true)} className="gap-2 w-full sm:w-auto">
             <Users className="w-4 h-4 shrink-0" />
             <span>Add Vendor</span>
-          </Button>
-          <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2 w-full sm:w-auto">
-            <ShoppingCart className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden">Create PO</span>
-            <span className="hidden sm:inline">Create PO (Optional)</span>
           </Button>
           <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2 w-full sm:w-auto">
             <Plus className="w-4 h-4 shrink-0" />
@@ -103,9 +80,6 @@ export default function ProcurementPage() {
                 <Receipt className="w-4 h-4 shrink-0" />
                 <span className="sm:hidden">Invoices</span>
                 <span className="hidden sm:inline">Payable Invoices</span>
-              </TabsTrigger>
-              <TabsTrigger value="orders" className="gap-2 shrink-0">
-                <ShoppingBag className="w-4 h-4 shrink-0" /> Orders
               </TabsTrigger>
               <TabsTrigger value="vendors" className="gap-2 shrink-0">
                 <Users className="w-4 h-4 shrink-0" /> Vendors
@@ -149,46 +123,6 @@ export default function ProcurementPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="orders" className="mt-6">
-          {isLoadingOrders ? (
-            <div className="grid place-items-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : filteredOrders && filteredOrders.length > 0 ? (
-            <PurchaseOrderTable
-              orders={filteredOrders}
-              onUpdateStatus={(id, status) => {
-                toast.promise(
-                  apiFetch(`/api/procurement/orders/${id}`, { 
-                    method: "PATCH", 
-                    body: JSON.stringify({ status }) 
-                  }),
-                  {
-                    loading: "Updating order...",
-                    success: () => {
-                      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
-                      return "Order status updated";
-                    },
-                    error: "Failed to update order",
-                  }
-                );
-              }}
-            />
-          ) : (
-            <EmptyState
-              icon={ShoppingCart}
-              title={searchQuery ? "No matching orders" : "No purchase orders yet"}
-              description={
-                searchQuery
-                  ? `No orders found matching "${searchQuery}".`
-                  : "Create an optional purchase order to track supplier intent before invoicing."
-              }
-              actionLabel={searchQuery ? "Clear Search" : "Create Purchase Order"}
-              onAction={() => (searchQuery ? setSearchQuery("") : setIsOrderOpen(true))}
-            />
-          )}
-        </TabsContent>
-
         <TabsContent value="vendors" className="mt-6">
           {isLoadingVendors ? (
             <div className="grid place-items-center py-20">
@@ -228,20 +162,12 @@ export default function ProcurementPage() {
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["vendors"] })}
       />
 
-      <CreatePurchaseOrderDialog
-        open={isOrderOpen}
-        onOpenChange={setIsOrderOpen}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["purchase-orders"] })}
-      />
-
       <CreateInvoiceDialog
         open={isInvoiceOpen}
         onOpenChange={setIsInvoiceOpen}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["purchase-invoices"] });
-          queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
         }}
-        purchaseOrders={orders || []}
       />
     </div>
   );

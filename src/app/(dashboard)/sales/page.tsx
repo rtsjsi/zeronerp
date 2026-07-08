@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Receipt, UserCircle, Search, Filter, ShoppingCart, Users, ShoppingBag, Sparkles } from "lucide-react";
+import { Receipt, UserCircle, Search, Filter, Users, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CustomerTable } from "@/components/sales/customer-table";
 import { CreateCustomerDialog } from "@/components/sales/create-customer-dialog";
-import { SalesOrderTable } from "@/components/sales/sales-order-table";
-import { CreateSalesOrderDialog } from "@/components/sales/create-sales-order-dialog";
 import { SalesInvoiceTable } from "@/components/sales/sales-invoice-table";
 import { CreateInvoiceDialog } from "@/components/sales/create-invoice-dialog";
 import { ExpressPOSDialog } from "@/components/sales/express-pos-dialog";
@@ -22,21 +20,10 @@ import { toast } from "sonner";
 export default function SalesPage() {
   const [activeTab, setActiveTab] = useState("invoices");
   const [isCustomerOpen, setIsCustomerOpen] = useState(false);
-  const [isOrderOpen, setIsOrderOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [isPOSOpen, setIsPOSOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
-
-  // Queries
-  const { data: orders, isLoading: isLoadingOrders } = useQuery({
-    queryKey: ["sales-orders"],
-    queryFn: async () => {
-      const res = await apiFetch<any[]>("/api/sales/orders");
-      if (!res.success) throw new Error(res.message);
-      return res.data;
-    },
-  });
 
   const { data: invoices, isLoading: isLoadingInvoices } = useQuery({
     queryKey: ["sales-invoices"],
@@ -62,11 +49,6 @@ export default function SalesPage() {
     invoice.customer?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredOrders = orders?.filter((order) =>
-    order.soNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.customer?.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const filteredCustomers = customers?.filter((customer) =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.contactName?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -76,18 +58,13 @@ export default function SalesPage() {
     <div className="space-y-6 animate-fade-in min-w-0">
       <PageHeader
         title="Sales"
-        description="Manage customers, sales orders, and invoices"
+        description="Manage customers and sales invoices"
         breadcrumbs={[{ label: "Sales" }]}
       >
         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full">
           <Button variant="outline" onClick={() => setIsCustomerOpen(true)} className="gap-2 w-full sm:w-auto">
             <UserCircle className="w-4 h-4 shrink-0" />
             <span>Add Customer</span>
-          </Button>
-          <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2 w-full sm:w-auto">
-            <ShoppingCart className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden">Create SO</span>
-            <span className="hidden sm:inline">Create SO (Optional)</span>
           </Button>
           <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} className="gap-2 w-full sm:w-auto">
             <Receipt className="w-4 h-4 shrink-0" />
@@ -113,9 +90,6 @@ export default function SalesPage() {
                 <Receipt className="w-4 h-4 shrink-0" />
                 <span className="sm:hidden">Invoices</span>
                 <span className="hidden sm:inline">Sales Invoices</span>
-              </TabsTrigger>
-              <TabsTrigger value="orders" className="gap-2 shrink-0">
-                <ShoppingBag className="w-4 h-4 shrink-0" /> Orders
               </TabsTrigger>
               <TabsTrigger value="customers" className="gap-2 shrink-0">
                 <Users className="w-4 h-4 shrink-0" /> Customers
@@ -159,46 +133,6 @@ export default function SalesPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="orders" className="mt-6">
-          {isLoadingOrders ? (
-            <div className="grid place-items-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : filteredOrders && filteredOrders.length > 0 ? (
-            <SalesOrderTable
-              orders={filteredOrders}
-              onUpdateStatus={(id, status) => {
-                toast.promise(
-                  apiFetch(`/api/sales/orders/${id}`, { 
-                    method: "PATCH", 
-                    body: JSON.stringify({ status }) 
-                  }),
-                  {
-                    loading: "Updating order...",
-                    success: () => {
-                      queryClient.invalidateQueries({ queryKey: ["sales-orders"] });
-                      return "Order status updated";
-                    },
-                    error: "Failed to update order",
-                  }
-                );
-              }}
-            />
-          ) : (
-            <EmptyState
-              icon={ShoppingCart}
-              title={searchQuery ? "No matching orders" : "No sales orders yet"}
-              description={
-                searchQuery
-                  ? `No orders found matching "${searchQuery}".`
-                  : "Create an optional sales order to track customer intent before invoicing."
-              }
-              actionLabel={searchQuery ? "Clear Search" : "Create Sales Order"}
-              onAction={() => (searchQuery ? setSearchQuery("") : setIsOrderOpen(true))}
-            />
-          )}
-        </TabsContent>
-
         <TabsContent value="customers" className="mt-6">
           {isLoadingCustomers ? (
             <div className="grid place-items-center py-20">
@@ -238,20 +172,12 @@ export default function SalesPage() {
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["customers"] })}
       />
 
-      <CreateSalesOrderDialog
-        open={isOrderOpen}
-        onOpenChange={setIsOrderOpen}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["sales-orders"] })}
-      />
-
       <CreateInvoiceDialog
         open={isInvoiceOpen}
         onOpenChange={setIsInvoiceOpen}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["sales-invoices"] });
-          queryClient.invalidateQueries({ queryKey: ["sales-orders"] });
         }}
-        salesOrders={orders || []}
       />
 
       <ExpressPOSDialog

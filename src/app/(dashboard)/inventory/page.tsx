@@ -10,6 +10,7 @@ import { ItemTable } from "@/components/inventory/item-table";
 import { CreateItemDialog } from "@/components/inventory/create-item-dialog";
 import { WarehouseTable } from "@/components/inventory/warehouse-table";
 import { CreateWarehouseDialog } from "@/components/inventory/create-warehouse-dialog";
+import { EditWarehouseDialog } from "@/components/inventory/edit-warehouse-dialog";
 import { TransactionTable } from "@/components/inventory/transaction-table";
 import { StockMovementDialog } from "@/components/inventory/stock-movement-dialog";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState("items");
   const [isItemOpen, setIsItemOpen] = useState(false);
   const [isWarehouseOpen, setIsWarehouseOpen] = useState(false);
+  const [isEditWarehouseOpen, setIsEditWarehouseOpen] = useState(false);
+  const [editWarehouse, setEditWarehouse] = useState<any | null>(null);
   const [isMovementOpen, setIsMovementOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
@@ -156,6 +159,11 @@ export default function InventoryPage() {
         </TabsContent>
 
         <TabsContent value="warehouses" className="mt-6">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => setIsWarehouseOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4 shrink-0" /> Add Warehouse
+            </Button>
+          </div>
           {isLoadingWarehouses ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -163,6 +171,10 @@ export default function InventoryPage() {
           ) : filteredWarehouses && filteredWarehouses.length > 0 ? (
             <WarehouseTable
               warehouses={filteredWarehouses}
+              onEdit={(warehouse) => {
+                setEditWarehouse(warehouse);
+                setIsEditWarehouseOpen(true);
+              }}
               onDelete={async (id) => {
                 if (!confirm("Are you sure?")) return;
                 const res = await apiFetch(`/api/inventory/warehouses/${id}`, { method: "DELETE" });
@@ -181,8 +193,6 @@ export default function InventoryPage() {
                   ? `No warehouses found matching "${searchQuery}".`
                   : "Add your storage locations to manage stock by warehouse."
               }
-              actionLabel={searchQuery ? "Clear Search" : "Add Warehouse"}
-              onAction={() => (searchQuery ? setSearchQuery("") : setIsWarehouseOpen(true))}
             />
           )}
         </TabsContent>
@@ -219,6 +229,16 @@ export default function InventoryPage() {
       <CreateWarehouseDialog
         open={isWarehouseOpen}
         onOpenChange={setIsWarehouseOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["warehouses"] })}
+      />
+
+      <EditWarehouseDialog
+        open={isEditWarehouseOpen}
+        onOpenChange={(open) => {
+          setIsEditWarehouseOpen(open);
+          if (!open) setEditWarehouse(null);
+        }}
+        warehouse={editWarehouse}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["warehouses"] })}
       />
 

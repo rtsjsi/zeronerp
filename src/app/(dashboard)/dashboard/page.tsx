@@ -117,9 +117,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {[
-              { label: "New Sales Order", href: "/sales", icon: ShoppingCart },
+              { label: "Record Sales Invoice", href: "/sales", icon: Receipt },
               { label: "Add Inventory Item", href: "/inventory", icon: Box },
-              { label: "Create Purchase Order", href: "/procurement", icon: ShoppingBagIcon },
+              { label: "Record Supplier Invoice", href: "/procurement", icon: ShoppingBagIcon },
             ].map((action, i) => {
               const ActionIcon = action.icon || Package;
               return (

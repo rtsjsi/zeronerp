@@ -9,10 +9,7 @@ import {
   inventoryTransactions,
   salesInvoiceItems,
   salesInvoices,
-  salesOrderItems,
-  salesOrders,
   stocks,
-  warehouses,
 } from '@/db/schema';
 import { newId, now, toJson, withTimestamps } from '@/db/helpers';
 
@@ -61,137 +58,6 @@ export class SalesService {
 
     if (!customer) throw new Error('Customer not found');
     return customer;
-  }
-
-  static async getSalesOrders(storeId: string) {
-    return db().query.salesOrders.findMany({
-      where: and(eq(salesOrders.storeId, storeId), eq(salesOrders.isDeleted, false)),
-      with: {
-        customer: true,
-        items: {
-          with: { item: true },
-        },
-      },
-      orderBy: desc(salesOrders.createdAt),
-    });
-  }
-
-  static async createSalesOrder(
-    storeId: string,
-    userId: string,
-    data: {
-      customerId: string;
-      soNumber: string;
-      notes?: string;
-      items: {
-        itemId: string;
-        quantity: number;
-        unitPrice: number;
-      }[];
-    },
-  ) {
-    const { items: lineItems, ...soData } = data;
-    const totalAmount = lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-    const database = db();
-    const soId = newId();
-
-    const [so] = await database
-      .insert(salesOrders)
-      .values(
-        withTimestamps({
-          id: soId,
-          ...soData,
-          storeId,
-          totalAmount,
-          createdBy: userId,
-        }),
-      )
-      .returning();
-
-    await database.insert(salesOrderItems).values(
-      lineItems.map((item) => ({
-        id: newId(),
-        soId,
-        itemId: item.itemId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.quantity * item.unitPrice,
-      })),
-    );
-
-    return (
-      (await database.query.salesOrders.findFirst({
-        where: eq(salesOrders.id, soId),
-        with: { items: true },
-      })) ?? so
-    );
-  }
-
-  static async updateOrderStatus(storeId: string, userId: string, id: string, status: string) {
-    const database = db();
-
-    const oldSo = await database.query.salesOrders.findFirst({
-      where: and(eq(salesOrders.id, id), eq(salesOrders.storeId, storeId)),
-      with: { items: true },
-    });
-
-    if (!oldSo) throw new Error('Sales Order not found');
-
-    const [newSo] = await database
-      .update(salesOrders)
-      .set({ status, updatedAt: now() })
-      .where(eq(salesOrders.id, id))
-      .returning();
-
-    if (status === 'CONFIRMED' && oldSo.status === 'DRAFT') {
-      const warehouse = await database.query.warehouses.findFirst({
-        where: and(eq(warehouses.storeId, storeId), eq(warehouses.isDeleted, false)),
-      });
-
-      if (warehouse && oldSo.items) {
-        for (const orderItem of oldSo.items) {
-          const existingStock = await database.query.stocks.findFirst({
-            where: and(
-              eq(stocks.itemId, orderItem.itemId),
-              eq(stocks.warehouseId, warehouse.id),
-            ),
-          });
-
-          if (existingStock) {
-            await database
-              .update(stocks)
-              .set({
-                quantity: Number(existingStock.quantity) - Number(orderItem.quantity),
-                updatedAt: now(),
-              })
-              .where(eq(stocks.id, existingStock.id));
-          } else {
-            await database.insert(stocks).values({
-              id: newId(),
-              storeId,
-              itemId: orderItem.itemId,
-              warehouseId: warehouse.id,
-              quantity: -Number(orderItem.quantity),
-              updatedAt: now(),
-            });
-          }
-
-          await database.insert(inventoryTransactions).values({
-            id: newId(),
-            storeId,
-            itemId: orderItem.itemId,
-            warehouseId: warehouse.id,
-            type: 'OUT',
-            quantity: -Number(orderItem.quantity),
-            reference: `Sales Order ${oldSo.soNumber}`,
-            performedBy: userId,
-            createdAt: now(),
-          });
-        }
-      }
-    }
-
-    return newSo;
   }
 
   static async getSalesInvoices(storeId: string) {
@@ -244,7 +110,6 @@ export class SalesService {
       invoiceNumber: string;
       financialYear: string;
       notes?: string;
-      soId?: string | null;
       paymentMethod?: string;
       amountReceived?: number;
       amountReturned?: number;
@@ -277,7 +142,7 @@ export class SalesService {
       throw new Error('Duplicate Sales Invoice number is not allowed in the same financial year.');
     }
 
-    const { items: lineItems, soId, customerId: _ignored, ...invData } = data;
+    const { items: lineItems, customerId: _ignored, ...invData } = data;
     const totalAmount = Number(
       lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0).toFixed(2),
     );
@@ -292,7 +157,6 @@ export class SalesService {
         customerId,
         storeId,
         totalAmount,
-        soId: soId || null,
         status: 'COMPLETED',
         paymentMethod: data.paymentMethod || 'CASH',
         amountReceived: data.amountReceived !== undefined ? data.amountReceived : totalAmount,
@@ -357,13 +221,6 @@ export class SalesService {
         performedBy: userId,
         createdAt: now(),
       });
-    }
-
-    if (soId) {
-      await database
-        .update(salesOrders)
-        .set({ status: 'COMPLETED', updatedAt: now() })
-        .where(eq(salesOrders.id, soId));
     }
 
     return invoice;

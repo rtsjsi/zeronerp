@@ -31,7 +31,6 @@ const invoiceSchema = z.object({
   vendorId: z.string().uuid("Please select a vendor"),
   invoiceNumber: z.string().min(2, "Invoice number is required"),
   financialYear: z.string().min(4, "Financial year is required"),
-  poId: z.string().uuid().optional().nullable(),
   notes: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
 });
@@ -42,10 +41,9 @@ interface CreateInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  purchaseOrders: any[];
 }
 
-export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, purchaseOrders = [] }: CreateInvoiceDialogProps) {
+export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInvoiceDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [vendors, setVendors] = useState<any[]>([]);
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
@@ -93,55 +91,25 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, purchaseOrd
       vendorId: "",
       invoiceNumber: "",
       financialYear: getCurrentFinancialYear(),
-      poId: "",
       notes: "",
       items: [{ itemId: "", warehouseId: "", quantity: 1, unitPrice: 0 }],
     },
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
   });
 
   const watchItems = form.watch("items");
-  const watchPoId = form.watch("poId");
   const total = watchItems ? watchItems.reduce((acc, item) => acc + (Number(item?.quantity || 0) * Number(item?.unitPrice || 0)), 0) : 0;
-
-  // Handle PO selection and auto-populating items
-  useEffect(() => {
-    if (watchPoId) {
-      const selectedPo = purchaseOrders.find(po => po.id === watchPoId);
-      if (selectedPo) {
-        form.setValue("vendorId", selectedPo.vendorId);
-        form.setValue("notes", selectedPo.notes || "");
-        
-        // Auto map items from the PO
-        const mappedItems = selectedPo.items.map((pi: any) => ({
-          itemId: pi.itemId,
-          warehouseId: warehouses[0]?.id || "", // Default to first warehouse
-          quantity: Number(pi.quantity),
-          unitPrice: Number(pi.unitPrice),
-        }));
-
-        if (mappedItems.length > 0) {
-          replace(mappedItems);
-        }
-      }
-    }
-  }, [watchPoId, purchaseOrders, warehouses, form, replace]);
 
   async function onSubmit(data: InvoiceFormValues) {
     setIsSubmitting(true);
     try {
-      const payload = {
-        ...data,
-        poId: data.poId || null,
-      };
-
       const res = await apiFetch("/api/procurement/invoices", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
       });
 
       if (res.success) {
@@ -159,9 +127,6 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, purchaseOrd
     }
   }
 
-  // Filter orders that are not completed
-  const eligibleOrders = purchaseOrders.filter(po => po.status !== "COMPLETED");
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] flex flex-col">
@@ -177,26 +142,11 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess, purchaseOrd
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 overflow-y-auto pr-2 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/20 p-4 rounded-lg border border-border shadow-sm">
             <div className="space-y-2">
-              <Label htmlFor="poId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Link Purchase Order (Optional)</Label>
-              <select
-                id="poId"
-                {...form.register("poId")}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/25 outline-none"
-              >
-                <option value="">Direct Entry (No PO)</option>
-                {eligibleOrders.map(po => (
-                  <option key={po.id} value={po.id}>{po.poNumber} ({po.vendor?.name})</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="vendorId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Supplier / Vendor</Label>
               <select
                 id="vendorId"
                 {...form.register("vendorId")}
-                disabled={!!watchPoId}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/25 outline-none disabled:opacity-75 disabled:bg-muted"
+                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/25 outline-none"
               >
                 <option value="">Select Vendor</option>
                 {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}

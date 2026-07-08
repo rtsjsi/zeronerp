@@ -9,7 +9,6 @@ const invoiceSchema = z.object({
   invoiceNumber: z.string().min(2),
   financialYear: z.string().min(4),
   notes: z.string().optional(),
-  poId: z.string().uuid().optional().nullable(),
   items: z.array(z.object({
     itemId: z.string().uuid(),
     warehouseId: z.string().uuid(),

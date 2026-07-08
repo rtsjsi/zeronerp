@@ -122,4 +122,26 @@ export class InventoryService {
     if (!warehouse) throw new Error('Warehouse not found');
     return warehouse;
   }
+
+  static async updateWarehouse(
+    storeId: string,
+    _userId: string,
+    id: string,
+    data: { name: string; code: string; location?: string },
+  ) {
+    const [warehouse] = await db()
+      .update(warehouses)
+      .set({
+        name: data.name,
+        code: data.code,
+        // `location` is nullable in DB; treat empty/undefined as null
+        location: data.location && data.location.trim().length > 0 ? data.location : null,
+        updatedAt: now(),
+      })
+      .where(and(eq(warehouses.id, id), eq(warehouses.storeId, storeId), eq(warehouses.isDeleted, false)))
+      .returning();
+
+    if (!warehouse) throw new Error("Warehouse not found");
+    return warehouse;
+  }
 }
