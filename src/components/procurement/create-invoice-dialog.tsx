@@ -211,7 +211,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                       onChange={(e) => {
                         const item = inventoryItems.find(i => i.id === e.target.value);
                         if (item) {
-                          form.setValue(`items.${index}.unitPrice`, Number(item.basePrice));
+                          form.setValue(`items.${index}.unitPrice`, Number(item.cost));
                         }
                       }}
                     >

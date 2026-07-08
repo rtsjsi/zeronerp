@@ -127,39 +127,14 @@ export function ItemFormFields({ form }: ItemFormFieldsProps) {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
+            <Label htmlFor="cost">Cost (₹)</Label>
+            <Input id="cost" type="number" step="0.01" {...register("cost", { valueAsNumber: true })} />
+            <FieldError message={errors.cost?.message} />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="mrp">MRP (₹)</Label>
             <Input id="mrp" type="number" step="0.01" {...register("mrp", { valueAsNumber: true })} />
             <FieldError message={errors.mrp?.message} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="sellingPrice">Selling Price (₹)</Label>
-            <Input
-              id="sellingPrice"
-              type="number"
-              step="0.01"
-              {...register("sellingPrice", { valueAsNumber: true })}
-            />
-            <FieldError message={errors.sellingPrice?.message} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="purchasePrice">Purchase Price (₹)</Label>
-            <Input
-              id="purchasePrice"
-              type="number"
-              step="0.01"
-              {...register("purchasePrice", { valueAsNumber: true })}
-            />
-            <FieldError message={errors.purchasePrice?.message} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="basePrice">Base Price (₹)</Label>
-            <Input
-              id="basePrice"
-              type="number"
-              step="0.01"
-              {...register("basePrice", { valueAsNumber: true })}
-            />
-            <FieldError message={errors.basePrice?.message} />
           </div>
         </div>
       </div>
@@ -177,34 +152,14 @@ export function ItemFormFields({ form }: ItemFormFieldsProps) {
             <FieldError message={errors.hsnSacCode?.message} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cgstPercent">CGST (%)</Label>
+            <Label htmlFor="gstRate">GST Rate (%)</Label>
             <Input
-              id="cgstPercent"
+              id="gstRate"
               type="number"
               step="0.01"
-              {...register("cgstPercent", { valueAsNumber: true })}
+              {...register("gstRate", { valueAsNumber: true })}
             />
-            <FieldError message={errors.cgstPercent?.message} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="sgstPercent">SGST (%)</Label>
-            <Input
-              id="sgstPercent"
-              type="number"
-              step="0.01"
-              {...register("sgstPercent", { valueAsNumber: true })}
-            />
-            <FieldError message={errors.sgstPercent?.message} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="igstPercent">IGST (%)</Label>
-            <Input
-              id="igstPercent"
-              type="number"
-              step="0.01"
-              {...register("igstPercent", { valueAsNumber: true })}
-            />
-            <FieldError message={errors.igstPercent?.message} />
+            <FieldError message={errors.gstRate?.message} />
           </div>
         </div>
       </div>

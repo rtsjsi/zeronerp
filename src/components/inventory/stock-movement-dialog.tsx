@@ -189,7 +189,7 @@ export function StockMovementDialog({ open, onOpenChange, onSuccess }: StockMove
                     className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="">Source</option>
-                    {warehouses.map(w => <option key={w.id} value={w.id}>{w.code}</option>)}
+                    {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -200,7 +200,7 @@ export function StockMovementDialog({ open, onOpenChange, onSuccess }: StockMove
                     className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="">Destination</option>
-                    {warehouses.map(w => <option key={w.id} value={w.id}>{w.code}</option>)}
+                    {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
                 </div>
               </div>

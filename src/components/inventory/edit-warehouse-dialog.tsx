@@ -13,7 +13,6 @@ import { apiFetch } from "@/lib/api-client";
 
 const warehouseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  code: z.string().min(2, "Code must be at least 2 characters"),
   location: z.string().optional(),
 });
 
@@ -22,7 +21,6 @@ type WarehouseFormValues = z.infer<typeof warehouseSchema>;
 export interface WarehouseForDialog {
   id: string;
   name: string;
-  code: string;
   location?: string | null;
 }
 
@@ -45,7 +43,6 @@ export function EditWarehouseDialog({
     resolver: zodResolver(warehouseSchema),
     defaultValues: {
       name: "",
-      code: "",
       location: "",
     },
   });
@@ -55,7 +52,6 @@ export function EditWarehouseDialog({
 
     form.reset({
       name: warehouse.name ?? "",
-      code: warehouse.code ?? "",
       location: warehouse.location ?? "",
     });
   }, [open, warehouse, form]);
@@ -67,8 +63,6 @@ export function EditWarehouseDialog({
     try {
       const payload = {
         name: data.name,
-        code: data.code,
-        // Store location is nullable; treat empty as "clear"
         location: data.location && data.location.trim().length > 0 ? data.location : undefined,
       };
 
@@ -97,26 +91,16 @@ export function EditWarehouseDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Warehouse</DialogTitle>
-          <DialogDescription>Update name, code, and location.</DialogDescription>
+          <DialogDescription>Update name and location.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Warehouse Code</Label>
-              <Input id="code" {...form.register("code")} placeholder="e.g. WH-01" />
-              {form.formState.errors.code && (
-                <p className="text-[10px] text-destructive">{form.formState.errors.code.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="name">Warehouse Name</Label>
-              <Input id="name" {...form.register("name")} placeholder="e.g. Main Hub" />
-              {form.formState.errors.name && (
-                <p className="text-[10px] text-destructive">{form.formState.errors.name.message}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Warehouse Name</Label>
+            <Input id="name" {...form.register("name")} placeholder="e.g. Main Hub" />
+            {form.formState.errors.name && (
+              <p className="text-[10px] text-destructive">{form.formState.errors.name.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -141,4 +125,3 @@ export function EditWarehouseDialog({
     </Dialog>
   );
 }
-

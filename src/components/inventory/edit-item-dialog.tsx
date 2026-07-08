@@ -30,15 +30,11 @@ export interface ItemForDialog {
   itemType: string;
   uom: string;
   hsnSacCode?: string | null;
-  cgstPercent: number;
-  sgstPercent: number;
-  igstPercent: number;
+  gstRate: number;
   reorderLevel: number;
   minStock: number;
+  cost: number;
   mrp: number;
-  sellingPrice: number;
-  purchasePrice: number;
-  basePrice: number;
   isActive: boolean;
 }
 

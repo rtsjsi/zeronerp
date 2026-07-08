@@ -14,15 +14,11 @@ export type ItemInput = {
   itemType?: string;
   uom?: string;
   hsnSacCode?: string;
-  cgstPercent?: number;
-  sgstPercent?: number;
-  igstPercent?: number;
+  gstRate?: number;
   reorderLevel?: number;
   minStock?: number;
+  cost?: number;
   mrp?: number;
-  sellingPrice?: number;
-  purchasePrice?: number;
-  basePrice?: number;
   isActive?: boolean;
 };
 
@@ -69,15 +65,11 @@ export class InventoryService {
           id: newId(),
           category: 'RAW_MATERIAL',
           itemType: 'STOCKABLE',
-          cgstPercent: 0,
-          sgstPercent: 0,
-          igstPercent: 0,
+          gstRate: 0,
           reorderLevel: 0,
           minStock: 0,
+          cost: 0,
           mrp: 0,
-          sellingPrice: 0,
-          purchasePrice: 0,
-          basePrice: 0,
           isActive: true,
           ...normalized,
           storeId,
@@ -134,7 +126,6 @@ export class InventoryService {
     userId: string,
     data: {
       name: string;
-      code: string;
       location?: string;
     },
   ) {
@@ -168,13 +159,12 @@ export class InventoryService {
     storeId: string,
     _userId: string,
     id: string,
-    data: { name: string; code: string; location?: string },
+    data: { name: string; location?: string },
   ) {
     const [warehouse] = await db()
       .update(warehouses)
       .set({
         name: data.name,
-        code: data.code,
         location: data.location && data.location.trim().length > 0 ? data.location : null,
         updatedAt: now(),
       })

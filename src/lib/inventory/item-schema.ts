@@ -42,15 +42,11 @@ export const itemFormSchema = z.object({
   itemType: itemTypeSchema,
   uom: uomSchema,
   hsnSacCode: optionalHsnSac,
-  cgstPercent: percentField,
-  sgstPercent: percentField,
-  igstPercent: percentField,
+  gstRate: percentField,
   reorderLevel: priceField,
   minStock: priceField,
+  cost: priceField,
   mrp: priceField,
-  sellingPrice: priceField,
-  purchasePrice: priceField,
-  basePrice: priceField,
   isActive: z.boolean(),
 });
 
@@ -87,15 +83,11 @@ export const defaultItemFormValues: ItemFormValues = {
   itemType: 'STOCKABLE',
   uom: 'pcs',
   hsnSacCode: '',
-  cgstPercent: 0,
-  sgstPercent: 0,
-  igstPercent: 0,
+  gstRate: 0,
   reorderLevel: 0,
   minStock: 0,
+  cost: 0,
   mrp: 0,
-  sellingPrice: 0,
-  purchasePrice: 0,
-  basePrice: 0,
   isActive: true,
 };
 
@@ -106,15 +98,11 @@ export function itemToFormValues(item: {
   itemType: string;
   uom: string;
   hsnSacCode?: string | null;
-  cgstPercent: number;
-  sgstPercent: number;
-  igstPercent: number;
+  gstRate: number;
   reorderLevel: number;
   minStock: number;
+  cost: number;
   mrp: number;
-  sellingPrice: number;
-  purchasePrice: number;
-  basePrice: number;
   isActive: boolean;
 }): ItemFormValues {
   return {
@@ -124,15 +112,11 @@ export function itemToFormValues(item: {
     itemType: item.itemType as ItemFormValues['itemType'],
     uom: item.uom as ItemFormValues['uom'],
     hsnSacCode: item.hsnSacCode ?? '',
-    cgstPercent: Number(item.cgstPercent),
-    sgstPercent: Number(item.sgstPercent),
-    igstPercent: Number(item.igstPercent),
+    gstRate: Number(item.gstRate),
     reorderLevel: Number(item.reorderLevel),
     minStock: Number(item.minStock),
+    cost: Number(item.cost),
     mrp: Number(item.mrp),
-    sellingPrice: Number(item.sellingPrice),
-    purchasePrice: Number(item.purchasePrice),
-    basePrice: Number(item.basePrice),
     isActive: item.isActive,
   };
 }

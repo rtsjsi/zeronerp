@@ -2,8 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { eq } from "drizzle-orm";
 import { withAuth } from "@/lib/auth-middleware";
-import { FG_BULK_OIL_ITEMS } from "@/lib/inventory/fg-bulk-oil-items";
-import { FG_OIL_ITEMS } from "@/lib/inventory/fg-oil-items";
+import { RM_SEED_ITEMS } from "@/lib/inventory/rm-seed-items";
 import { InventoryService } from "@/lib/services/inventory.service";
 import { db } from "@/lib/db";
 import { items } from "@/db/schema";
@@ -25,7 +24,7 @@ export const POST = withAuth(async (_req, ctx) => {
     let created = 0;
     let skipped = 0;
 
-    for (const item of FG_OIL_ITEMS) {
+    for (const item of RM_SEED_ITEMS) {
       if (existingNames.has(item.name)) {
         skipped++;
         continue;
@@ -33,27 +32,9 @@ export const POST = withAuth(async (_req, ctx) => {
 
       await InventoryService.createItem(ctx.storeId, ctx.userId, {
         name: item.name,
-        category: "FINISHED_GOODS",
+        category: "RAW_MATERIAL",
         itemType: "STOCKABLE",
-        uom: "nos",
-        mrp: item.mrp,
-      });
-
-      existingNames.add(item.name);
-      created++;
-    }
-
-    for (const item of FG_BULK_OIL_ITEMS) {
-      if (existingNames.has(item.name)) {
-        skipped++;
-        continue;
-      }
-
-      await InventoryService.createItem(ctx.storeId, ctx.userId, {
-        name: item.name,
-        category: "FINISHED_GOODS",
-        itemType: "STOCKABLE",
-        uom: "l",
+        uom: "kg",
       });
 
       existingNames.add(item.name);
@@ -62,10 +43,10 @@ export const POST = withAuth(async (_req, ctx) => {
 
     return apiSuccess(
       { created, skipped },
-      "FG oil items seeded (idempotent)",
+      "Raw material items seeded (idempotent)",
     );
   } catch (err) {
-    console.error("[Seed FG Items Error]", err);
+    console.error("[Seed RM Items Error]", err);
     return apiError(err instanceof Error ? err.message : "Internal server error", 500);
   }
 });

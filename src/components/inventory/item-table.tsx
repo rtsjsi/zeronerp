@@ -18,9 +18,9 @@ interface Item {
   itemType: string;
   uom: string;
   hsnSacCode?: string | null;
+  gstRate: number;
+  cost: number;
   mrp: number;
-  sellingPrice: number;
-  basePrice: number;
   reorderLevel: number;
   minStock: number;
   stocks: { quantity: number }[];
@@ -53,7 +53,6 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
             {items.map((item) => {
               const totalStock = item.stocks.reduce((acc, s) => acc + Number(s.quantity), 0);
               const lowStock = isLowStock(item.itemType, totalStock, item.reorderLevel, item.minStock);
-              const displayPrice = Number(item.sellingPrice) || Number(item.basePrice);
 
               return (
                 <tr key={item.id} className="hover:bg-muted/30 transition-colors group">
@@ -96,7 +95,7 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium">₹{displayPrice.toLocaleString()}</div>
+                    <div className="font-medium">₹{Number(item.cost).toLocaleString()}</div>
                     {Number(item.mrp) > 0 && (
                       <div className="text-[10px] text-muted-foreground">
                         MRP ₹{Number(item.mrp).toLocaleString()}
@@ -104,7 +103,12 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-xs font-mono">{item.hsnSacCode || "—"}</div>
+                    <div className="text-xs font-mono">
+                      {Number(item.gstRate) > 0 ? `${Number(item.gstRate)}%` : "—"}
+                    </div>
+                    {item.hsnSacCode && (
+                      <div className="text-[10px] text-muted-foreground font-mono">{item.hsnSacCode}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant={item.isActive ? "success" : "secondary"}>

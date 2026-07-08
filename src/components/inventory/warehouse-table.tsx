@@ -22,7 +22,6 @@ import {
 interface Warehouse {
   id: string;
   name: string;
-  code: string;
   location?: string | null;
 }
 
@@ -38,7 +37,6 @@ export function WarehouseTable({ warehouses, onEdit, onDelete }: WarehouseTableP
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[200px]">Warehouse Code</TableHead>
             <TableHead>Warehouse Name</TableHead>
             <TableHead>Location</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -47,9 +45,6 @@ export function WarehouseTable({ warehouses, onEdit, onDelete }: WarehouseTableP
         <TableBody>
           {warehouses.map((warehouse) => (
             <TableRow key={warehouse.id} className="group transition-colors">
-              <TableCell className="font-mono text-xs font-bold text-primary">
-                {warehouse.code}
-              </TableCell>
               <TableCell className="font-medium">
                 <div className="flex items-center gap-2">
                   <Box className="w-4 h-4 text-muted-foreground" />

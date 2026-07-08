@@ -28,7 +28,7 @@ interface ExpressPOSDialogProps {
 interface CartItem {
   id: string;
   name: string;
-  basePrice: number;
+  mrp: number;
   quantity: number;
   warehouseId: string;
 }
@@ -111,7 +111,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
         {
           id: item.id,
           name: item.name,
-          basePrice: Number(item.basePrice),
+          mrp: Number(item.mrp),
           quantity: 1,
           warehouseId: selectedWarehouseId,
         },
@@ -150,7 +150,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
     : [];
 
   // Cart math
-  const cartSubtotal = cart.reduce((sum, item) => sum + item.basePrice * item.quantity, 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + item.mrp * item.quantity, 0);
   const cartTax = cartSubtotal * 0.05; // 5% flat GST/VAT simulation
   const cartGrandTotal = cartSubtotal + cartTax;
 
@@ -182,7 +182,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
           itemId: i.id,
           warehouseId: i.warehouseId,
           quantity: i.quantity,
-          unitPrice: i.basePrice,
+          unitPrice: i.mrp,
         })),
       };
 
@@ -217,8 +217,8 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
     const itemRows = cart.map(
       (item) => `
       <tr>
-        <td style="padding: 4px 0; font-family: monospace;">${item.name} (${item.quantity} x $${item.basePrice.toFixed(2)})</td>
-        <td style="text-align: right; font-family: monospace;">$${(item.quantity * item.basePrice).toFixed(2)}</td>
+        <td style="padding: 4px 0; font-family: monospace;">${item.name} (${item.quantity} x $${item.mrp.toFixed(2)})</td>
+        <td style="text-align: right; font-family: monospace;">$${(item.quantity * item.mrp).toFixed(2)}</td>
       </tr>
     `
     ).join("");
@@ -395,7 +395,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
                         <div className="font-semibold text-sm">{item.name}</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-bold text-primary">{formatCurrency(item.basePrice)}</span>
+                        <span className="font-bold text-primary">{formatCurrency(item.mrp)}</span>
                         <Button size="sm" variant="secondary" className="h-7 px-2">
                           <Plus className="w-3.5 h-3.5 mr-1" /> Add
                         </Button>
@@ -428,7 +428,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
                       <div className="sm:col-span-5 min-w-0">
                         <div className="font-medium line-clamp-2 sm:line-clamp-1">{item.name}</div>
                         <div className="text-[10px] text-muted-foreground font-mono">
-                          {warehouses.find(w => w.id === item.warehouseId)?.code}
+                          {warehouses.find(w => w.id === item.warehouseId)?.name}
                         </div>
                       </div>
 
@@ -458,14 +458,14 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
                       <div className="flex items-center justify-between sm:contents">
                         <span className="text-xs font-semibold uppercase text-muted-foreground sm:hidden">Price</span>
                         <div className="sm:col-span-2 text-right font-medium text-muted-foreground">
-                          {formatCurrency(item.basePrice)}
+                          {formatCurrency(item.mrp)}
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between sm:contents">
                         <span className="text-xs font-semibold uppercase text-muted-foreground sm:hidden">Total</span>
                         <div className="sm:col-span-2 text-right font-semibold text-primary flex items-center justify-end gap-2">
-                          <span>{formatCurrency(item.basePrice * item.quantity)}</span>
+                          <span>{formatCurrency(item.mrp * item.quantity)}</span>
                           <button 
                             onClick={() => removeFromCart(item.id, item.warehouseId)}
                             className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"

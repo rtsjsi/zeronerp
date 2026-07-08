@@ -19,7 +19,6 @@ import { apiFetch } from "@/lib/api-client";
 
 const warehouseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  code: z.string().min(2, "Code must be at least 2 characters"),
   location: z.string().optional(),
 });
 
@@ -38,7 +37,6 @@ export function CreateWarehouseDialog({ open, onOpenChange, onSuccess }: CreateW
     resolver: zodResolver(warehouseSchema),
     defaultValues: {
       name: "",
-      code: "",
       location: "",
     },
   });
@@ -76,21 +74,12 @@ export function CreateWarehouseDialog({ open, onOpenChange, onSuccess }: CreateW
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Warehouse Code</Label>
-              <Input id="code" {...form.register("code")} placeholder="e.g. WH-01" />
-              {form.formState.errors.code && (
-                <p className="text-[10px] text-destructive">{form.formState.errors.code.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="name">Warehouse Name</Label>
-              <Input id="name" {...form.register("name")} placeholder="e.g. Main Hub" />
-              {form.formState.errors.name && (
-                <p className="text-[10px] text-destructive">{form.formState.errors.name.message}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Warehouse Name</Label>
+            <Input id="name" {...form.register("name")} placeholder="e.g. Main Hub" />
+            {form.formState.errors.name && (
+              <p className="text-[10px] text-destructive">{form.formState.errors.name.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">

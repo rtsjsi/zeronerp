@@ -70,8 +70,7 @@ export default function InventoryPage() {
   );
 
   const filteredWarehouses = warehouses?.filter((wh: any) =>
-    wh.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    wh.code.toLowerCase().includes(searchQuery.toLowerCase())
+    wh.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredTransactions = transactions?.filter((tx: any) =>

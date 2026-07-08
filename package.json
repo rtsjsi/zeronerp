@@ -19,6 +19,8 @@
     "db:execute:remote": "node scripts/run-with-env.mjs npx wrangler d1 execute zeronerpdb --remote",
     "db:generate": "drizzle-kit generate",
     "db:seed-admin": "node scripts/seed-admin.mjs",
+    "db:seed-fg-items": "node scripts/seed-fg-items.mjs",
+    "db:seed-rm-items": "node scripts/seed-rm-items.mjs",
     "db:reset-admin": "node scripts/run-with-env.mjs node scripts/reset-admin-password.mjs",
     "secrets:jwt": "node scripts/run-with-env.mjs node scripts/set-jwt-secret.mjs"
   },

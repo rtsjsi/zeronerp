@@ -22,7 +22,6 @@ interface Transaction {
   };
   warehouse: {
     name: string;
-    code: string;
   };
 }
 
@@ -82,10 +81,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
                 <span className="font-medium">{tx.item.name}</span>
               </TableCell>
               <TableCell>
-                <div className="flex flex-col">
-                  <span className="text-sm">{tx.warehouse.name}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">{tx.warehouse.code}</span>
-                </div>
+                <span className="text-sm">{tx.warehouse.name}</span>
               </TableCell>
               <TableCell>{getBadge(tx.type)}</TableCell>
               <TableCell className={`text-right font-mono font-bold ${tx.quantity > 0 ? "text-emerald-600" : "text-red-600"}`}>

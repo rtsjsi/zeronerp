@@ -6,7 +6,6 @@ import { z } from "zod";
 
 const warehouseSchema = z.object({
   name: z.string().min(2),
-  code: z.string().min(2),
   location: z.string().optional(),
 });
 

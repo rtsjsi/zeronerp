@@ -24,7 +24,7 @@ export const GET = withAuth(async (_req, ctx) => {
     let totalInventoryValue = 0;
     for (const item of storeItems) {
       const totalQty = (item.stocks || []).reduce((sum, s) => sum + Number(s.quantity), 0);
-      totalInventoryValue += Number(item.basePrice) * totalQty;
+      totalInventoryValue += Number(item.cost) * totalQty;
     }
 
     const startOfMonth = new Date();
