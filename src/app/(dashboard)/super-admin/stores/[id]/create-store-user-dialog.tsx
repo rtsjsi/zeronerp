@@ -5,9 +5,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LovSelect } from "@/components/shared/lov-select";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
+
+const ROLE_OPTIONS = [
+  { value: "USER", label: "User (Standard)" },
+  { value: "ADMIN", label: "Admin (Store Manager)" },
+] as const;
 
 interface CreateStoreUserDialogProps {
   storeId: string;
@@ -95,18 +100,12 @@ export function CreateStoreUserDialog({ storeId, open, onOpenChange, onSuccess }
 
           <div className="space-y-2">
             <Label>Role</Label>
-            <Select 
-              value={formData.role} 
-              onValueChange={(val) => setFormData({...formData, role: val || "USER"})}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USER">User (Standard)</SelectItem>
-                <SelectItem value="ADMIN">Admin (Store Manager)</SelectItem>
-              </SelectContent>
-            </Select>
+            <LovSelect
+              value={formData.role}
+              onValueChange={(val) => setFormData({ ...formData, role: val || "USER" })}
+              options={ROLE_OPTIONS}
+              placeholder="Select role"
+            />
           </div>
 
           <DialogFooter className="pt-4">

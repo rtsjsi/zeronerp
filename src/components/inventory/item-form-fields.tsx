@@ -5,16 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { LovSelect } from "@/components/shared/lov-select";
 import { UOM_OPTIONS } from "@/lib/inventory/constants";
 import {
   ITEM_CATEGORY_OPTIONS,
+  ITEM_STATUS_OPTIONS,
   ITEM_TYPE_OPTIONS,
   type ItemFormValues,
 } from "@/lib/inventory/item-schema";
@@ -65,18 +60,12 @@ export function ItemFormFields({ form, skuReadOnly = false }: ItemFormFieldsProp
               name="category"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ITEM_CATEGORY_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <LovSelect
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  options={ITEM_CATEGORY_OPTIONS}
+                  placeholder="Select category"
+                />
               )}
             />
             <FieldError message={errors.category?.message} />
@@ -88,18 +77,12 @@ export function ItemFormFields({ form, skuReadOnly = false }: ItemFormFieldsProp
               name="itemType"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ITEM_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <LovSelect
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  options={ITEM_TYPE_OPTIONS}
+                  placeholder="Select type"
+                />
               )}
             />
             <FieldError message={errors.itemType?.message} />
@@ -111,18 +94,12 @@ export function ItemFormFields({ form, skuReadOnly = false }: ItemFormFieldsProp
               name="uom"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select UOM" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UOM_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <LovSelect
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  options={UOM_OPTIONS}
+                  placeholder="Select UOM"
+                />
               )}
             />
             <FieldError message={errors.uom?.message} />
@@ -134,18 +111,11 @@ export function ItemFormFields({ form, skuReadOnly = false }: ItemFormFieldsProp
               name="isActive"
               control={control}
               render={({ field }) => (
-                <Select
+                <LovSelect
                   value={field.value ? "active" : "inactive"}
                   onValueChange={(val) => field.onChange(val === "active")}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
+                  options={ITEM_STATUS_OPTIONS}
+                />
               )}
             />
           </div>

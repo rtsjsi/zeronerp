@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LovSelect } from "@/components/shared/lov-select";
 import { Store } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 
@@ -57,20 +57,21 @@ export function StoreSelector() {
     window.location.reload();
   };
 
+  const storeOptions = [
+    { value: "none", label: "Super Admin View" },
+    ...stores.map((store) => ({ value: String(store.id), label: store.name })),
+  ];
+
   return (
     <div className="flex items-center gap-2 min-w-0 max-w-full">
-      <Select value={selectedId} onValueChange={handleSelect}>
-        <SelectTrigger className="w-full max-w-[180px] min-w-0 h-9">
-          <Store className="w-4 h-4 mr-2" />
-          <SelectValue placeholder="Select Store" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">Super Admin View</SelectItem>
-          {stores.map(store => (
-            <SelectItem key={store.id} value={String(store.id)}>{store.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <LovSelect
+        value={selectedId}
+        onValueChange={handleSelect}
+        options={storeOptions}
+        placeholder="Select Store"
+        className="max-w-[180px] min-w-0 h-9"
+        prefix={<Store className="w-4 h-4 mr-2 shrink-0" />}
+      />
     </div>
   );
 }

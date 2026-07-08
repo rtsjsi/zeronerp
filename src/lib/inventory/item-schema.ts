@@ -13,6 +13,11 @@ export const ITEM_TYPE_OPTIONS = [
   { value: 'NON_STOCKABLE', label: 'Non-Stockable (Services)' },
 ] as const;
 
+export const ITEM_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+] as const;
+
 export const ITEM_CATEGORY_VALUES = ITEM_CATEGORY_OPTIONS.map((o) => o.value);
 export const ITEM_TYPE_VALUES = ITEM_TYPE_OPTIONS.map((o) => o.value);
 
