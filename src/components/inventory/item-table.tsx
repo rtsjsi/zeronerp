@@ -1,6 +1,6 @@
 "use client";
 
-import { Package, MoreVertical, Edit2, Trash2, History } from "lucide-react";
+import { Package, MoreVertical, Edit2, Trash2, History, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,14 +9,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getCategoryLabel, isLowStock } from "@/lib/inventory/item-schema";
 
 interface Item {
   id: string;
   sku: string;
   name: string;
+  category: string;
+  itemType: string;
   uom: string;
-  basePrice: any;
-  stocks: any[];
+  hsnSacCode?: string | null;
+  mrp: number;
+  sellingPrice: number;
+  basePrice: number;
+  reorderLevel: number;
+  minStock: number;
+  stocks: { quantity: number }[];
   isActive: boolean;
 }
 
@@ -36,8 +44,9 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
             <tr>
               <th className="px-6 py-4">Item Details</th>
               <th className="px-6 py-4">SKU</th>
-              <th className="px-6 py-4">Total Stock</th>
-              <th className="px-6 py-4">Price</th>
+              <th className="px-6 py-4">Stock</th>
+              <th className="px-6 py-4">Pricing</th>
+              <th className="px-6 py-4">GST</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
@@ -45,26 +54,60 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
           <tbody className="divide-y divide-border">
             {items.map((item) => {
               const totalStock = item.stocks.reduce((acc, s) => acc + Number(s.quantity), 0);
-              
+              const lowStock = isLowStock(item.itemType, totalStock, item.reorderLevel, item.minStock);
+              const displayPrice = Number(item.sellingPrice) || Number(item.basePrice);
+
               return (
                 <tr key={item.id} className="hover:bg-muted/30 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0">
                         <Package className="w-5 h-5" />
                       </div>
-                      <div>
-                        <div className="font-semibold text-foreground">{item.name}</div>
-                        <div className="text-[11px] text-muted-foreground uppercase">{item.uom}</div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-foreground truncate">{item.name}</div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <Badge variant="outline" className="text-[10px] font-normal">
+                            {getCategoryLabel(item.category)}
+                          </Badge>
+                          <span className="text-[11px] text-muted-foreground uppercase">{item.uom}</span>
+                          {lowStock && (
+                            <Badge variant="destructive" className="text-[10px] gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              Low Stock
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-xs">{item.sku}</td>
-                  <td className="px-6 py-4 font-medium">
-                    {totalStock} {item.uom}
+                  <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">{item.sku}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {item.itemType === "NON_STOCKABLE" ? (
+                      <span className="text-muted-foreground text-xs">N/A</span>
+                    ) : (
+                      <div>
+                        <div className="font-medium">
+                          {totalStock} {item.uom}
+                        </div>
+                        {(item.reorderLevel > 0 || item.minStock > 0) && (
+                          <div className="text-[10px] text-muted-foreground">
+                            Reorder: {item.reorderLevel} · Min: {item.minStock}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-6 py-4">
-                    ₹{Number(item.basePrice).toLocaleString()}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-medium">₹{displayPrice.toLocaleString()}</div>
+                    {Number(item.mrp) > 0 && (
+                      <div className="text-[10px] text-muted-foreground">
+                        MRP ₹{Number(item.mrp).toLocaleString()}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-xs font-mono">{item.hsnSacCode || "—"}</div>
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant={item.isActive ? "success" : "secondary"}>
@@ -85,7 +128,7 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
                         <DropdownMenuItem onClick={() => onViewHistory(item)}>
                           <History className="mr-2 h-4 w-4" /> History
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => onDelete(item.id)}
                           className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                         >

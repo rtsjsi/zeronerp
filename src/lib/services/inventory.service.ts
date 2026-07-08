@@ -2,10 +2,47 @@
  * Inventory Service (Cloudflare D1 / Drizzle)
  */
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { items, warehouses } from '@/db/schema';
 import { newId, now, withTimestamps } from '@/db/helpers';
+
+export class DuplicateSkuError extends Error {
+  constructor(sku: string) {
+    super(`SKU "${sku}" already exists`);
+    this.name = 'DuplicateSkuError';
+  }
+}
+
+export type ItemInput = {
+  sku: string;
+  name: string;
+  description?: string;
+  category?: string;
+  itemType?: string;
+  uom?: string;
+  hsnSacCode?: string;
+  cgstPercent?: number;
+  sgstPercent?: number;
+  igstPercent?: number;
+  reorderLevel?: number;
+  minStock?: number;
+  mrp?: number;
+  sellingPrice?: number;
+  purchasePrice?: number;
+  basePrice?: number;
+  isActive?: boolean;
+};
+
+function normalizeItemInput(data: ItemInput) {
+  return {
+    ...data,
+    sku: data.sku.trim(),
+    name: data.name.trim(),
+    description: data.description?.trim() || null,
+    hsnSacCode: data.hsnSacCode?.trim() || null,
+  };
+}
 
 export class InventoryService {
   static async getItems(storeId: string) {
@@ -31,23 +68,40 @@ export class InventoryService {
     });
   }
 
-  static async createItem(
-    storeId: string,
-    userId: string,
-    data: {
-      sku: string;
-      name: string;
-      description?: string;
-      uom?: string;
-      basePrice?: number;
-    },
-  ) {
+  private static async assertSkuAvailable(storeId: string, sku: string, excludeId?: string) {
+    const existing = await db().query.items.findFirst({
+      where: excludeId
+        ? and(eq(items.storeId, storeId), eq(items.sku, sku), ne(items.id, excludeId))
+        : and(eq(items.storeId, storeId), eq(items.sku, sku)),
+      columns: { id: true },
+    });
+    if (existing) {
+      throw new DuplicateSkuError(sku);
+    }
+  }
+
+  static async createItem(storeId: string, userId: string, data: ItemInput) {
+    const normalized = normalizeItemInput(data);
+    await this.assertSkuAvailable(storeId, normalized.sku);
+
     const [item] = await db()
       .insert(items)
       .values(
         withTimestamps({
           id: newId(),
-          ...data,
+          category: 'RAW_MATERIAL',
+          itemType: 'STOCKABLE',
+          cgstPercent: 0,
+          sgstPercent: 0,
+          igstPercent: 0,
+          reorderLevel: 0,
+          minStock: 0,
+          mrp: 0,
+          sellingPrice: 0,
+          purchasePrice: 0,
+          basePrice: 0,
+          isActive: true,
+          ...normalized,
           storeId,
           createdBy: userId,
         }),
@@ -57,9 +111,24 @@ export class InventoryService {
     return item;
   }
 
-  static async updateItem(storeId: string, _userId: string, id: string, updateData: Record<string, unknown>) {
+  static async updateItem(storeId: string, _userId: string, id: string, data: Partial<ItemInput>) {
     const oldItem = await this.getItemById(storeId, id);
     if (!oldItem) throw new Error('Item not found');
+
+    const updateData: Record<string, unknown> = { ...data };
+    if (data.sku !== undefined) {
+      updateData.sku = data.sku.trim();
+      if (updateData.sku !== oldItem.sku) {
+        await this.assertSkuAvailable(storeId, updateData.sku as string, id);
+      }
+    }
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.description !== undefined) {
+      updateData.description = data.description?.trim() || null;
+    }
+    if (data.hsnSacCode !== undefined) {
+      updateData.hsnSacCode = data.hsnSacCode?.trim() || null;
+    }
 
     const [newItem] = await db()
       .update(items)
@@ -134,14 +203,13 @@ export class InventoryService {
       .set({
         name: data.name,
         code: data.code,
-        // `location` is nullable in DB; treat empty/undefined as null
         location: data.location && data.location.trim().length > 0 ? data.location : null,
         updatedAt: now(),
       })
       .where(and(eq(warehouses.id, id), eq(warehouses.storeId, storeId), eq(warehouses.isDeleted, false)))
       .returning();
 
-    if (!warehouse) throw new Error("Warehouse not found");
+    if (!warehouse) throw new Error('Warehouse not found');
     return warehouse;
   }
 }

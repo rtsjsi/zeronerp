@@ -238,7 +238,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                   </div>
 
                   <div className="w-full md:w-24 space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quantity</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quantity (packs)</Label>
                     <Input 
                       type="number" 
                       step="0.001"

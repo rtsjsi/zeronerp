@@ -1,16 +1,8 @@
 export const dynamic = "force-dynamic";
 import { withAuth } from "@/lib/auth-middleware";
-import { InventoryService } from "@/lib/services/inventory.service";
+import { DuplicateSkuError, InventoryService } from "@/lib/services/inventory.service";
 import { apiSuccess, apiError } from "@/lib/api-response";
-import { z } from "zod";
-
-const itemSchema = z.object({
-  sku: z.string().min(2),
-  name: z.string().min(2),
-  description: z.string().optional(),
-  uom: z.string().optional(),
-  basePrice: z.number().optional(),
-});
+import { createItemSchema } from "@/lib/inventory/item-schema";
 
 export const GET = withAuth(async (_req, ctx) => {
   const items = await InventoryService.getItems(ctx.storeId);
@@ -20,7 +12,7 @@ export const GET = withAuth(async (_req, ctx) => {
 export const POST = withAuth(async (req, ctx) => {
   try {
     const body = await req.json();
-    const parsed = itemSchema.safeParse(body);
+    const parsed = createItemSchema.safeParse(body);
 
     if (!parsed.success) {
       const fieldErrors: Record<string, string[]> = {};
@@ -35,8 +27,10 @@ export const POST = withAuth(async (req, ctx) => {
     const item = await InventoryService.createItem(ctx.storeId, ctx.userId, parsed.data);
     return apiSuccess(item, "Item created", 201);
   } catch (err) {
+    if (err instanceof DuplicateSkuError) {
+      return apiError(err.message, 409);
+    }
     console.error("[Items API Error]", err);
     return apiError("Internal server error", 500);
   }
 });
-

@@ -8,6 +8,7 @@ import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ItemTable } from "@/components/inventory/item-table";
 import { CreateItemDialog } from "@/components/inventory/create-item-dialog";
+import { EditItemDialog } from "@/components/inventory/edit-item-dialog";
 import { WarehouseTable } from "@/components/inventory/warehouse-table";
 import { CreateWarehouseDialog } from "@/components/inventory/create-warehouse-dialog";
 import { EditWarehouseDialog } from "@/components/inventory/edit-warehouse-dialog";
@@ -19,15 +20,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
+import { Sparkles } from "lucide-react";
 
 export default function InventoryPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("items");
   const [isItemOpen, setIsItemOpen] = useState(false);
+  const [isEditItemOpen, setIsEditItemOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any | null>(null);
   const [isWarehouseOpen, setIsWarehouseOpen] = useState(false);
   const [isEditWarehouseOpen, setIsEditWarehouseOpen] = useState(false);
   const [editWarehouse, setEditWarehouse] = useState<any | null>(null);
   const [isMovementOpen, setIsMovementOpen] = useState(false);
+  const [isSeedingFgItems, setIsSeedingFgItems] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -76,6 +81,37 @@ export default function InventoryPage() {
     tx.reference?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const canSeedFgItems = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+
+  const handleSeedFgItems = async () => {
+    if (!canSeedFgItems) {
+      toast.error("Permission denied");
+      return;
+    }
+
+    if (!confirm("Seed FG pack-size items for oils? This will create missing items only.")) return;
+
+    setIsSeedingFgItems(true);
+    try {
+      const res = await apiFetch<{ created: number; skipped: number }>(
+        "/api/inventory/seed-fg-items",
+        { method: "POST" },
+      );
+      if (res.success && res.data) {
+        toast.success(
+          `FG items seeded. Created ${res.data.created}, skipped ${res.data.skipped}.`,
+        );
+        queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
+      } else {
+        toast.error(res.message || "Failed to seed FG pack items");
+      }
+    } catch (e) {
+      toast.error("Failed to seed FG pack items");
+    } finally {
+      setIsSeedingFgItems(false);
+    }
+  };
+
   const handleDeleteItem = async (id: string) => {
     if (!confirm("Are you sure?")) return;
     const res = await apiFetch(`/api/inventory/items/${id}`, { method: "DELETE" });
@@ -96,6 +132,16 @@ export default function InventoryPage() {
           <Button variant="outline" onClick={() => setIsMovementOpen(true)} className="gap-2 w-full sm:w-auto">
             <ArrowRightLeft className="w-4 h-4 shrink-0" /> Move Stock
           </Button>
+          {canSeedFgItems && (
+            <Button
+              variant="outline"
+              onClick={handleSeedFgItems}
+              className="gap-2 w-full sm:w-auto"
+              disabled={isSeedingFgItems}
+            >
+              <Sparkles className="w-4 h-4 shrink-0" /> {isSeedingFgItems ? "Seeding..." : "Seed FG Pack Items"}
+            </Button>
+          )}
           <Button onClick={() => setIsItemOpen(true)} className="gap-2 w-full sm:w-auto">
             <Plus className="w-4 h-4 shrink-0" /> Add Item
           </Button>
@@ -140,6 +186,10 @@ export default function InventoryPage() {
           ) : filteredItems && filteredItems.length > 0 ? (
             <ItemTable
               items={filteredItems}
+              onEdit={(item) => {
+                setEditItem(item);
+                setIsEditItemOpen(true);
+              }}
               onDelete={handleDeleteItem}
               onViewHistory={() => setActiveTab("history")}
             />
@@ -223,6 +273,16 @@ export default function InventoryPage() {
       <CreateItemDialog
         open={isItemOpen}
         onOpenChange={setIsItemOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["inventory-items"] })}
+      />
+
+      <EditItemDialog
+        open={isEditItemOpen}
+        onOpenChange={(open) => {
+          setIsEditItemOpen(open);
+          if (!open) setEditItem(null);
+        }}
+        item={editItem}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["inventory-items"] })}
       />
 

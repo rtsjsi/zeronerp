@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -10,24 +11,46 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 import { ItemFormFields } from "@/components/inventory/item-form-fields";
 import {
   defaultItemFormValues,
   itemFormSchema,
+  itemToFormValues,
   serializeItemPayload,
   type ItemFormValues,
 } from "@/lib/inventory/item-schema";
 
-interface CreateItemDialogProps {
+export interface ItemForDialog {
+  id: string;
+  sku: string;
+  name: string;
+  description?: string | null;
+  category: string;
+  itemType: string;
+  uom: string;
+  hsnSacCode?: string | null;
+  cgstPercent: number;
+  sgstPercent: number;
+  igstPercent: number;
+  reorderLevel: number;
+  minStock: number;
+  mrp: number;
+  sellingPrice: number;
+  purchasePrice: number;
+  basePrice: number;
+  isActive: boolean;
+}
+
+interface EditItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  item: ItemForDialog | null;
   onSuccess: () => void;
 }
 
-export function CreateItemDialog({ open, onOpenChange, onSuccess }: CreateItemDialogProps) {
+export function EditItemDialog({ open, onOpenChange, item, onSuccess }: EditItemDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ItemFormValues>({
@@ -35,21 +58,28 @@ export function CreateItemDialog({ open, onOpenChange, onSuccess }: CreateItemDi
     defaultValues: defaultItemFormValues,
   });
 
+  useEffect(() => {
+    if (!open || !item) return;
+    form.reset(itemToFormValues(item));
+  }, [open, item, form]);
+
   async function onSubmit(data: ItemFormValues) {
+    if (!item) return;
+
     setIsSubmitting(true);
     try {
-      const res = await apiFetch("/api/inventory/items", {
-        method: "POST",
+      const res = await apiFetch(`/api/inventory/items/${item.id}`, {
+        method: "PATCH",
         body: JSON.stringify(serializeItemPayload(data)),
       });
 
       if (res.success) {
-        toast.success("Item created successfully");
+        toast.success("Item updated successfully");
         onSuccess();
         onOpenChange(false);
         form.reset(defaultItemFormValues);
       } else {
-        toast.error(res.message || "Failed to create item");
+        toast.error(res.message || "Failed to update item");
       }
     } catch {
       toast.error("Something went wrong");
@@ -62,10 +92,8 @@ export function CreateItemDialog({ open, onOpenChange, onSuccess }: CreateItemDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Item</DialogTitle>
-          <DialogDescription>
-            Create a new item in your inventory master. Enter a meaningful SKU for easy identification.
-          </DialogDescription>
+          <DialogTitle>Edit Item</DialogTitle>
+          <DialogDescription>Update item master details for {item?.name ?? "this item"}.</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <ItemFormFields form={form} />
@@ -73,8 +101,8 @@ export function CreateItemDialog({ open, onOpenChange, onSuccess }: CreateItemDi
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Item"}
+            <Button type="submit" disabled={isSubmitting || !item}>
+              {isSubmitting ? "Updating..." : "Update Item"}
             </Button>
           </div>
         </form>

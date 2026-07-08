@@ -1,0 +1,11 @@
+ALTER TABLE `Item` ADD `category` text NOT NULL DEFAULT 'RAW_MATERIAL';
+ALTER TABLE `Item` ADD `itemType` text NOT NULL DEFAULT 'STOCKABLE';
+ALTER TABLE `Item` ADD `hsnSacCode` text;
+ALTER TABLE `Item` ADD `cgstPercent` real NOT NULL DEFAULT 0;
+ALTER TABLE `Item` ADD `sgstPercent` real NOT NULL DEFAULT 0;
+ALTER TABLE `Item` ADD `igstPercent` real NOT NULL DEFAULT 0;
+ALTER TABLE `Item` ADD `reorderLevel` real NOT NULL DEFAULT 0;
+ALTER TABLE `Item` ADD `minStock` real NOT NULL DEFAULT 0;
+ALTER TABLE `Item` ADD `mrp` real NOT NULL DEFAULT 0;
+ALTER TABLE `Item` ADD `sellingPrice` real NOT NULL DEFAULT 0;
+ALTER TABLE `Item` ADD `purchasePrice` real NOT NULL DEFAULT 0;

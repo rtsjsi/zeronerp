@@ -208,7 +208,7 @@ export function StockMovementDialog({ open, onOpenChange, onSuccess }: StockMove
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity</Label>
+                <Label htmlFor="quantity">Quantity (packs)</Label>
                 <Input type="number" step="0.001" {...form.register("quantity", { valueAsNumber: true })} />
               </div>
               <div className="space-y-2">

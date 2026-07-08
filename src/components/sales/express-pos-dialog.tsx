@@ -415,7 +415,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
             <div className="flex-1 flex flex-col min-h-[250px] border rounded-xl overflow-hidden bg-card/40 min-w-0">
               <div className="hidden sm:grid grid-cols-12 gap-2 p-3 bg-muted/50 border-b text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <div className="col-span-5">Product Description</div>
-                <div className="col-span-3 text-center">Quantity</div>
+                <div className="col-span-3 text-center">Quantity (packs)</div>
                 <div className="col-span-2 text-right">Price</div>
                 <div className="col-span-2 text-right">Total</div>
               </div>
@@ -438,7 +438,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
                       </div>
 
                       <div className="sm:col-span-3 flex items-center justify-between sm:justify-center gap-2">
-                        <span className="text-xs font-semibold uppercase text-muted-foreground sm:hidden">Qty</span>
+                        <span className="text-xs font-semibold uppercase text-muted-foreground sm:hidden">Packs</span>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
