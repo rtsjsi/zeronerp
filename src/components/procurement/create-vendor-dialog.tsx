@@ -94,7 +94,7 @@ export function CreateVendorDialog({ open, onOpenChange, onSuccess }: CreateVend
             <Input id="contactName" {...form.register("contactName")} placeholder="e.g. John Doe" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" {...form.register("email")} placeholder="john@acme.com" />

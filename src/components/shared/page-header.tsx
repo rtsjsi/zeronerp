@@ -57,14 +57,18 @@ export function PageHeader({
       )}
 
       {/* Title + Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-3 min-w-0">
+        <div className="min-w-0">
           <h1 className="text-xl md:text-2xl font-bold text-foreground">{title}</h1>
           {description && (
             <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
           )}
         </div>
-        {headerActions && <div className="flex items-center gap-2 shrink-0">{headerActions}</div>}
+        {headerActions && (
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full min-w-0">
+            {headerActions}
+          </div>
+        )}
       </div>
     </div>
   );

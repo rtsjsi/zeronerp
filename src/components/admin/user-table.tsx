@@ -27,7 +27,7 @@ interface UserTableProps {
 
 export function UserTable({ users, onToggleStatus, onDelete }: UserTableProps) {
   return (
-    <div className="rounded-xl border bg-card/50 backdrop-blur-sm overflow-hidden">
+    <div className="rounded-xl border bg-card/50 backdrop-blur-sm min-w-0 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-wider">

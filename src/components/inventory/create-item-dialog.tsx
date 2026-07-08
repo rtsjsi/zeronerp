@@ -81,7 +81,7 @@ export function CreateItemDialog({ open, onOpenChange, onSuccess }: CreateItemDi
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="sku">SKU / Code</Label>
               <Input id="sku" {...form.register("sku")} placeholder="e.g. ITEM-001" />

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Receipt, UserCircle, Search, Filter, ShoppingCart, Users, ShoppingBag, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
+import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CustomerTable } from "@/components/sales/customer-table";
 import { CreateCustomerDialog } from "@/components/sales/create-customer-dialog";
@@ -72,57 +73,69 @@ export default function SalesPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in min-w-0">
       <PageHeader
         title="Sales"
         description="Manage customers, sales orders, and invoices"
         breadcrumbs={[{ label: "Sales" }]}
       >
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsCustomerOpen(true)} className="gap-2">
-            <UserCircle className="w-4 h-4" /> Add Customer
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full">
+          <Button variant="outline" onClick={() => setIsCustomerOpen(true)} className="gap-2 w-full sm:w-auto">
+            <UserCircle className="w-4 h-4 shrink-0" />
+            <span>Add Customer</span>
           </Button>
-          <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2">
-            <ShoppingCart className="w-4 h-4" /> Create SO (Optional)
+          <Button variant="outline" onClick={() => setIsOrderOpen(true)} className="gap-2 w-full sm:w-auto">
+            <ShoppingCart className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden">Create SO</span>
+            <span className="hidden sm:inline">Create SO (Optional)</span>
           </Button>
-          <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} className="gap-2">
-            <Receipt className="w-4 h-4" /> Record B2B Invoice
+          <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} className="gap-2 w-full sm:w-auto">
+            <Receipt className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden">B2B Invoice</span>
+            <span className="hidden sm:inline">Record B2B Invoice</span>
           </Button>
-          <Button onClick={() => setIsPOSOpen(true)} className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md border-none">
-            <Sparkles className="w-4 h-4 text-yellow-300 fill-yellow-300" /> Express POS checkout
+          <Button
+            onClick={() => setIsPOSOpen(true)}
+            className="gap-2 w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md border-none"
+          >
+            <Sparkles className="w-4 h-4 shrink-0 text-yellow-300 fill-yellow-300" />
+            <span className="sm:hidden">Express POS</span>
+            <span className="hidden sm:inline">Express POS checkout</span>
           </Button>
         </div>
       </PageHeader>
 
-      <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card/30 p-4 rounded-xl border backdrop-blur-sm">
-          <TabsList className="bg-background/50">
-            <TabsTrigger value="invoices" className="gap-2">
-              <Receipt className="w-4 h-4" /> Sales Invoices
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="gap-2">
-              <ShoppingBag className="w-4 h-4" /> Orders
-            </TabsTrigger>
-            <TabsTrigger value="customers" className="gap-2">
-              <Users className="w-4 h-4" /> Customers
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder={`Search ${activeTab}...`}
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="icon" className="shrink-0">
-              <Filter className="w-4 h-4" />
-            </Button>
+      <Tabs value={activeTab} className="w-full min-w-0" onValueChange={setActiveTab}>
+        <TabToolbar
+          tabs={
+            <TabsList className="bg-background/50 w-max min-w-full sm:min-w-0">
+              <TabsTrigger value="invoices" className="gap-2 shrink-0">
+                <Receipt className="w-4 h-4 shrink-0" />
+                <span className="sm:hidden">Invoices</span>
+                <span className="hidden sm:inline">Sales Invoices</span>
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="gap-2 shrink-0">
+                <ShoppingBag className="w-4 h-4 shrink-0" /> Orders
+              </TabsTrigger>
+              <TabsTrigger value="customers" className="gap-2 shrink-0">
+                <Users className="w-4 h-4 shrink-0" /> Customers
+              </TabsTrigger>
+            </TabsList>
+          }
+        >
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder={`Search ${activeTab}...`}
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        </div>
+          <Button variant="outline" size="icon" className="shrink-0">
+            <Filter className="w-4 h-4" />
+          </Button>
+        </TabToolbar>
 
         <TabsContent value="invoices" className="mt-6">
           {isLoadingInvoices ? (

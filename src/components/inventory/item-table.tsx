@@ -29,7 +29,7 @@ interface ItemTableProps {
 
 export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableProps) {
   return (
-    <div className="rounded-xl border bg-card/50 backdrop-blur-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+    <div className="rounded-xl border bg-card/50 backdrop-blur-sm min-w-0 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-wider">

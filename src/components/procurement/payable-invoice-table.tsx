@@ -43,7 +43,7 @@ interface PayableInvoiceTableProps {
 
 export function PayableInvoiceTable({ invoices }: PayableInvoiceTableProps) {
   return (
-    <div className="rounded-xl border bg-card/50 backdrop-blur-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="rounded-xl border bg-card/50 backdrop-blur-sm min-w-0 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
