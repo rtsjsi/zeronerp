@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Factory,
   Users as UsersIcon,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -38,6 +39,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Inventory", href: "/inventory", icon: Package },
+  { label: "Production", href: "/production", icon: FlaskConical },
   { label: "Procurement", href: "/procurement", icon: ShoppingCart },
   { label: "Sales", href: "/sales", icon: Receipt },
   { label: "Finance", href: "/finance", icon: TrendingUp },

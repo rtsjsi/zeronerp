@@ -15,12 +15,14 @@ import {
   Moon,
   Sun,
   LogOut,
+  FlaskConical,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { Separator } from "@/components/ui/separator";
 
 const menuItems = [
+  { label: "Production", href: "/production", icon: FlaskConical, description: "Recipes & production" },
   { label: "Finance", href: "/finance", icon: TrendingUp, description: "Accounts & GST" },
   { label: "Reports", href: "/reports", icon: BarChart3, description: "Business analytics" },
   { label: "Settings", href: "/settings", icon: Settings, description: "Configuration" },

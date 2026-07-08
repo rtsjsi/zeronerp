@@ -216,9 +216,31 @@ export const salesInvoiceItems = sqliteTable('SalesInvoiceItem', {
   totalPrice: real('totalPrice').notNull(),
 });
 
+export const recipes = sqliteTable('Recipe', {
+  id: text('id').primaryKey(),
+  storeId: text('storeId').notNull().references(() => stores.id),
+  name: text('name').notNull(),
+  finishedItemId: text('finishedItemId').notNull().references(() => items.id),
+  outputQuantity: real('outputQuantity').notNull().default(1),
+  notes: text('notes'),
+  isActive: integer('isActive', { mode: 'boolean' }).notNull().default(true),
+  isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
+  createdBy: text('createdBy'),
+  ...timestamps,
+});
+
+export const recipeLines = sqliteTable('RecipeLine', {
+  id: text('id').primaryKey(),
+  storeId: text('storeId').notNull().references(() => stores.id),
+  recipeId: text('recipeId').notNull().references(() => recipes.id, { onDelete: 'cascade' }),
+  rawItemId: text('rawItemId').notNull().references(() => items.id),
+  quantity: real('quantity').notNull(),
+});
+
 export const productionBatches = sqliteTable('ProductionBatch', {
   id: text('id').primaryKey(),
   storeId: text('storeId').notNull().references(() => stores.id),
+  recipeId: text('recipeId').references(() => recipes.id),
   batchNumber: text('batchNumber').notNull(),
   status: text('status').notNull().default('DRAFT'),
   notes: text('notes'),
@@ -279,8 +301,19 @@ export const salesInvoiceItemsRelations = relations(salesInvoiceItems, ({ one })
   warehouse: one(warehouses, { fields: [salesInvoiceItems.warehouseId], references: [warehouses.id] }),
 }));
 
-export const productionBatchesRelations = relations(productionBatches, ({ many }) => ({
+export const productionBatchesRelations = relations(productionBatches, ({ one, many }) => ({
+  recipe: one(recipes, { fields: [productionBatches.recipeId], references: [recipes.id] }),
   materials: many(productionMaterials),
+}));
+
+export const recipesRelations = relations(recipes, ({ one, many }) => ({
+  finishedItem: one(items, { fields: [recipes.finishedItemId], references: [items.id] }),
+  lines: many(recipeLines),
+}));
+
+export const recipeLinesRelations = relations(recipeLines, ({ one }) => ({
+  recipe: one(recipes, { fields: [recipeLines.recipeId], references: [recipes.id] }),
+  rawItem: one(items, { fields: [recipeLines.rawItemId], references: [items.id] }),
 }));
 
 export const productionMaterialsRelations = relations(productionMaterials, ({ one }) => ({
@@ -308,6 +341,8 @@ export const schema = {
   salesInvoiceItems,
   productionBatches,
   productionMaterials,
+  recipes,
+  recipeLines,
 };
 
 export type DbSchema = typeof schema;
