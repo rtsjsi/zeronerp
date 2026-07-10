@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { normalizeUomCode, uomSchema } from './constants';
+import { normalizeUomCode, uomCodeSchema } from './constants';
 
 export const ITEM_CATEGORY_OPTIONS = [
   { value: 'RAW_MATERIAL', label: 'Raw Material' },
@@ -40,7 +40,7 @@ export const itemFormSchema = z.object({
   description: z.string().optional(),
   category: itemCategorySchema,
   itemType: itemTypeSchema,
-  uom: uomSchema,
+  uom: uomCodeSchema,
   hsnSacCode: optionalHsnSac,
   gstRate: percentField,
   reorderLevel: priceField,

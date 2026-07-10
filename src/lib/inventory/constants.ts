@@ -60,10 +60,13 @@ export function normalizeUomCode(code: string): (typeof UOM_OPTIONS)[number]['va
   return trimmed.toUpperCase() as (typeof UOM_OPTIONS)[number]['value'];
 }
 
-export const uomSchema = z.preprocess(
-  (val) => (typeof val === 'string' ? normalizeUomCode(val) : val),
-  z.enum(UOM_VALUES as [string, ...string[]]),
-);
+/** Valid stored UOM codes — use in forms, API validation, and typed outputs. */
+export const uomCodeSchema = z.enum(UOM_VALUES as [string, ...string[]]);
+
+export type UomCode = z.infer<typeof uomCodeSchema>;
+
+/** @deprecated Use uomCodeSchema — legacy normalization happens in InventoryService. */
+export const uomSchema = uomCodeSchema;
 
 export function getUomLabel(code: string): string {
   const normalized = normalizeUomCode(code);
