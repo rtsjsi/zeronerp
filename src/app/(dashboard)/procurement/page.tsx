@@ -29,6 +29,7 @@ export default function ProcurementPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "invoices",
   });
 
   const { data: vendors, isLoading: isLoadingVendors } = useQuery({
@@ -38,6 +39,7 @@ export default function ProcurementPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "vendors",
   });
 
   // Filters

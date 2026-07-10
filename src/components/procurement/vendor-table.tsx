@@ -26,6 +26,8 @@ interface Vendor {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  pan?: string | null;
+  gstn?: string | null;
 }
 
 interface VendorTableProps {
@@ -42,6 +44,7 @@ export function VendorTable({ vendors, onEdit, onDelete }: VendorTableProps) {
           <TableRow className="hover:bg-transparent">
             <TableHead className="min-w-[140px] max-w-[220px]">Vendor Name</TableHead>
             <TableHead>Contact Person</TableHead>
+            <TableHead>Tax IDs</TableHead>
             <TableHead>Contact Details</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -62,6 +65,13 @@ export function VendorTable({ vendors, onEdit, onDelete }: VendorTableProps) {
               </TableCell>
               <TableCell>{vendor.contactName || "-"}</TableCell>
               <TableCell>
+                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  {vendor.pan && <span>PAN: {vendor.pan}</span>}
+                  {vendor.gstn && <span>GSTN: {vendor.gstn}</span>}
+                  {!vendor.pan && !vendor.gstn && "-"}
+                </div>
+              </TableCell>
+              <TableCell>
                 <div className="flex flex-col gap-1">
                   {vendor.email && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -80,11 +90,9 @@ export function VendorTable({ vendors, onEdit, onDelete }: VendorTableProps) {
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
-                  <DropdownMenuTrigger render={
-                    <button className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                  } />
+                  <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Vendor Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -93,7 +101,7 @@ export function VendorTable({ vendors, onEdit, onDelete }: VendorTableProps) {
                         Edit Details
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(vendor.id)}>
+                    <DropdownMenuItem variant="destructive" onClick={() => onDelete?.(vendor.id)}>
                       Delete Vendor
                     </DropdownMenuItem>
                   </DropdownMenuContent>

@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
+import { optionalGstnSchema, optionalPanSchema } from "@/lib/partner-schema";
 
 const vendorSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -24,6 +25,8 @@ const vendorSchema = z.object({
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
+  pan: optionalPanSchema,
+  gstn: optionalGstnSchema,
 });
 
 type VendorFormValues = z.infer<typeof vendorSchema>;
@@ -45,6 +48,8 @@ export function CreateVendorDialog({ open, onOpenChange, onSuccess }: CreateVend
       email: "",
       phone: "",
       address: "",
+      pan: "",
+      gstn: "",
     },
   });
 
@@ -105,6 +110,35 @@ export function CreateVendorDialog({ open, onOpenChange, onSuccess }: CreateVend
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input id="phone" {...form.register("phone")} placeholder="+91 98765 43210" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="pan">PAN</Label>
+              <Input
+                id="pan"
+                {...form.register("pan")}
+                placeholder="ABCDE1234F"
+                maxLength={10}
+                className="uppercase"
+              />
+              {form.formState.errors.pan && (
+                <p className="text-[10px] text-destructive">{form.formState.errors.pan.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gstn">GSTN</Label>
+              <Input
+                id="gstn"
+                {...form.register("gstn")}
+                placeholder="22AAAAA0000A1Z5"
+                maxLength={15}
+                className="uppercase"
+              />
+              {form.formState.errors.gstn && (
+                <p className="text-[10px] text-destructive">{form.formState.errors.gstn.message}</p>
+              )}
             </div>
           </div>
 

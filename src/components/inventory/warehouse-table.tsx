@@ -59,11 +59,9 @@ export function WarehouseTable({ warehouses, onEdit, onDelete }: WarehouseTableP
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
-                  <DropdownMenuTrigger render={
-                    <button className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                  } />
+                  <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Warehouse Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -72,7 +70,7 @@ export function WarehouseTable({ warehouses, onEdit, onDelete }: WarehouseTableP
                         Edit Warehouse
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(warehouse.id)}>
+                    <DropdownMenuItem variant="destructive" onClick={() => onDelete?.(warehouse.id)}>
                       Delete Warehouse
                     </DropdownMenuItem>
                   </DropdownMenuContent>

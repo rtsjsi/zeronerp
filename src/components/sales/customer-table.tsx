@@ -26,6 +26,8 @@ interface Customer {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  pan?: string | null;
+  gstn?: string | null;
 }
 
 interface CustomerTableProps {
@@ -42,6 +44,7 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
           <TableRow className="hover:bg-transparent">
             <TableHead className="min-w-[140px] max-w-[220px]">Customer Name</TableHead>
             <TableHead>Contact Person</TableHead>
+            <TableHead>Tax IDs</TableHead>
             <TableHead>Contact Details</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -65,6 +68,13 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
               </TableCell>
               <TableCell>{customer.contactName || "-"}</TableCell>
               <TableCell>
+                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  {customer.pan && <span>PAN: {customer.pan}</span>}
+                  {customer.gstn && <span>GSTN: {customer.gstn}</span>}
+                  {!customer.pan && !customer.gstn && "-"}
+                </div>
+              </TableCell>
+              <TableCell>
                 <div className="flex flex-col gap-1">
                   {customer.email && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -83,11 +93,9 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
-                  <DropdownMenuTrigger render={
-                    <button className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                  } />
+                  <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Customer Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -96,7 +104,7 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
                         Edit Details
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(customer.id)}>
+                    <DropdownMenuItem variant="destructive" onClick={() => onDelete?.(customer.id)}>
                       Delete Customer
                     </DropdownMenuItem>
                   </DropdownMenuContent>

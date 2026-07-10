@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/auth-middleware";
 import { SalesService } from "@/lib/services/sales.service";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { z } from "zod";
+import { optionalGstnSchema, optionalPanSchema } from "@/lib/partner-schema";
 
 const customerSchema = z.object({
   name: z.string().min(2),
@@ -10,6 +11,8 @@ const customerSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
+  pan: optionalPanSchema,
+  gstn: optionalGstnSchema,
 });
 
 export const GET = withAuth(async (_req, ctx) => {

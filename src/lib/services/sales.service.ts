@@ -12,6 +12,7 @@ import {
   stocks,
 } from '@/db/schema';
 import { newId, now, toJson, withTimestamps } from '@/db/helpers';
+import { normalizePartnerTaxFields } from '@/lib/partner-schema';
 
 export class SalesService {
   static async getCustomers(storeId: string) {
@@ -30,15 +31,24 @@ export class SalesService {
       email?: string;
       phone?: string;
       address?: string;
+      pan?: string;
+      gstn?: string;
       customFields?: Record<string, unknown>;
     },
   ) {
+    const taxFields = normalizePartnerTaxFields(data);
+
     const [customer] = await db()
       .insert(customers)
       .values(
         withTimestamps({
           id: newId(),
-          ...data,
+          name: data.name.trim(),
+          contactName: data.contactName?.trim() || null,
+          email: data.email?.trim() || null,
+          phone: data.phone?.trim() || null,
+          address: data.address?.trim() || null,
+          ...taxFields,
           customFields: toJson(data.customFields),
           storeId,
           createdBy: userId,

@@ -117,6 +117,8 @@ export const vendors = sqliteTable(
     email: text('email'),
     phone: text('phone'),
     address: text('address'),
+    pan: text('pan'),
+    gstn: text('gstn'),
     customFields: text('customFields').notNull().default('{}'),
     isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
     createdBy: text('createdBy'),
@@ -135,6 +137,8 @@ export const customers = sqliteTable(
     email: text('email'),
     phone: text('phone'),
     address: text('address'),
+    pan: text('pan'),
+    gstn: text('gstn'),
     customFields: text('customFields').notNull().default('{}'),
     isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
     createdBy: text('createdBy'),
@@ -296,6 +300,7 @@ export const purchaseInvoicesRelations = relations(purchaseInvoices, ({ one, man
 }));
 
 export const purchaseInvoiceItemsRelations = relations(purchaseInvoiceItems, ({ one }) => ({
+  invoice: one(purchaseInvoices, { fields: [purchaseInvoiceItems.invoiceId], references: [purchaseInvoices.id] }),
   item: one(items, { fields: [purchaseInvoiceItems.itemId], references: [items.id] }),
   warehouse: one(warehouses, { fields: [purchaseInvoiceItems.warehouseId], references: [warehouses.id] }),
 }));
@@ -306,6 +311,7 @@ export const salesInvoicesRelations = relations(salesInvoices, ({ one, many }) =
 }));
 
 export const salesInvoiceItemsRelations = relations(salesInvoiceItems, ({ one }) => ({
+  invoice: one(salesInvoices, { fields: [salesInvoiceItems.invoiceId], references: [salesInvoices.id] }),
   item: one(items, { fields: [salesInvoiceItems.itemId], references: [items.id] }),
   warehouse: one(warehouses, { fields: [salesInvoiceItems.warehouseId], references: [warehouses.id] }),
 }));

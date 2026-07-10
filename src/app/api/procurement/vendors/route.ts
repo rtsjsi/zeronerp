@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/auth-middleware";
 import { ProcurementService } from "@/lib/services/procurement.service";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { z } from "zod";
+import { optionalGstnSchema, optionalPanSchema } from "@/lib/partner-schema";
 
 const vendorSchema = z.object({
   name: z.string().min(2),
@@ -10,6 +11,8 @@ const vendorSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
+  pan: optionalPanSchema,
+  gstn: optionalGstnSchema,
 });
 
 export const GET = withAuth(async (_req, ctx) => {

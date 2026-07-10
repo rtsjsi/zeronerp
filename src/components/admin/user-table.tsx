@@ -61,11 +61,9 @@ export function UserTable({ users, onToggleStatus, onDelete }: UserTableProps) {
                 </td>
                 <td className="px-6 py-4 text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={
-                      <button className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    } />
+                    <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
+                      <MoreVertical className="w-4 h-4" />
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem onClick={() => onToggleStatus(user.id, user.isActive)}>
                         {user.isActive ? (
