@@ -69,29 +69,12 @@ export default function ProductionPage() {
 
   return (
     <div className="space-y-6 animate-fade-in min-w-0">
-      <PageHeader
-        title="Production"
-        description="Define recipes and declare production to update stock"
-        breadcrumbs={[{ label: "Production" }]}
-      >
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full">
-          <Button
-            variant="outline"
-            onClick={() => setIsRecipeOpen(true)}
-            className="gap-2 w-full sm:w-auto"
-          >
-            <FlaskConical className="w-4 h-4 shrink-0" /> Add Recipe
-          </Button>
-          <Button onClick={() => setIsDeclareOpen(true)} className="gap-2 w-full sm:w-auto">
-            <Plus className="w-4 h-4 shrink-0" /> Declare Production
-          </Button>
-        </div>
-      </PageHeader>
+      <PageHeader breadcrumbs={[{ label: "Production" }]} />
 
       <Tabs value={activeTab} className="w-full min-w-0" onValueChange={setActiveTab}>
         <TabToolbar
           tabs={
-            <TabsList className="bg-background/50 w-max min-w-full sm:min-w-0">
+            <TabsList variant="line" className="w-max min-w-full sm:min-w-0">
               <TabsTrigger value="production" className="gap-2 shrink-0">
                 <Factory className="w-4 h-4 shrink-0" /> Production
               </TabsTrigger>
@@ -116,6 +99,11 @@ export default function ProductionPage() {
         </TabToolbar>
 
         <TabsContent value="production" className="mt-6">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => setIsDeclareOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4 shrink-0" /> Declare Production
+            </Button>
+          </div>
           {isLoadingBatches ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -138,6 +126,11 @@ export default function ProductionPage() {
         </TabsContent>
 
         <TabsContent value="recipes" className="mt-6">
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" onClick={() => setIsRecipeOpen(true)} className="gap-2">
+              <FlaskConical className="w-4 h-4 shrink-0" /> Add Recipe
+            </Button>
+          </div>
           {isLoadingRecipes ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

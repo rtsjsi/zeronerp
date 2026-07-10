@@ -13,7 +13,7 @@ interface Breadcrumb {
 }
 
 interface PageHeaderProps {
-  title: string;
+  title?: string;
   description?: string;
   breadcrumbs?: Breadcrumb[];
   actions?: React.ReactNode;
@@ -57,19 +57,23 @@ export function PageHeader({
       )}
 
       {/* Title + Actions */}
-      <div className="flex flex-col gap-3 min-w-0">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold text-foreground">{title}</h1>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+      {(title || headerActions) && (
+        <div className="flex flex-col gap-3 min-w-0">
+          {title && (
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-foreground">{title}</h1>
+              {description && (
+                <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+              )}
+            </div>
+          )}
+          {headerActions && (
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full min-w-0">
+              {headerActions}
+            </div>
           )}
         </div>
-        {headerActions && (
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full min-w-0">
-            {headerActions}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -54,28 +54,12 @@ export default function ProcurementPage() {
 
   return (
     <div className="space-y-6 animate-fade-in min-w-0">
-      <PageHeader
-        title="Procurement"
-        description="Manage suppliers and payable invoices"
-        breadcrumbs={[{ label: "Procurement" }]}
-      >
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full">
-          <Button variant="outline" onClick={() => setIsVendorOpen(true)} className="gap-2 w-full sm:w-auto">
-            <Users className="w-4 h-4 shrink-0" />
-            <span>Add Vendor</span>
-          </Button>
-          <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2 w-full sm:w-auto">
-            <Plus className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden">Record Invoice</span>
-            <span className="hidden sm:inline">Record Supplier Invoice</span>
-          </Button>
-        </div>
-      </PageHeader>
+      <PageHeader breadcrumbs={[{ label: "Procurement" }]} />
 
       <Tabs value={activeTab} className="w-full min-w-0" onValueChange={setActiveTab}>
         <TabToolbar
           tabs={
-            <TabsList className="bg-background/50 w-max min-w-full sm:min-w-0">
+            <TabsList variant="line" className="w-max min-w-full sm:min-w-0">
               <TabsTrigger value="invoices" className="gap-2 shrink-0">
                 <Receipt className="w-4 h-4 shrink-0" />
                 <span className="sm:hidden">Invoices</span>
@@ -102,6 +86,13 @@ export default function ProcurementPage() {
         </TabToolbar>
 
         <TabsContent value="invoices" className="mt-6">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden">Record Invoice</span>
+              <span className="hidden sm:inline">Record Supplier Invoice</span>
+            </Button>
+          </div>
           {isLoadingInvoices ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -124,6 +115,12 @@ export default function ProcurementPage() {
         </TabsContent>
 
         <TabsContent value="vendors" className="mt-6">
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" onClick={() => setIsVendorOpen(true)} className="gap-2">
+              <Users className="w-4 h-4 shrink-0" />
+              <span>Add Vendor</span>
+            </Button>
+          </div>
           {isLoadingVendors ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

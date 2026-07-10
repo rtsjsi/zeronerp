@@ -18,7 +18,7 @@ export function TabToolbar({ tabs, children, className }: TabToolbarProps) {
         className
       )}
     >
-      <div className="w-full min-w-0 overflow-x-auto -mx-1 px-1 scrollbar-thin">
+      <div className="w-full min-w-0 overflow-x-auto -mx-1 px-1 scrollbar-thin border-b border-border pb-1">
         {tabs}
       </div>
       <div className="flex items-center gap-2 w-full min-w-0">{children}</div>

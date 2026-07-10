@@ -19,11 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/auth-context";
-import { Sparkles } from "lucide-react";
 
 export default function InventoryPage() {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("items");
   const [isItemOpen, setIsItemOpen] = useState(false);
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
@@ -32,7 +29,6 @@ export default function InventoryPage() {
   const [isEditWarehouseOpen, setIsEditWarehouseOpen] = useState(false);
   const [editWarehouse, setEditWarehouse] = useState<any | null>(null);
   const [isMovementOpen, setIsMovementOpen] = useState(false);
-  const [isSeedingFgItems, setIsSeedingFgItems] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -78,37 +74,6 @@ export default function InventoryPage() {
     tx.reference?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const canSeedFgItems = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
-
-  const handleSeedFgItems = async () => {
-    if (!canSeedFgItems) {
-      toast.error("Permission denied");
-      return;
-    }
-
-    if (!confirm("Seed FG pack-size items for oils? This will create missing items only.")) return;
-
-    setIsSeedingFgItems(true);
-    try {
-      const res = await apiFetch<{ created: number; skipped: number }>(
-        "/api/inventory/seed-fg-items",
-        { method: "POST" },
-      );
-      if (res.success && res.data) {
-        toast.success(
-          `FG items seeded. Created ${res.data.created}, skipped ${res.data.skipped}.`,
-        );
-        queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
-      } else {
-        toast.error(res.message || "Failed to seed FG pack items");
-      }
-    } catch (e) {
-      toast.error("Failed to seed FG pack items");
-    } finally {
-      setIsSeedingFgItems(false);
-    }
-  };
-
   const handleDeleteItem = async (id: string) => {
     if (!confirm("Are you sure?")) return;
     const res = await apiFetch(`/api/inventory/items/${id}`, { method: "DELETE" });
@@ -120,35 +85,12 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6 animate-fade-in min-w-0">
-      <PageHeader
-        title="Inventory"
-        description="Manage items, warehouses, and stock levels"
-        breadcrumbs={[{ label: "Inventory" }]}
-      >
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full">
-          <Button variant="outline" onClick={() => setIsMovementOpen(true)} className="gap-2 w-full sm:w-auto">
-            <ArrowRightLeft className="w-4 h-4 shrink-0" /> Move Stock
-          </Button>
-          {canSeedFgItems && (
-            <Button
-              variant="outline"
-              onClick={handleSeedFgItems}
-              className="gap-2 w-full sm:w-auto"
-              disabled={isSeedingFgItems}
-            >
-              <Sparkles className="w-4 h-4 shrink-0" /> {isSeedingFgItems ? "Seeding..." : "Seed FG Pack Items"}
-            </Button>
-          )}
-          <Button onClick={() => setIsItemOpen(true)} className="gap-2 w-full sm:w-auto">
-            <Plus className="w-4 h-4 shrink-0" /> Add Item
-          </Button>
-        </div>
-      </PageHeader>
+      <PageHeader breadcrumbs={[{ label: "Inventory" }]} />
 
       <Tabs defaultValue="items" className="w-full min-w-0" onValueChange={setActiveTab}>
         <TabToolbar
           tabs={
-            <TabsList className="bg-background/50 w-max min-w-full sm:min-w-0">
+            <TabsList variant="line" className="w-max min-w-full sm:min-w-0">
               <TabsTrigger value="items" className="gap-2 shrink-0">
                 <Package className="w-4 h-4 shrink-0" /> Items
               </TabsTrigger>
@@ -176,6 +118,11 @@ export default function InventoryPage() {
         </TabToolbar>
 
         <TabsContent value="items" className="mt-6">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => setIsItemOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4 shrink-0" /> Add Item
+            </Button>
+          </div>
           {isLoadingItems ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -245,6 +192,11 @@ export default function InventoryPage() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" onClick={() => setIsMovementOpen(true)} className="gap-2">
+              <ArrowRightLeft className="w-4 h-4 shrink-0" /> Move Stock
+            </Button>
+          </div>
           {isLoadingTransactions ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

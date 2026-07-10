@@ -8,5 +8,75 @@
         "quantity": 2.2
       }
     ]
+  },
+  {
+    "finishedGoodName": "Mustard Oil",
+    "outputQuantity": 1,
+    "lines": [
+      {
+        "rawMaterialName": "Mustard Seeds - Rai (Raw, for crushing)",
+        "quantity": 2.5
+      }
+    ]
+  },
+  {
+    "finishedGoodName": "Castor Oil",
+    "outputQuantity": 1,
+    "lines": [
+      {
+        "rawMaterialName": "Castor Seeds - Diveli/Erandi (Raw, for crushing)",
+        "quantity": 2.0
+      }
+    ]
+  },
+  {
+    "finishedGoodName": "Sesame Oil (Til Oil)",
+    "outputQuantity": 1,
+    "lines": [
+      {
+        "rawMaterialName": "Sesame Seeds - Til, White (Raw, for crushing)",
+        "quantity": 2.0
+      }
+    ]
+  },
+  {
+    "finishedGoodName": "Black Sesame Oil",
+    "outputQuantity": 1,
+    "lines": [
+      {
+        "rawMaterialName": "Sesame Seeds - Black Til (Raw, for crushing)",
+        "quantity": 2.0
+      }
+    ]
+  },
+  {
+    "finishedGoodName": "Sunflower Oil",
+    "outputQuantity": 1,
+    "lines": [
+      {
+        "rawMaterialName": "Sunflower Seeds (Raw, for crushing)",
+        "quantity": 2.5
+      }
+    ]
+  },
+  {
+    "finishedGoodName": "Coconut Oil",
+    "outputQuantity": 1,
+    "lines": [
+      {
+        "rawMaterialName": "Copra - Dried Coconut Kernel (Raw, for crushing)",
+        "quantity": 1.5
+      }
+    ]
+  },
+  {
+    "finishedGoodName": "Almond Oil",
+    "outputQuantity": 1,
+    "lines": [
+      {
+        "rawMaterialName": "Almonds - Badam (Raw, for crushing)",
+        "quantity": 1.8
+      }
+    ]
   }
 ]

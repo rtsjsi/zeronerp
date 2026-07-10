@@ -1,7 +1,7 @@
 /**
  * Seed sample production recipes into D1 for all active stores.
  *
- * Requires FG and RM items to exist (run db:seed-fg-items and db:seed-rm-items first).
+ * Requires bulk FG and RM items to exist (run db:seed-fg-items and db:seed-rm-items first).
  *
  * Usage:
  *   npm run db:seed-sample-recipes
