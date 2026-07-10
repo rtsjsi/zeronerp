@@ -130,7 +130,7 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Recipe</DialogTitle>
           <DialogDescription>Update recipe for {fullRecipe?.name ?? "this recipe"}.</DialogDescription>
@@ -143,8 +143,8 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
               <Input id="edit-name" {...form.register("name")} />
             </div>
 
-            <div className="space-y-2 sm:col-span-2 sm:grid sm:grid-cols-3 sm:gap-4">
-              <div className="space-y-2">
+            <div className="space-y-2 sm:col-span-2 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3">
+              <div className="space-y-2 sm:col-span-8 min-w-0">
                 <Label htmlFor="edit-finishedItemId">Finished Good</Label>
                 <Controller
                   name="finishedItemId"
@@ -163,12 +163,12 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label>UOM</Label>
-                <UomField value={finishedGoodUom} />
+                <UomField value={finishedGoodUom} compact />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="edit-outputQuantity">Output Qty</Label>
                 <Input
                   id="edit-outputQuantity"
@@ -200,7 +200,7 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
 
               return (
               <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                <div className="sm:col-span-5 space-y-1">
+                <div className="sm:col-span-7 space-y-1 min-w-0">
                   <Controller
                     name={`lines.${index}.rawItemId`}
                     control={form.control}
@@ -217,9 +217,9 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                   />
                 </div>
                 <div className="sm:col-span-2 space-y-1">
-                  <UomField value={rawItemUom} />
+                  <UomField value={rawItemUom} compact />
                 </div>
-                <div className="sm:col-span-4 space-y-1">
+                <div className="sm:col-span-2 space-y-1">
                   <Input
                     type="number"
                     step="0.001"

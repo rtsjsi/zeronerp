@@ -1,10 +1,10 @@
 [
-  { "name": "Groundnut Oil (Peanut Oil) – સીંગતેલ" },
-  { "name": "Mustard Oil – રાયનું તેલ" },
-  { "name": "Castor Oil – દિવેલ" },
-  { "name": "Sesame Oil (Til Oil) – તલ તેલ" },
-  { "name": "Black Sesame Oil – કાળાતલનું તેલ" },
-  { "name": "Sunflower Oil – સુર્યમુખીનું તેલ" },
-  { "name": "Coconut Oil – કોપરેલ" },
-  { "name": "Almond Oil – બદામ તેલ" }
+  { "name": "Groundnut Oil (Peanut Oil)" },
+  { "name": "Mustard Oil" },
+  { "name": "Castor Oil" },
+  { "name": "Sesame Oil (Til Oil)" },
+  { "name": "Black Sesame Oil" },
+  { "name": "Sunflower Oil" },
+  { "name": "Coconut Oil" },
+  { "name": "Almond Oil" }
 ]
