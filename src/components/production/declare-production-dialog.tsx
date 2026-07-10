@@ -47,6 +47,7 @@ const declareSchema = z.object({
 });
 
 type DeclareFormValues = z.infer<typeof declareSchema>;
+type DeclareInputLine = z.infer<typeof inputLineSchema>;
 
 interface DeclareProductionDialogProps {
   open: boolean;
@@ -87,7 +88,7 @@ function buildInputsForOutput(
   quantity: number,
   recipes: any[],
   warehouseId: string,
-) {
+): DeclareInputLine[] {
   const recipe = getRecipeForFg(recipes, finishedItemId);
   if (!recipe || !quantity) return [];
 
@@ -344,7 +345,7 @@ export function DeclareProductionDialog({
   function syncOutputInputs(index: number) {
     const output = form.getValues(`outputs.${index}`);
     const existingByItem = new Map(
-      (output.inputs ?? []).map((input) => [input.itemId, input.warehouseId]),
+      (output.inputs ?? []).map((input: DeclareInputLine) => [input.itemId, input.warehouseId]),
     );
     const rmWarehouseId = output.inputs?.[0]?.warehouseId || defaultWarehouseId;
     const built = buildInputsForOutput(
@@ -353,7 +354,7 @@ export function DeclareProductionDialog({
       recipes,
       rmWarehouseId,
     );
-    const nextInputs = built.map((input) => ({
+    const nextInputs = built.map((input: DeclareInputLine) => ({
       ...input,
       warehouseId: existingByItem.get(input.itemId) ?? input.warehouseId,
     }));
