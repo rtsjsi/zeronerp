@@ -8,14 +8,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, MapPin, Box } from "lucide-react";
+import { MoreVertical, MapPin, Box, Edit2, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -60,18 +57,19 @@ export function WarehouseTable({ warehouses, onEdit, onDelete }: WarehouseTableP
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
-                    <MoreHorizontal className="w-4 h-4" />
+                    <MoreVertical className="w-4 h-4" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Warehouse Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                  <DropdownMenuContent align="end" className="w-40">
                     {onEdit && (
                       <DropdownMenuItem onClick={() => onEdit(warehouse)}>
-                        Edit Warehouse
+                        <Edit2 className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem variant="destructive" onClick={() => onDelete?.(warehouse.id)}>
-                      Delete Warehouse
+                    <DropdownMenuItem
+                      onClick={() => onDelete?.(warehouse.id)}
+                      className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
