@@ -3,7 +3,6 @@
 import { Controller, type UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { LovSelect } from "@/components/shared/lov-select";
 import { UOM_OPTIONS } from "@/lib/inventory/constants";
@@ -106,16 +105,6 @@ export function ItemFormFields({ form }: ItemFormFieldsProps) {
               )}
             />
           </div>
-        </div>
-
-        <div className="space-y-2 mt-4">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            {...register("description")}
-            placeholder="Brief details about the item..."
-            className="resize-none h-20"
-          />
         </div>
       </div>
 

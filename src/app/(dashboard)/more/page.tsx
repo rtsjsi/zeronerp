@@ -8,7 +8,6 @@
 
 import Link from "next/link";
 import {
-  TrendingUp,
   BarChart3,
   Settings,
   ChevronRight,
@@ -23,7 +22,6 @@ import { Separator } from "@/components/ui/separator";
 
 const menuItems = [
   { label: "Production", href: "/production", icon: FlaskConical, description: "Recipes & production" },
-  { label: "Finance", href: "/finance", icon: TrendingUp, description: "Accounts & GST" },
   { label: "Reports", href: "/reports", icon: BarChart3, description: "Business analytics" },
   { label: "Settings", href: "/settings", icon: Settings, description: "Configuration" },
 ];

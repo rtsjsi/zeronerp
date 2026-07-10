@@ -1,17 +1,11 @@
 "use client";
 
-import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Settings } from "lucide-react";
 
 export default function SettingsPage() {
   return (
-    <div className="animate-fade-in">
-      <PageHeader
-        title="Settings"
-        description="Tenant configuration, custom fields, roles, and permissions"
-        breadcrumbs={[{ label: "Settings" }]}
-      />
+    <div className="animate-fade-in min-w-0">
       <EmptyState
         icon={Settings}
         title="Settings"

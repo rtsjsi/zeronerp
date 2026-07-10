@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s | ZeronERP",
   },
   description:
-    "A radically simpler ERP platform with built-in AI — manage inventory, sales, procurement, and finance with ease.",
+    "A radically simpler ERP platform with built-in AI — manage inventory, sales, and procurement with ease.",
   keywords: ["ERP", "business management", "inventory", "GST", "invoicing", "AI"],
   authors: [{ name: "ZeronERP" }],
   manifest: "/manifest.json",

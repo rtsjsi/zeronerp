@@ -16,7 +16,6 @@ import {
   Package,
   ShoppingCart,
   Receipt,
-  TrendingUp,
   BarChart3,
   ChevronLeft,
   ChevronRight,
@@ -40,9 +39,8 @@ const mainNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Inventory", href: "/inventory", icon: Package },
   { label: "Production", href: "/production", icon: FlaskConical },
-  { label: "Procurement", href: "/procurement", icon: ShoppingCart },
+  { label: "Purchase", href: "/procurement", icon: ShoppingCart },
   { label: "Sales", href: "/sales", icon: Receipt },
-  { label: "Finance", href: "/finance", icon: TrendingUp },
   { label: "Reports", href: "/reports", icon: BarChart3 },
 ];
 

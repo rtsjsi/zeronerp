@@ -36,8 +36,8 @@ const now = new Date().toISOString();
 const insertStatements = RM_SEED_ITEMS.map((item) => {
   const id = randomUUID();
   const name = sqlEscape(item.name);
-  return `INSERT INTO Item (id, storeId, name, description, category, itemType, uom, hsnSacCode, gstRate, reorderLevel, minStock, cost, mrp, isActive, isDeleted, createdBy, createdAt, updatedAt)
-SELECT '${id}', s.id, '${name}', NULL, 'RAW_MATERIAL', 'STOCKABLE', 'kg', NULL, 0, 0, 0, 0, 0, 1, 0, NULL, '${now}', '${now}'
+  return `INSERT INTO Item (id, storeId, name, category, itemType, uom, hsnSacCode, gstRate, reorderLevel, minStock, cost, mrp, isActive, isDeleted, createdBy, createdAt, updatedAt)
+SELECT '${id}', s.id, '${name}', 'RAW_MATERIAL', 'STOCKABLE', 'kg', NULL, 0, 0, 0, 0, 0, 1, 0, NULL, '${now}', '${now}'
 FROM Stores s
 WHERE s.isDeleted = 0 AND s.isActive = 1
 AND NOT EXISTS (

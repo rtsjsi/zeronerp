@@ -37,7 +37,6 @@ const percentField = z.number().min(0).max(100, 'Must be between 0 and 100');
 
 export const itemFormSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters'),
-  description: z.string().optional(),
   category: itemCategorySchema,
   itemType: itemTypeSchema,
   uom: uomCodeSchema,
@@ -78,7 +77,6 @@ export function isLowStock(
 
 export const defaultItemFormValues: ItemFormValues = {
   name: '',
-  description: '',
   category: 'RAW_MATERIAL',
   itemType: 'STOCKABLE',
   uom: 'PCS',
@@ -93,7 +91,6 @@ export const defaultItemFormValues: ItemFormValues = {
 
 export function itemToFormValues(item: {
   name: string;
-  description?: string | null;
   category: string;
   itemType: string;
   uom: string;
@@ -107,7 +104,6 @@ export function itemToFormValues(item: {
 }): ItemFormValues {
   return {
     name: item.name,
-    description: item.description ?? '',
     category: item.category as ItemFormValues['category'],
     itemType: item.itemType as ItemFormValues['itemType'],
     uom: normalizeUomCode(item.uom),
@@ -124,7 +120,6 @@ export function itemToFormValues(item: {
 export function serializeItemPayload(data: ItemFormValues) {
   return {
     ...data,
-    description: data.description?.trim() || undefined,
     hsnSacCode: data.hsnSacCode?.trim() || undefined,
   };
 }

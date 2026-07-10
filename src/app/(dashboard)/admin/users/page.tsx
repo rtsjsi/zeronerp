@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Users, Shield, Search, Filter } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
+import { UserPlus, Users, Search, Filter } from "lucide-react";
+import { PageToolbar } from "@/components/shared/page-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { UserTable } from "@/components/admin/user-table";
 import { CreateUserDialog } from "@/components/admin/create-user-dialog";
@@ -65,40 +65,29 @@ export default function UserManagementPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <PageHeader
-        title="User Management"
-        description="Manage your organization's members directly."
-        breadcrumbs={[{ label: "Admin" }, { label: "Users" }]}
-      >
-        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-          <UserPlus className="w-4 h-4" /> Add Member
-        </Button>
-      </PageHeader>
-
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card/30 p-4 rounded-xl border backdrop-blur-sm">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Shield className="w-4 h-4 text-primary" />
-          <span>Showing {filteredUsers?.length || 0} members</span>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search members..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon" className="shrink-0">
-            <Filter className="w-4 h-4" />
+    <div className="animate-fade-in min-w-0">
+      <PageToolbar
+        actions={
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shrink-0">
+            <UserPlus className="w-4 h-4" /> Add Member
           </Button>
+        }
+      >
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search members..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-      </div>
+        <Button variant="outline" size="icon" className="shrink-0">
+          <Filter className="w-4 h-4" />
+        </Button>
+      </PageToolbar>
 
-      <div className="mt-6">
+      <div className="mt-3">
         {isLoading ? (
           <div className="grid place-items-center py-20">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

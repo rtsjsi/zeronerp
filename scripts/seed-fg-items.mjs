@@ -32,8 +32,8 @@ function sqlEscape(value) {
 function buildBulkInsert(item, now) {
   const id = randomUUID();
   const name = sqlEscape(item.name);
-  return `INSERT INTO Item (id, storeId, name, description, category, itemType, uom, hsnSacCode, gstRate, reorderLevel, minStock, cost, mrp, isActive, isDeleted, createdBy, createdAt, updatedAt)
-SELECT '${id}', s.id, '${name}', NULL, 'FINISHED_GOODS', 'STOCKABLE', 'LTR', NULL, 0, 0, 0, 0, 0, 1, 0, NULL, '${now}', '${now}'
+  return `INSERT INTO Item (id, storeId, name, category, itemType, uom, hsnSacCode, gstRate, reorderLevel, minStock, cost, mrp, isActive, isDeleted, createdBy, createdAt, updatedAt)
+SELECT '${id}', s.id, '${name}', 'FINISHED_GOODS', 'STOCKABLE', 'LTR', NULL, 0, 0, 0, 0, 0, 1, 0, NULL, '${now}', '${now}'
 FROM Stores s
 WHERE s.isDeleted = 0 AND s.isActive = 1
 AND NOT EXISTS (

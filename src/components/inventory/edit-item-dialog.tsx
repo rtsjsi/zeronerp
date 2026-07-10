@@ -25,7 +25,6 @@ import {
 export interface ItemForDialog {
   id: string;
   name: string;
-  description?: string | null;
   category: string;
   itemType: string;
   uom: string;

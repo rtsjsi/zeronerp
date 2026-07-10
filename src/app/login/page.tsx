@@ -38,7 +38,7 @@ export default function LoginPage() {
 
           <p className="text-lg text-white/70 leading-relaxed mb-8">
             A modern ERP platform with built-in AI that eliminates complexity.
-            Manage inventory, sales, procurement, and finance — all in one place.
+            Manage inventory, sales, and procurement — all in one place.
           </p>
 
           <div className="space-y-4">

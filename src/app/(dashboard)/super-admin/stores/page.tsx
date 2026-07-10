@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageToolbar } from "@/components/shared/page-toolbar";
 import { Button } from "@/components/ui/button";
 import { Plus, Store, Users, MapPin, Phone } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -47,18 +47,17 @@ export default function SuperAdminStoresPage() {
   };
 
   return (
-    <div className="flex-1 p-6 flex flex-col h-full overflow-hidden">
-      <PageHeader 
-        title="Manage Stores" 
-        description="Super Admin view to manage all tenants across ZeronERP."
-      >
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Store
-        </Button>
-      </PageHeader>
+    <div className="animate-fade-in min-w-0 flex flex-col h-full overflow-hidden">
+      <PageToolbar
+        actions={
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shrink-0">
+            <Plus className="w-4 h-4" />
+            Create Store
+          </Button>
+        }
+      />
 
-      <Card className="flex-1 mt-6 flex flex-col min-h-0">
+      <Card className="flex-1 mt-3 flex flex-col min-h-0">
         <CardContent className="p-0 flex-1 overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">

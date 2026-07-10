@@ -52,7 +52,6 @@ export const items = sqliteTable(
     id: text('id').primaryKey(),
     storeId: text('storeId').notNull().references(() => stores.id),
     name: text('name').notNull(),
-    description: text('description'),
     category: text('category').notNull().default('RAW_MATERIAL'),
     itemType: text('itemType').notNull().default('STOCKABLE'),
     uom: text('uom').notNull().default('PCS'),

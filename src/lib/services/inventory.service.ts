@@ -10,7 +10,6 @@ import { normalizeUomCode } from '@/lib/inventory/constants';
 
 export type ItemInput = {
   name: string;
-  description?: string;
   category?: string;
   itemType?: string;
   uom?: string;
@@ -27,7 +26,6 @@ function normalizeItemInput(data: ItemInput) {
   return {
     ...data,
     name: data.name.trim(),
-    description: data.description?.trim() || null,
     hsnSacCode: data.hsnSacCode?.trim() || null,
     ...(data.uom !== undefined ? { uom: normalizeUomCode(data.uom) } : {}),
   };
@@ -89,9 +87,6 @@ export class InventoryService {
 
     const updateData: Record<string, unknown> = { ...data };
     if (data.name !== undefined) updateData.name = data.name.trim();
-    if (data.description !== undefined) {
-      updateData.description = data.description?.trim() || null;
-    }
     if (data.hsnSacCode !== undefined) {
       updateData.hsnSacCode = data.hsnSacCode?.trim() || null;
     }
