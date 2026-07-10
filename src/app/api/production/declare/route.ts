@@ -5,18 +5,24 @@ import { ProductionService } from "@/lib/services/production.service";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { z } from "zod";
 
-const materialSchema = z.object({
+const inputLineSchema = z.object({
   itemId: z.string().min(1),
-  warehouseId: z.string().min(1),
-  type: z.enum(["INPUT", "OUTPUT"]),
   quantity: z.number().positive("Quantity must be greater than zero"),
+});
+
+const outputLineSchema = z.object({
+  recipeId: z.string().min(1),
+  quantity: z.number().positive("Quantity must be greater than zero"),
+  inputs: z.array(inputLineSchema).min(1, "Each finished good needs raw materials"),
 });
 
 const declareSchema = z.object({
   recipeId: z.string().optional(),
   batchNumber: z.string().trim().min(1),
   notes: z.string().optional(),
-  materials: z.array(materialSchema).min(2, "Output and raw materials are required"),
+  outputWarehouseId: z.string().min(1),
+  inputWarehouseId: z.string().min(1),
+  outputs: z.array(outputLineSchema).min(1, "Add at least one finished good line"),
 });
 
 export const POST = withAuth(async (req, ctx) => {

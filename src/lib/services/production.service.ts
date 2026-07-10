@@ -7,17 +7,23 @@ import { db } from '@/lib/db';
 import {
   productionBatches,
   productionMaterials,
+  productionOutputs,
+  recipes,
   stocks,
 } from '@/db/schema';
 import { newId, now, withTimestamps } from '@/db/helpers';
 import { StockService } from './stock.service';
 
-export interface ProductionMaterialInput {
+export type ProductionInputLine = {
   itemId: string;
-  warehouseId: string;
-  type: 'INPUT' | 'OUTPUT';
   quantity: number;
-}
+};
+
+export type ProductionOutputLine = {
+  recipeId: string;
+  quantity: number;
+  inputs: ProductionInputLine[];
+};
 
 export class ProductionService {
   static async getBatches(storeId: string) {
@@ -25,8 +31,17 @@ export class ProductionService {
       where: and(eq(productionBatches.storeId, storeId), eq(productionBatches.isDeleted, false)),
       with: {
         recipe: { with: { finishedItem: true } },
+        outputs: {
+          with: {
+            recipe: { with: { finishedItem: true } },
+            item: true,
+            materials: {
+              with: { item: true, warehouse: true },
+            },
+          },
+        },
         materials: {
-          with: { item: true, warehouse: true },
+          with: { item: true, warehouse: true, outputLine: true },
         },
       },
       orderBy: desc(productionBatches.createdAt),
@@ -40,28 +55,49 @@ export class ProductionService {
       recipeId?: string;
       batchNumber: string;
       notes?: string;
-      materials: ProductionMaterialInput[];
+      outputWarehouseId: string;
+      inputWarehouseId: string;
+      outputs: ProductionOutputLine[];
     },
   ) {
     const database = db();
 
-    if (!data.materials.length) {
-      throw new Error('At least one material line is required');
+    if (!data.outputs.length) {
+      throw new Error('At least one finished good line is required');
     }
 
-    const outputs = data.materials.filter((m) => m.type === 'OUTPUT');
-    const inputs = data.materials.filter((m) => m.type === 'INPUT');
-
-    if (!outputs.length) throw new Error('At least one finished good output is required');
-    if (!inputs.length) throw new Error('At least one raw material input is required');
-
-    for (const material of data.materials) {
-      if (material.quantity <= 0) {
-        throw new Error('All quantities must be greater than zero');
+    for (const output of data.outputs) {
+      if (output.quantity <= 0) {
+        throw new Error('All output quantities must be greater than zero');
+      }
+      if (!output.inputs.length) {
+        throw new Error('Each finished good line needs at least one raw material');
+      }
+      for (const input of output.inputs) {
+        if (input.quantity <= 0) {
+          throw new Error('All raw material quantities must be greater than zero');
+        }
       }
     }
 
-    for (const input of inputs) {
+    const aggregatedInputs = new Map<string, { itemId: string; warehouseId: string; quantity: number }>();
+    for (const output of data.outputs) {
+      for (const input of output.inputs) {
+        const key = `${input.itemId}:${data.inputWarehouseId}`;
+        const existing = aggregatedInputs.get(key);
+        if (existing) {
+          existing.quantity += input.quantity;
+        } else {
+          aggregatedInputs.set(key, {
+            itemId: input.itemId,
+            warehouseId: data.inputWarehouseId,
+            quantity: input.quantity,
+          });
+        }
+      }
+    }
+
+    for (const input of aggregatedInputs.values()) {
       const stock = await database.query.stocks.findFirst({
         where: and(eq(stocks.itemId, input.itemId), eq(stocks.warehouseId, input.warehouseId)),
       });
@@ -93,36 +129,77 @@ export class ProductionService {
       )
       .returning();
 
-    await database.insert(productionMaterials).values(
-      data.materials.map((material) => ({
+    const reference = `Production ${data.batchNumber.trim()}`;
+    const materialRows: Array<typeof productionMaterials.$inferInsert> = [];
+
+    for (const output of data.outputs) {
+      const recipe = await database.query.recipes.findFirst({
+        where: and(eq(recipes.id, output.recipeId), eq(recipes.storeId, storeId)),
+      });
+      if (!recipe) throw new Error('Selected recipe not found');
+
+      const outputLineId = newId();
+
+      await database.insert(productionOutputs).values({
+        id: outputLineId,
+        storeId,
+        batchId,
+        recipeId: output.recipeId,
+        itemId: recipe.finishedItemId,
+        warehouseId: data.outputWarehouseId,
+        quantity: output.quantity,
+        createdAt: ts,
+      });
+
+      materialRows.push({
         id: newId(),
         storeId,
         batchId,
-        itemId: material.itemId,
-        warehouseId: material.warehouseId,
-        type: material.type,
-        quantity: material.quantity,
+        outputLineId,
+        itemId: recipe.finishedItemId,
+        warehouseId: data.outputWarehouseId,
+        type: 'OUTPUT',
+        quantity: output.quantity,
         createdAt: ts,
-      })),
-    );
+      });
 
-    const reference = `Production ${data.batchNumber.trim()}`;
+      for (const input of output.inputs) {
+        materialRows.push({
+          id: newId(),
+          storeId,
+          batchId,
+          outputLineId,
+          itemId: input.itemId,
+          warehouseId: data.inputWarehouseId,
+          type: 'INPUT',
+          quantity: input.quantity,
+          createdAt: ts,
+        });
+      }
+    }
 
-    for (const material of inputs) {
+    await database.insert(productionMaterials).values(materialRows);
+
+    for (const input of aggregatedInputs.values()) {
       await StockService.adjustStock(storeId, userId, {
-        itemId: material.itemId,
-        warehouseId: material.warehouseId,
-        quantity: -material.quantity,
+        itemId: input.itemId,
+        warehouseId: input.warehouseId,
+        quantity: -input.quantity,
         type: 'OUT',
         reference,
       });
     }
 
-    for (const material of outputs) {
+    for (const output of data.outputs) {
+      const recipe = await database.query.recipes.findFirst({
+        where: eq(recipes.id, output.recipeId),
+      });
+      if (!recipe) continue;
+
       await StockService.adjustStock(storeId, userId, {
-        itemId: material.itemId,
-        warehouseId: material.warehouseId,
-        quantity: material.quantity,
+        itemId: recipe.finishedItemId,
+        warehouseId: data.outputWarehouseId,
+        quantity: output.quantity,
         type: 'IN',
         reference,
       });
@@ -133,7 +210,14 @@ export class ProductionService {
         where: eq(productionBatches.id, batchId),
         with: {
           recipe: { with: { finishedItem: true } },
-          materials: { with: { item: true, warehouse: true } },
+          outputs: {
+            with: {
+              recipe: { with: { finishedItem: true } },
+              item: true,
+              materials: { with: { item: true, warehouse: true } },
+            },
+          },
+          materials: { with: { item: true, warehouse: true, outputLine: true } },
         },
       })) ?? batch
     );

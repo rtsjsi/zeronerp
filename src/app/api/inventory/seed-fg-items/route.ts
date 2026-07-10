@@ -35,7 +35,7 @@ export const POST = withAuth(async (_req, ctx) => {
         name: item.name,
         category: "FINISHED_GOODS",
         itemType: "STOCKABLE",
-        uom: "nos",
+        uom: "NOS",
         mrp: item.mrp,
       });
 
@@ -53,7 +53,7 @@ export const POST = withAuth(async (_req, ctx) => {
         name: item.name,
         category: "FINISHED_GOODS",
         itemType: "STOCKABLE",
-        uom: "l",
+        uom: "LTR",
       });
 
       existingNames.add(item.name);

@@ -55,7 +55,7 @@ export const items = sqliteTable(
     description: text('description'),
     category: text('category').notNull().default('RAW_MATERIAL'),
     itemType: text('itemType').notNull().default('STOCKABLE'),
-    uom: text('uom').notNull().default('pcs'),
+    uom: text('uom').notNull().default('PCS'),
     hsnSacCode: text('hsnSacCode'),
     gstRate: real('gstRate').notNull().default(0),
     reorderLevel: real('reorderLevel').notNull().default(0),
@@ -250,10 +250,22 @@ export const productionBatches = sqliteTable('ProductionBatch', {
   ...timestamps,
 });
 
+export const productionOutputs = sqliteTable('ProductionOutput', {
+  id: text('id').primaryKey(),
+  storeId: text('storeId').notNull().references(() => stores.id),
+  batchId: text('batchId').notNull().references(() => productionBatches.id, { onDelete: 'cascade' }),
+  recipeId: text('recipeId').references(() => recipes.id),
+  itemId: text('itemId').notNull().references(() => items.id),
+  warehouseId: text('warehouseId').notNull().references(() => warehouses.id),
+  quantity: real('quantity').notNull(),
+  createdAt: text('createdAt').notNull(),
+});
+
 export const productionMaterials = sqliteTable('ProductionMaterial', {
   id: text('id').primaryKey(),
   storeId: text('storeId').notNull().references(() => stores.id),
   batchId: text('batchId').notNull().references(() => productionBatches.id, { onDelete: 'cascade' }),
+  outputLineId: text('outputLineId').references(() => productionOutputs.id, { onDelete: 'cascade' }),
   itemId: text('itemId').notNull().references(() => items.id),
   warehouseId: text('warehouseId').notNull().references(() => warehouses.id),
   type: text('type').notNull(),
@@ -302,6 +314,15 @@ export const salesInvoiceItemsRelations = relations(salesInvoiceItems, ({ one })
 
 export const productionBatchesRelations = relations(productionBatches, ({ one, many }) => ({
   recipe: one(recipes, { fields: [productionBatches.recipeId], references: [recipes.id] }),
+  outputs: many(productionOutputs),
+  materials: many(productionMaterials),
+}));
+
+export const productionOutputsRelations = relations(productionOutputs, ({ one, many }) => ({
+  batch: one(productionBatches, { fields: [productionOutputs.batchId], references: [productionBatches.id] }),
+  recipe: one(recipes, { fields: [productionOutputs.recipeId], references: [recipes.id] }),
+  item: one(items, { fields: [productionOutputs.itemId], references: [items.id] }),
+  warehouse: one(warehouses, { fields: [productionOutputs.warehouseId], references: [warehouses.id] }),
   materials: many(productionMaterials),
 }));
 
@@ -318,6 +339,10 @@ export const recipeLinesRelations = relations(recipeLines, ({ one }) => ({
 export const productionMaterialsRelations = relations(productionMaterials, ({ one }) => ({
   item: one(items, { fields: [productionMaterials.itemId], references: [items.id] }),
   warehouse: one(warehouses, { fields: [productionMaterials.warehouseId], references: [warehouses.id] }),
+  outputLine: one(productionOutputs, {
+    fields: [productionMaterials.outputLineId],
+    references: [productionOutputs.id],
+  }),
 }));
 
 export const inventoryTransactionsRelations = relations(inventoryTransactions, ({ one }) => ({
@@ -339,6 +364,7 @@ export const schema = {
   salesInvoices,
   salesInvoiceItems,
   productionBatches,
+  productionOutputs,
   productionMaterials,
   recipes,
   recipeLines,

@@ -1,0 +1,20 @@
+-- Normalize Item.uom to 3-character uppercase codes.
+UPDATE `Item` SET `uom` = 'PCS' WHERE lower(`uom`) = 'pcs';
+UPDATE `Item` SET `uom` = 'NOS' WHERE lower(`uom`) = 'nos';
+UPDATE `Item` SET `uom` = 'KGM' WHERE lower(`uom`) = 'kg';
+UPDATE `Item` SET `uom` = 'GRM' WHERE lower(`uom`) = 'g';
+UPDATE `Item` SET `uom` = 'LTR' WHERE lower(`uom`) = 'l';
+UPDATE `Item` SET `uom` = 'MLT' WHERE lower(`uom`) = 'ml';
+UPDATE `Item` SET `uom` = 'MTR' WHERE lower(`uom`) = 'm';
+UPDATE `Item` SET `uom` = 'CMT' WHERE lower(`uom`) = 'cm';
+UPDATE `Item` SET `uom` = 'SQM' WHERE lower(`uom`) = 'sqm';
+UPDATE `Item` SET `uom` = 'SQF' WHERE lower(`uom`) = 'sqft';
+UPDATE `Item` SET `uom` = 'BOX' WHERE lower(`uom`) = 'box';
+UPDATE `Item` SET `uom` = 'PKT' WHERE lower(`uom`) = 'pkt';
+UPDATE `Item` SET `uom` = 'BAG' WHERE lower(`uom`) = 'bag';
+UPDATE `Item` SET `uom` = 'SET' WHERE lower(`uom`) = 'set';
+UPDATE `Item` SET `uom` = 'PRS' WHERE lower(`uom`) = 'pair';
+UPDATE `Item` SET `uom` = 'DZN' WHERE lower(`uom`) = 'dozen';
+UPDATE `Item` SET `uom` = 'TNE' WHERE lower(`uom`) = 'tonne';
+UPDATE `Item` SET `uom` = 'ROL' WHERE lower(`uom`) = 'roll';
+UPDATE `Item` SET `uom` = 'SHT' WHERE lower(`uom`) = 'sheet';

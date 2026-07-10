@@ -34,7 +34,7 @@ export const POST = withAuth(async (_req, ctx) => {
         name: item.name,
         category: "RAW_MATERIAL",
         itemType: "STOCKABLE",
-        uom: "kg",
+        uom: "KGM",
       });
 
       existingNames.add(item.name);

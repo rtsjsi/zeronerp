@@ -18,6 +18,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 import { ItemSelect } from "@/components/shared/item-select";
+import { UomField } from "@/components/shared/uom-field";
 
 const recipeSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters"),
@@ -60,7 +61,7 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
   const finishedItemId = form.watch("finishedItemId");
   const lineValues = form.watch("lines");
   const finishedGoodUom =
-    finishedGoods.find((item) => item.id === finishedItemId)?.uom ?? "—";
+    finishedGoods.find((item) => item.id === finishedItemId)?.uom ?? null;
 
   useEffect(() => {
     if (!open) return;
@@ -151,7 +152,7 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
 
               <div className="space-y-2">
                 <Label>UOM</Label>
-                <Input value={finishedGoodUom} readOnly disabled className="bg-muted/50" />
+                <UomField value={finishedGoodUom} />
               </div>
 
               <div className="space-y-2">
@@ -187,7 +188,7 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
 
             {fields.map((field, index) => {
               const rawItemUom =
-                rawMaterials.find((item) => item.id === lineValues?.[index]?.rawItemId)?.uom ?? "—";
+                rawMaterials.find((item) => item.id === lineValues?.[index]?.rawItemId)?.uom ?? null;
 
               return (
               <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
@@ -208,7 +209,7 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
                   />
                 </div>
                 <div className="sm:col-span-2 space-y-1">
-                  <Input value={rawItemUom} readOnly disabled className="bg-muted/50" />
+                  <UomField value={rawItemUom} />
                 </div>
                 <div className="sm:col-span-4 space-y-1">
                   <Input

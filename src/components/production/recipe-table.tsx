@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Edit2, Trash2, FlaskConical } from "lucide-react";
+import { formatUom } from "@/lib/inventory/constants";
 
 export interface RecipeRow {
   id: string;
@@ -54,7 +55,7 @@ export function RecipeTable({ recipes, onEdit, onDelete }: RecipeTableProps) {
                 </td>
                 <td className="px-6 py-4">{recipe.finishedItem?.name ?? "—"}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {recipe.outputQuantity} {recipe.finishedItem?.uom ?? "—"}
+                  {recipe.outputQuantity} {formatUom(recipe.finishedItem?.uom)}
                 </td>
                 <td className="px-6 py-4">
                   <div className="space-y-1">
@@ -69,7 +70,7 @@ export function RecipeTable({ recipes, onEdit, onDelete }: RecipeTableProps) {
                   <div className="space-y-1">
                     {recipe.lines?.map((line, idx) => (
                       <div key={idx} className="text-xs text-muted-foreground whitespace-nowrap">
-                        {line.quantity} {line.rawItem?.uom ?? "—"}
+                        {line.quantity} {formatUom(line.rawItem?.uom)}
                       </div>
                     ))}
                   </div>

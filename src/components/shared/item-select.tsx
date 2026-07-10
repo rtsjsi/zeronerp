@@ -21,8 +21,10 @@ interface ItemSelectProps {
   id?: string;
 }
 
+import { formatUom } from "@/lib/inventory/constants";
+
 function formatItemLabel(item: ItemOption, showUom: boolean) {
-  if (showUom && item.uom) return `${item.name} (${item.uom})`;
+  if (showUom && item.uom) return `${item.name} (${formatUom(item.uom)})`;
   return item.name;
 }
 

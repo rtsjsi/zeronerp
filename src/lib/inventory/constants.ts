@@ -1,31 +1,77 @@
 import { z } from 'zod';
 
+/** Stored in DB as exactly 3 uppercase characters. */
 export const UOM_OPTIONS = [
-  { value: 'pcs', label: 'Pieces (pcs)' },
-  { value: 'nos', label: 'Numbers (nos)' },
-  { value: 'kg', label: 'Kilogram (kg)' },
-  { value: 'g', label: 'Gram (g)' },
-  { value: 'l', label: 'Litre (l)' },
-  { value: 'ml', label: 'Millilitre (ml)' },
-  { value: 'm', label: 'Metre (m)' },
-  { value: 'cm', label: 'Centimetre (cm)' },
-  { value: 'sqm', label: 'Square Metre (sqm)' },
-  { value: 'sqft', label: 'Square Feet (sqft)' },
-  { value: 'box', label: 'Box' },
-  { value: 'pkt', label: 'Packet (pkt)' },
-  { value: 'bag', label: 'Bag' },
-  { value: 'set', label: 'Set' },
-  { value: 'pair', label: 'Pair' },
-  { value: 'dozen', label: 'Dozen' },
-  { value: 'tonne', label: 'Tonne' },
-  { value: 'roll', label: 'Roll' },
-  { value: 'sheet', label: 'Sheet' },
+  { value: 'PCS', label: 'Pieces (PCS)' },
+  { value: 'NOS', label: 'Numbers (NOS)' },
+  { value: 'KGM', label: 'Kilogram (KGM)' },
+  { value: 'GRM', label: 'Gram (GRM)' },
+  { value: 'LTR', label: 'Litre (LTR)' },
+  { value: 'MLT', label: 'Millilitre (MLT)' },
+  { value: 'MTR', label: 'Metre (MTR)' },
+  { value: 'CMT', label: 'Centimetre (CMT)' },
+  { value: 'SQM', label: 'Square Metre (SQM)' },
+  { value: 'SQF', label: 'Square Feet (SQF)' },
+  { value: 'BOX', label: 'Box (BOX)' },
+  { value: 'PKT', label: 'Packet (PKT)' },
+  { value: 'BAG', label: 'Bag (BAG)' },
+  { value: 'SET', label: 'Set (SET)' },
+  { value: 'PRS', label: 'Pair (PRS)' },
+  { value: 'DZN', label: 'Dozen (DZN)' },
+  { value: 'TNE', label: 'Tonne (TNE)' },
+  { value: 'ROL', label: 'Roll (ROL)' },
+  { value: 'SHT', label: 'Sheet (SHT)' },
 ] as const;
 
 export const UOM_VALUES = UOM_OPTIONS.map((o) => o.value);
 
-export const uomSchema = z.enum(UOM_VALUES as [string, ...string[]]);
+/** Maps legacy lowercase / variable-length codes to 3-char caps values. */
+export const LEGACY_UOM_MAP: Record<string, (typeof UOM_OPTIONS)[number]['value']> = {
+  pcs: 'PCS',
+  nos: 'NOS',
+  kg: 'KGM',
+  g: 'GRM',
+  l: 'LTR',
+  ml: 'MLT',
+  m: 'MTR',
+  cm: 'CMT',
+  sqm: 'SQM',
+  sqft: 'SQF',
+  box: 'BOX',
+  pkt: 'PKT',
+  bag: 'BAG',
+  set: 'SET',
+  pair: 'PRS',
+  dozen: 'DZN',
+  tonne: 'TNE',
+  roll: 'ROL',
+  sheet: 'SHT',
+};
+
+export function normalizeUomCode(code: string): (typeof UOM_OPTIONS)[number]['value'] {
+  const trimmed = code.trim();
+  if ((UOM_VALUES as readonly string[]).includes(trimmed)) {
+    return trimmed as (typeof UOM_OPTIONS)[number]['value'];
+  }
+
+  const legacy = LEGACY_UOM_MAP[trimmed.toLowerCase()];
+  if (legacy) return legacy;
+
+  return trimmed.toUpperCase() as (typeof UOM_OPTIONS)[number]['value'];
+}
+
+export const uomSchema = z.preprocess(
+  (val) => (typeof val === 'string' ? normalizeUomCode(val) : val),
+  z.enum(UOM_VALUES as [string, ...string[]]),
+);
 
 export function getUomLabel(code: string): string {
-  return UOM_OPTIONS.find((o) => o.value === code)?.label ?? code;
+  const normalized = normalizeUomCode(code);
+  return UOM_OPTIONS.find((o) => o.value === normalized)?.label ?? normalized;
+}
+
+/** Display label for a stored UOM code; use everywhere UOM is shown to users. */
+export function formatUom(code?: string | null): string {
+  if (!code) return '—';
+  return getUomLabel(code);
 }

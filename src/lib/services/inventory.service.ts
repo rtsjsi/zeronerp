@@ -6,6 +6,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { items, warehouses } from '@/db/schema';
 import { newId, now, withTimestamps } from '@/db/helpers';
+import { normalizeUomCode } from '@/lib/inventory/constants';
 
 export type ItemInput = {
   name: string;
@@ -28,6 +29,7 @@ function normalizeItemInput(data: ItemInput) {
     name: data.name.trim(),
     description: data.description?.trim() || null,
     hsnSacCode: data.hsnSacCode?.trim() || null,
+    ...(data.uom !== undefined ? { uom: normalizeUomCode(data.uom) } : {}),
   };
 }
 
@@ -92,6 +94,9 @@ export class InventoryService {
     }
     if (data.hsnSacCode !== undefined) {
       updateData.hsnSacCode = data.hsnSacCode?.trim() || null;
+    }
+    if (data.uom !== undefined) {
+      updateData.uom = normalizeUomCode(data.uom);
     }
 
     const [newItem] = await db()

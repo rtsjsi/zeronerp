@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getCategoryLabel, isLowStock } from "@/lib/inventory/item-schema";
+import { formatUom } from "@/lib/inventory/constants";
 
 interface Item {
   id: string;
@@ -67,7 +68,7 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
                           <Badge variant="outline" className="text-[10px] font-normal">
                             {getCategoryLabel(item.category)}
                           </Badge>
-                          <span className="text-[11px] text-muted-foreground uppercase">{item.uom}</span>
+                          <span className="text-[11px] text-muted-foreground">{formatUom(item.uom)}</span>
                           {lowStock && (
                             <Badge variant="destructive" className="text-[10px] gap-1">
                               <AlertTriangle className="w-3 h-3" />
@@ -84,7 +85,7 @@ export function ItemTable({ items, onEdit, onDelete, onViewHistory }: ItemTableP
                     ) : (
                       <div>
                         <div className="font-medium">
-                          {totalStock} {item.uom}
+                          {totalStock} {formatUom(item.uom)}
                         </div>
                         {(item.reorderLevel > 0 || item.minStock > 0) && (
                           <div className="text-[10px] text-muted-foreground">

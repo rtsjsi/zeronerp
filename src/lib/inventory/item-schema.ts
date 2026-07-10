@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { uomSchema } from './constants';
+import { normalizeUomCode, uomSchema } from './constants';
 
 export const ITEM_CATEGORY_OPTIONS = [
   { value: 'RAW_MATERIAL', label: 'Raw Material' },
@@ -81,7 +81,7 @@ export const defaultItemFormValues: ItemFormValues = {
   description: '',
   category: 'RAW_MATERIAL',
   itemType: 'STOCKABLE',
-  uom: 'pcs',
+  uom: 'PCS',
   hsnSacCode: '',
   gstRate: 0,
   reorderLevel: 0,
@@ -110,7 +110,7 @@ export function itemToFormValues(item: {
     description: item.description ?? '',
     category: item.category as ItemFormValues['category'],
     itemType: item.itemType as ItemFormValues['itemType'],
-    uom: item.uom as ItemFormValues['uom'],
+    uom: normalizeUomCode(item.uom),
     hsnSacCode: item.hsnSacCode ?? '',
     gstRate: Number(item.gstRate),
     reorderLevel: Number(item.reorderLevel),
