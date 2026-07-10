@@ -142,7 +142,7 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
               <Input id="edit-name" {...form.register("name")} />
             </div>
 
-            <div className="space-y-2 sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-4">
+            <div className="space-y-2 sm:col-span-2 sm:grid sm:grid-cols-3 sm:gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-finishedItemId">Finished Good</Label>
                 <Controller
@@ -163,19 +163,18 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
               </div>
 
               <div className="space-y-2">
+                <Label>UOM</Label>
+                <Input value={finishedGoodUom} readOnly disabled className="bg-muted/50" />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="edit-outputQuantity">Output Qty</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="edit-outputQuantity"
-                    type="number"
-                    step="0.001"
-                    className="flex-1"
-                    {...form.register("outputQuantity", { valueAsNumber: true })}
-                  />
-                  <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
-                    {finishedGoodUom}
-                  </span>
-                </div>
+                <Input
+                  id="edit-outputQuantity"
+                  type="number"
+                  step="0.001"
+                  {...form.register("outputQuantity", { valueAsNumber: true })}
+                />
               </div>
             </div>
           </div>
@@ -200,7 +199,7 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
 
               return (
               <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                <div className="sm:col-span-6 space-y-1">
+                <div className="sm:col-span-5 space-y-1">
                   <Controller
                     name={`lines.${index}.rawItemId`}
                     control={form.control}
@@ -216,19 +215,16 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                     )}
                   />
                 </div>
-                <div className="sm:col-span-5 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      step="0.001"
-                      placeholder="Qty"
-                      className="flex-1"
-                      {...form.register(`lines.${index}.quantity`, { valueAsNumber: true })}
-                    />
-                    <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
-                      {rawItemUom}
-                    </span>
-                  </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <Input value={rawItemUom} readOnly disabled className="bg-muted/50" />
+                </div>
+                <div className="sm:col-span-4 space-y-1">
+                  <Input
+                    type="number"
+                    step="0.001"
+                    placeholder="Qty"
+                    {...form.register(`lines.${index}.quantity`, { valueAsNumber: true })}
+                  />
                 </div>
                 <div className="sm:col-span-1 flex justify-end">
                   <Button

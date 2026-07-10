@@ -57,7 +57,10 @@ export function ProductionBatchTable({ batches }: ProductionBatchTableProps) {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm">{batch.recipe?.name ?? "Manual"}</div>
+                    <div className="text-sm">
+                      {batch.recipe?.name ??
+                        (outputs.length > 1 ? "Multiple recipes" : "Recipe declaration")}
+                    </div>
                     <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
                       {outputs.map((line, idx) => (
                         <div key={idx} className="text-emerald-700">

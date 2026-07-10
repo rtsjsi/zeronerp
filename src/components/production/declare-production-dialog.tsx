@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useCallback, useEffect, useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -15,27 +15,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
+import { ItemSelect } from "@/components/shared/item-select";
+import { SearchableLovSelect } from "@/components/shared/searchable-lov-select";
+
+const outputLineSchema = z.object({
+  recipeId: z.string().min(1, "Select a recipe"),
+  quantity: z.number().positive("Quantity must be greater than zero"),
+});
+
+const inputLineSchema = z.object({
+  itemId: z.string().min(1, "Select a raw material"),
+  warehouseId: z.string().min(1),
+  quantity: z.number().positive("Quantity must be greater than zero"),
+});
 
 const declareSchema = z.object({
-  recipeId: z.string().min(1, "Select a recipe"),
   batchNumber: z.string().trim().min(1, "Batch number is required"),
   notes: z.string().optional(),
-  outputQuantity: z.number().positive("Output quantity must be greater than zero"),
-  outputWarehouseId: z.string().min(1, "Select output warehouse"),
+  outputWarehouseId: z.string().min(1, "Select finished good warehouse"),
   inputWarehouseId: z.string().min(1, "Select raw material warehouse"),
-  inputs: z
-    .array(
-      z.object({
-        itemId: z.string().min(1),
-        warehouseId: z.string().min(1),
-        quantity: z.number().positive("Quantity must be greater than zero"),
-      }),
-    )
-    .min(1),
-  outputItemId: z.string().min(1),
-  outputQty: z.number().positive("Output quantity must be greater than zero"),
+  outputs: z.array(outputLineSchema).min(1, "Add at least one finished good line"),
+  inputs: z.array(inputLineSchema).min(1, "Add at least one raw material line"),
 });
 
 type DeclareFormValues = z.infer<typeof declareSchema>;
@@ -53,6 +56,37 @@ function makeBatchNumber() {
   return `PRD-${date}-${time}`;
 }
 
+function defaultRecipeId(recipes: any[]) {
+  return recipes.length === 1 ? recipes[0].id : "";
+}
+
+function buildInputsFromOutputs(
+  outputs: { recipeId: string; quantity: number }[],
+  recipes: any[],
+  warehouseId: string,
+) {
+  const merged = new Map<string, number>();
+
+  for (const output of outputs) {
+    const recipe = recipes.find((r) => r.id === output.recipeId);
+    if (!recipe || !output.quantity) continue;
+
+    const basis = Number(recipe.outputQuantity) || 1;
+    const factor = output.quantity / basis;
+
+    for (const line of recipe.lines ?? []) {
+      const qty = Number((Number(line.quantity) * factor).toFixed(3));
+      merged.set(line.rawItemId, (merged.get(line.rawItemId) ?? 0) + qty);
+    }
+  }
+
+  return Array.from(merged.entries()).map(([itemId, quantity]) => ({
+    itemId,
+    warehouseId,
+    quantity: Number(quantity.toFixed(3)),
+  }));
+}
+
 export function DeclareProductionDialog({
   open,
   onOpenChange,
@@ -61,127 +95,148 @@ export function DeclareProductionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recipes, setRecipes] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null);
+  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
 
   const form = useForm<DeclareFormValues>({
     resolver: zodResolver(declareSchema),
     defaultValues: {
-      recipeId: "",
       batchNumber: makeBatchNumber(),
       notes: "",
-      outputQuantity: 1,
       outputWarehouseId: "",
       inputWarehouseId: "",
+      outputs: [{ recipeId: "", quantity: 1 }],
       inputs: [],
-      outputItemId: "",
-      outputQty: 1,
     },
   });
 
-  const { fields, replace } = useFieldArray({ control: form.control, name: "inputs" });
+  const {
+    fields: outputFields,
+    append: appendOutput,
+    remove: removeOutput,
+  } = useFieldArray({ control: form.control, name: "outputs" });
 
-  const recipeId = form.watch("recipeId");
-  const outputQuantity = form.watch("outputQuantity");
+  const {
+    fields: inputFields,
+    append: appendInput,
+    remove: removeInput,
+    replace: replaceInputs,
+  } = useFieldArray({ control: form.control, name: "inputs" });
+
+  const outputs = form.watch("outputs");
   const inputWarehouseId = form.watch("inputWarehouseId");
-  const outputWarehouseId = form.watch("outputWarehouseId");
+  const inputValues = form.watch("inputs");
+
+  const recipeOptions = recipes.map((recipe) => ({
+    value: recipe.id,
+    label: `${recipe.name} (${recipe.finishedItem?.name ?? "FG"})`,
+  }));
+
+  const syncInputsFromOutputs = useCallback(() => {
+    const currentOutputs = form.getValues("outputs");
+    const warehouseId = form.getValues("inputWarehouseId") || warehouses[0]?.id || "";
+    const hasValidOutput = currentOutputs.some((line) => line.recipeId && line.quantity > 0);
+
+    if (!hasValidOutput) {
+      replaceInputs([]);
+      return;
+    }
+
+    const nextInputs = buildInputsFromOutputs(currentOutputs, recipes, warehouseId);
+    replaceInputs(nextInputs);
+  }, [form, recipes, warehouses, replaceInputs]);
 
   useEffect(() => {
     if (!open) return;
 
     const load = async () => {
-      const [recipesRes, warehousesRes] = await Promise.all([
+      const [recipesRes, warehousesRes, itemsRes] = await Promise.all([
         apiFetch<any[]>("/api/production/recipes"),
         apiFetch<any[]>("/api/inventory/warehouses"),
+        apiFetch<any[]>("/api/inventory/items"),
       ]);
 
-      if (recipesRes.success && recipesRes.data) {
-        setRecipes(recipesRes.data.filter((r) => r.isActive));
-      }
-      if (warehousesRes.success && warehousesRes.data) {
-        setWarehouses(warehousesRes.data);
-        const defaultWh = warehousesRes.data[0]?.id ?? "";
-        form.setValue("outputWarehouseId", defaultWh);
-        form.setValue("inputWarehouseId", defaultWh);
+      const activeRecipes =
+        recipesRes.success && recipesRes.data
+          ? recipesRes.data.filter((r) => r.isActive)
+          : [];
+      const loadedWarehouses = warehousesRes.success ? warehousesRes.data ?? [] : [];
+      const defaultWh = loadedWarehouses[0]?.id ?? "";
+      const initialRecipeId = defaultRecipeId(activeRecipes);
+
+      setRecipes(activeRecipes);
+      setWarehouses(loadedWarehouses);
+      if (itemsRes.success && itemsRes.data) {
+        setInventoryItems(itemsRes.data);
       }
 
       form.reset({
-        recipeId: "",
         batchNumber: makeBatchNumber(),
         notes: "",
-        outputQuantity: 1,
-        outputWarehouseId: warehousesRes.data?.[0]?.id ?? "",
-        inputWarehouseId: warehousesRes.data?.[0]?.id ?? "",
+        outputWarehouseId: defaultWh,
+        inputWarehouseId: defaultWh,
+        outputs: [{ recipeId: initialRecipeId, quantity: 1 }],
         inputs: [],
-        outputItemId: "",
-        outputQty: 1,
       });
-      setSelectedRecipe(null);
-      replace([]);
+
+      if (initialRecipeId) {
+        const nextInputs = buildInputsFromOutputs(
+          [{ recipeId: initialRecipeId, quantity: 1 }],
+          activeRecipes,
+          defaultWh,
+        );
+        replaceInputs(nextInputs);
+      } else {
+        replaceInputs([]);
+      }
     };
 
     load();
-  }, [open, form, replace]);
-
-  useEffect(() => {
-    if (!recipeId) {
-      setSelectedRecipe(null);
-      return;
-    }
-
-    const recipe = recipes.find((r) => r.id === recipeId);
-    setSelectedRecipe(recipe ?? null);
-
-    if (!recipe) return;
-
-    const basis = Number(recipe.outputQuantity) || 1;
-    const factor = (Number(outputQuantity) || 1) / basis;
-
-    form.setValue("outputItemId", recipe.finishedItemId);
-    form.setValue("outputQty", Number(outputQuantity) || 1);
-
-    const scaledInputs = (recipe.lines ?? []).map((line: any) => ({
-      itemId: line.rawItemId,
-      warehouseId: inputWarehouseId || warehouses[0]?.id || "",
-      quantity: Number((Number(line.quantity) * factor).toFixed(3)),
-    }));
-
-    replace(scaledInputs);
-  }, [recipeId, outputQuantity, recipes, form, replace, inputWarehouseId, warehouses]);
+  }, [open, form, replaceInputs]);
 
   useEffect(() => {
     if (!inputWarehouseId) return;
     const current = form.getValues("inputs");
     if (!current.length) return;
-    replace(current.map((line) => ({ ...line, warehouseId: inputWarehouseId })));
-  }, [inputWarehouseId, form, replace]);
+    replaceInputs(current.map((line) => ({ ...line, warehouseId: inputWarehouseId })));
+  }, [inputWarehouseId, form, replaceInputs]);
 
-  const finishedItemName = useMemo(
-    () => selectedRecipe?.finishedItem?.name ?? "Finished good",
-    [selectedRecipe],
-  );
+  function getRecipe(recipeId: string) {
+    return recipes.find((recipe) => recipe.id === recipeId);
+  }
+
+  function getItemUom(itemId: string) {
+    return inventoryItems.find((item) => item.id === itemId)?.uom ?? "—";
+  }
 
   async function onSubmit(data: DeclareFormValues) {
     setIsSubmitting(true);
     try {
       const materials = [
+        ...data.outputs.map((line) => {
+          const recipe = getRecipe(line.recipeId);
+          if (!recipe) throw new Error("Selected recipe not found");
+          return {
+            itemId: recipe.finishedItemId,
+            warehouseId: data.outputWarehouseId,
+            type: "OUTPUT" as const,
+            quantity: line.quantity,
+          };
+        }),
         ...data.inputs.map((line) => ({
           itemId: line.itemId,
           warehouseId: line.warehouseId,
           type: "INPUT" as const,
           quantity: line.quantity,
         })),
-        {
-          itemId: data.outputItemId,
-          warehouseId: data.outputWarehouseId,
-          type: "OUTPUT" as const,
-          quantity: data.outputQty,
-        },
       ];
+
+      const uniqueRecipeIds = [...new Set(data.outputs.map((line) => line.recipeId))];
+      const recipeId = uniqueRecipeIds.length === 1 ? uniqueRecipeIds[0] : undefined;
 
       const res = await apiFetch("/api/production/declare", {
         method: "POST",
         body: JSON.stringify({
-          recipeId: data.recipeId,
+          recipeId,
           batchNumber: data.batchNumber,
           notes: data.notes,
           materials,
@@ -195,63 +250,31 @@ export function DeclareProductionDialog({
       } else {
         toast.error(res.message || "Failed to declare production");
       }
-    } catch {
-      toast.error("Something went wrong");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  const hasRecipes = recipes.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[760px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Declare Production</DialogTitle>
           <DialogDescription>
-            Load quantities from a recipe, adjust as needed, then declare production to update stock.
+            Declare one or more finished goods under a single batch. Raw materials default from
+            recipes and can be edited before stock is updated.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="recipeId">Recipe</Label>
-              <select
-                id="recipeId"
-                {...form.register("recipeId")}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Select recipe</option>
-                {recipes.map((recipe) => (
-                  <option key={recipe.id} value={recipe.id}>
-                    {recipe.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="batchNumber">Batch Number</Label>
               <Input id="batchNumber" {...form.register("batchNumber")} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="outputQuantity">Produce Qty</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="outputQuantity"
-                  type="number"
-                  step="0.001"
-                  className="flex-1"
-                  {...form.register("outputQuantity", { valueAsNumber: true })}
-                />
-                <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
-                  {selectedRecipe?.finishedItem?.uom ?? "—"}
-                </span>
-              </div>
-              {selectedRecipe && (
-                <p className="text-[10px] text-muted-foreground">{finishedItemName}</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -292,70 +315,190 @@ export function DeclareProductionDialog({
             <Textarea id="notes" {...form.register("notes")} className="resize-none h-16" />
           </div>
 
-          {selectedRecipe && (
-            <>
-              <div className="rounded-lg border p-4 space-y-3 bg-muted/20">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Finished Good (editable)
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Finished Good</Label>
-                    <Input value={finishedItemName} disabled />
+          <div className="rounded-lg border p-4 space-y-3 bg-muted/20">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Finished Goods
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                disabled={!hasRecipes}
+                onClick={() => {
+                  appendOutput({ recipeId: defaultRecipeId(recipes), quantity: 1 });
+                  setTimeout(() => syncInputsFromOutputs(), 0);
+                }}
+              >
+                <Plus className="w-3.5 h-3.5" /> Add FG Line
+              </Button>
+            </div>
+
+            {!hasRecipes && (
+              <p className="text-xs text-muted-foreground">
+                Create an active recipe before declaring production.
+              </p>
+            )}
+
+            {outputFields.map((field, index) => {
+              const recipe = getRecipe(outputs?.[index]?.recipeId ?? "");
+              return (
+                <div
+                  key={field.id}
+                  className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end border-b border-border/60 pb-3 last:border-0 last:pb-0"
+                >
+                  <div className="sm:col-span-5 space-y-1">
+                    <Label className="text-xs">Recipe / FG</Label>
+                    <Controller
+                      name={`outputs.${index}.recipeId`}
+                      control={form.control}
+                      render={({ field: recipeField }) => (
+                        <SearchableLovSelect
+                          value={recipeField.value}
+                          onValueChange={(value) => {
+                            recipeField.onChange(value);
+                            setTimeout(() => syncInputsFromOutputs(), 0);
+                          }}
+                          options={recipeOptions}
+                          placeholder="Select recipe"
+                          searchPlaceholder="Search recipes..."
+                          disabled={!hasRecipes}
+                        />
+                      )}
+                    />
                   </div>
-                  <div className="space-y-1">
+                  <div className="sm:col-span-3 space-y-1">
+                    <Label className="text-xs">Finished Good</Label>
+                    <Input value={recipe?.finishedItem?.name ?? "—"} disabled />
+                  </div>
+                  <div className="sm:col-span-3 space-y-1">
                     <Label className="text-xs">Output Qty</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
                         step="0.001"
                         className="flex-1"
-                        {...form.register("outputQty", { valueAsNumber: true })}
+                        {...form.register(`outputs.${index}.quantity`, { valueAsNumber: true })}
+                        onBlur={() => syncInputsFromOutputs()}
                       />
                       <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
-                        {selectedRecipe.finishedItem?.uom ?? "—"}
+                        {recipe?.finishedItem?.uom ?? "—"}
                       </span>
                     </div>
                   </div>
+                  <div className="sm:col-span-1 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={outputFields.length === 1}
+                      onClick={() => {
+                        removeOutput(index);
+                        setTimeout(() => syncInputsFromOutputs(), 0);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              );
+            })}
+            {form.formState.errors.outputs && (
+              <p className="text-[10px] text-destructive">
+                {form.formState.errors.outputs.message ||
+                  form.formState.errors.outputs.root?.message}
+              </p>
+            )}
+          </div>
 
-              <div className="rounded-lg border p-4 space-y-3 bg-muted/20">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Raw Materials Consumed (editable)
-                </p>
-                {fields.map((field, index) => {
-                  const line = selectedRecipe.lines?.[index];
-                  return (
-                    <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                      <div className="sm:col-span-6 text-sm truncate">
-                        {line?.rawItem?.name ?? "Raw material"}
-                      </div>
-                      <div className="sm:col-span-6 flex items-center gap-2">
-                        <Input
-                          type="number"
-                          step="0.001"
-                          className="flex-1"
-                          {...form.register(`inputs.${index}.quantity`, { valueAsNumber: true })}
-                        />
-                        <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
-                          {line?.rawItem?.uom ?? "—"}
-                        </span>
-                      </div>
-                      <input type="hidden" {...form.register(`inputs.${index}.itemId`)} />
-                      <input type="hidden" {...form.register(`inputs.${index}.warehouseId`)} />
-                    </div>
-                  );
-                })}
+          <div className="rounded-lg border p-4 space-y-3 bg-muted/20">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Raw Materials Consumed
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() =>
+                  appendInput({
+                    itemId: "",
+                    warehouseId: inputWarehouseId || warehouses[0]?.id || "",
+                    quantity: 1,
+                  })
+                }
+              >
+                <Plus className="w-3.5 h-3.5" /> Add RM Line
+              </Button>
+            </div>
+
+            {inputFields.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Select a recipe on a finished good line to load raw materials.
+              </p>
+            )}
+
+            {inputFields.map((field, index) => (
+              <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                <div className="sm:col-span-6 space-y-1">
+                  <Label className="text-xs">Raw Material</Label>
+                  <Controller
+                    name={`inputs.${index}.itemId`}
+                    control={form.control}
+                    render={({ field: itemField }) => (
+                      <ItemSelect
+                        value={itemField.value}
+                        onValueChange={itemField.onChange}
+                        items={inventoryItems}
+                        placeholder="Select raw material"
+                        searchPlaceholder="Search items..."
+                        showUom={false}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="sm:col-span-5 space-y-1">
+                  <Label className="text-xs">Qty</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="0.001"
+                      className="flex-1"
+                      {...form.register(`inputs.${index}.quantity`, { valueAsNumber: true })}
+                    />
+                    <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
+                      {getItemUom(inputValues?.[index]?.itemId ?? "")}
+                    </span>
+                  </div>
+                </div>
+                <div className="sm:col-span-1 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={inputFields.length === 1}
+                    onClick={() => removeInput(index)}
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+                <input type="hidden" {...form.register(`inputs.${index}.warehouseId`)} />
               </div>
-            </>
-          )}
+            ))}
+            {form.formState.errors.inputs && (
+              <p className="text-[10px] text-destructive">
+                {form.formState.errors.inputs.message || form.formState.errors.inputs.root?.message}
+              </p>
+            )}
+          </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !selectedRecipe}>
+            <Button type="submit" disabled={isSubmitting || !hasRecipes}>
               {isSubmitting ? "Declaring..." : "Declare Production"}
             </Button>
           </div>
