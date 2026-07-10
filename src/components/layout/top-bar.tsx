@@ -80,15 +80,16 @@ export function TopBar() {
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger render={
-              <button className="flex items-center gap-2 rounded-full p-1 hover:bg-accent transition-colors" id="user-menu-btn">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                    {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-            } />
+            <DropdownMenuTrigger
+              className="flex items-center gap-2 rounded-full p-1 hover:bg-accent transition-colors outline-none"
+              id="user-menu-btn"
+            >
+              <Avatar className="w-8 h-8">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                  {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-3 py-2">
                 <p className="text-sm font-medium">{user?.fullName || "User"}</p>

@@ -32,6 +32,7 @@ export default function ProductionPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "recipes",
   });
 
   const { data: batches, isLoading: isLoadingBatches } = useQuery({
@@ -41,6 +42,7 @@ export default function ProductionPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "production",
   });
 
   const filteredRecipes = recipes?.filter((recipe: any) =>

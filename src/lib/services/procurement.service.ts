@@ -12,7 +12,7 @@ import {
   vendors,
 } from '@/db/schema';
 import { newId, now, toJson, withTimestamps } from '@/db/helpers';
-import { normalizePartnerTaxFields } from '@/lib/partner-schema';
+import { normalizePartnerTaxFields, normalizePartnerInput } from '@/lib/partner-schema';
 
 export class ProcurementService {
   static async getVendors(storeId: string) {
@@ -64,6 +64,34 @@ export class ProcurementService {
       .update(vendors)
       .set({ isDeleted: true, updatedAt: now() })
       .where(and(eq(vendors.id, id), eq(vendors.storeId, storeId)))
+      .returning();
+
+    if (!vendor) throw new Error('Vendor not found');
+    return vendor;
+  }
+
+  static async updateVendor(
+    storeId: string,
+    _userId: string,
+    id: string,
+    data: {
+      name: string;
+      contactName?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      pan?: string;
+      gstn?: string;
+    },
+  ) {
+    const normalized = normalizePartnerInput(data);
+
+    const [vendor] = await db()
+      .update(vendors)
+      .set({ ...normalized, updatedAt: now() })
+      .where(
+        and(eq(vendors.id, id), eq(vendors.storeId, storeId), eq(vendors.isDeleted, false)),
+      )
       .returning();
 
     if (!vendor) throw new Error('Vendor not found');

@@ -39,6 +39,7 @@ export default function InventoryPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "items",
   });
 
   const { data: warehouses, isLoading: isLoadingWarehouses } = useQuery({
@@ -48,6 +49,7 @@ export default function InventoryPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "warehouses",
   });
 
   const { data: transactions, isLoading: isLoadingTransactions } = useQuery({
@@ -57,6 +59,7 @@ export default function InventoryPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "history",
   });
 
   // Filters
@@ -84,7 +87,7 @@ export default function InventoryPage() {
 
   return (
     <div className="animate-fade-in min-w-0">
-      <Tabs defaultValue="items" className="w-full min-w-0" onValueChange={setActiveTab}>
+      <Tabs value={activeTab} className="w-full min-w-0" onValueChange={setActiveTab}>
         <TabToolbar
           tabs={
             <TabsList variant="line" className="w-max min-w-full sm:min-w-0">

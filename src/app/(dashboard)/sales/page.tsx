@@ -7,6 +7,7 @@ import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CustomerTable } from "@/components/sales/customer-table";
 import { CreateCustomerDialog } from "@/components/sales/create-customer-dialog";
+import { EditCustomerDialog } from "@/components/sales/edit-customer-dialog";
 import { SalesInvoiceTable } from "@/components/sales/sales-invoice-table";
 import { CreateInvoiceDialog } from "@/components/sales/create-invoice-dialog";
 import { ExpressPOSDialog } from "@/components/sales/express-pos-dialog";
@@ -19,6 +20,8 @@ import { toast } from "sonner";
 export default function SalesPage() {
   const [activeTab, setActiveTab] = useState("invoices");
   const [isCustomerOpen, setIsCustomerOpen] = useState(false);
+  const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
+  const [editCustomer, setEditCustomer] = useState<any | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [isPOSOpen, setIsPOSOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,6 +34,7 @@ export default function SalesPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "invoices",
   });
 
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
@@ -40,6 +44,7 @@ export default function SalesPage() {
       if (!res.success) throw new Error(res.message);
       return res.data;
     },
+    enabled: activeTab === "customers",
   });
 
   // Filters
@@ -138,6 +143,10 @@ export default function SalesPage() {
           ) : filteredCustomers && filteredCustomers.length > 0 ? (
             <CustomerTable
               customers={filteredCustomers}
+              onEdit={(customer) => {
+                setEditCustomer(customer);
+                setIsEditCustomerOpen(true);
+              }}
               onDelete={async (id) => {
                 if (!confirm("Are you sure?")) return;
                 const res = await apiFetch(`/api/sales/customers/${id}`, { method: "DELETE" });
@@ -166,6 +175,16 @@ export default function SalesPage() {
       <CreateCustomerDialog
         open={isCustomerOpen}
         onOpenChange={setIsCustomerOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["customers"] })}
+      />
+
+      <EditCustomerDialog
+        open={isEditCustomerOpen}
+        onOpenChange={(open) => {
+          setIsEditCustomerOpen(open);
+          if (!open) setEditCustomer(null);
+        }}
+        customer={editCustomer}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["customers"] })}
       />
 

@@ -7,6 +7,7 @@ import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { VendorTable } from "@/components/procurement/vendor-table";
 import { CreateVendorDialog } from "@/components/procurement/create-vendor-dialog";
+import { EditVendorDialog } from "@/components/procurement/edit-vendor-dialog";
 import { PayableInvoiceTable } from "@/components/procurement/payable-invoice-table";
 import { CreateInvoiceDialog } from "@/components/procurement/create-invoice-dialog";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ import { toast } from "sonner";
 export default function ProcurementPage() {
   const [activeTab, setActiveTab] = useState("invoices");
   const [isVendorOpen, setIsVendorOpen] = useState(false);
+  const [isEditVendorOpen, setIsEditVendorOpen] = useState(false);
+  const [editVendor, setEditVendor] = useState<any | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
@@ -128,6 +131,10 @@ export default function ProcurementPage() {
           ) : filteredVendors && filteredVendors.length > 0 ? (
             <VendorTable
               vendors={filteredVendors}
+              onEdit={(vendor) => {
+                setEditVendor(vendor);
+                setIsEditVendorOpen(true);
+              }}
               onDelete={async (id) => {
                 if (!confirm("Are you sure?")) return;
                 const res = await apiFetch(`/api/procurement/vendors/${id}`, { method: "DELETE" });
@@ -156,6 +163,16 @@ export default function ProcurementPage() {
       <CreateVendorDialog
         open={isVendorOpen}
         onOpenChange={setIsVendorOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["vendors"] })}
+      />
+
+      <EditVendorDialog
+        open={isEditVendorOpen}
+        onOpenChange={(open) => {
+          setIsEditVendorOpen(open);
+          if (!open) setEditVendor(null);
+        }}
+        vendor={editVendor}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ["vendors"] })}
       />
 

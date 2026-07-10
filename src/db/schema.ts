@@ -341,6 +341,10 @@ export const recipeLinesRelations = relations(recipeLines, ({ one }) => ({
 }));
 
 export const productionMaterialsRelations = relations(productionMaterials, ({ one }) => ({
+  batch: one(productionBatches, {
+    fields: [productionMaterials.batchId],
+    references: [productionBatches.id],
+  }),
   item: one(items, { fields: [productionMaterials.itemId], references: [items.id] }),
   warehouse: one(warehouses, { fields: [productionMaterials.warehouseId], references: [warehouses.id] }),
   outputLine: one(productionOutputs, {

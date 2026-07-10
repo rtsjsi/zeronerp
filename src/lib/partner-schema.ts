@@ -27,3 +27,28 @@ export function normalizePartnerTaxFields(data: { pan?: string; gstn?: string })
     gstn: data.gstn?.trim().toUpperCase() || null,
   };
 }
+
+export const partnerFormSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  contactName: z.string().optional(),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  pan: optionalPanSchema,
+  gstn: optionalGstnSchema,
+});
+
+export type PartnerFormValues = z.infer<typeof partnerFormSchema>;
+
+export type PartnerInput = PartnerFormValues;
+
+export function normalizePartnerInput(data: PartnerInput) {
+  return {
+    name: data.name.trim(),
+    contactName: data.contactName?.trim() || null,
+    email: data.email?.trim() || null,
+    phone: data.phone?.trim() || null,
+    address: data.address?.trim() || null,
+    ...normalizePartnerTaxFields(data),
+  };
+}

@@ -12,7 +12,7 @@ import {
   stocks,
 } from '@/db/schema';
 import { newId, now, toJson, withTimestamps } from '@/db/helpers';
-import { normalizePartnerTaxFields } from '@/lib/partner-schema';
+import { normalizePartnerTaxFields, normalizePartnerInput } from '@/lib/partner-schema';
 
 export class SalesService {
   static async getCustomers(storeId: string) {
@@ -64,6 +64,34 @@ export class SalesService {
       .update(customers)
       .set({ isDeleted: true, updatedAt: now() })
       .where(and(eq(customers.id, id), eq(customers.storeId, storeId)))
+      .returning();
+
+    if (!customer) throw new Error('Customer not found');
+    return customer;
+  }
+
+  static async updateCustomer(
+    storeId: string,
+    _userId: string,
+    id: string,
+    data: {
+      name: string;
+      contactName?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      pan?: string;
+      gstn?: string;
+    },
+  ) {
+    const normalized = normalizePartnerInput(data);
+
+    const [customer] = await db()
+      .update(customers)
+      .set({ ...normalized, updatedAt: now() })
+      .where(
+        and(eq(customers.id, id), eq(customers.storeId, storeId), eq(customers.isDeleted, false)),
+      )
       .returning();
 
     if (!customer) throw new Error('Customer not found');
