@@ -33,7 +33,6 @@ export function RecipeTable({ recipes, onEdit, onDelete }: RecipeTableProps) {
         <table className="w-full text-sm text-left">
           <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-wider">
             <tr>
-              <th className="px-6 py-4">Recipe</th>
               <th className="px-6 py-4">Finished Good</th>
               <th className="px-6 py-4">Output Qty</th>
               <th className="px-6 py-4">Raw Materials</th>
@@ -50,10 +49,9 @@ export function RecipeTable({ recipes, onEdit, onDelete }: RecipeTableProps) {
                     <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
                       <FlaskConical className="w-4 h-4" />
                     </div>
-                    <span className="font-semibold">{recipe.name}</span>
+                    <span className="font-semibold">{recipe.finishedItem?.name ?? "—"}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4">{recipe.finishedItem?.name ?? "—"}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {recipe.outputQuantity} {formatUom(recipe.finishedItem?.uom)}
                 </td>

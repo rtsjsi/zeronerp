@@ -8,11 +8,11 @@ import {
   productionBatches,
   productionMaterials,
   productionOutputs,
-  recipes,
   stocks,
 } from '@/db/schema';
 import { newId, now, withTimestamps } from '@/db/helpers';
 import { StockService } from './stock.service';
+import { RecipeService } from './recipe.service';
 
 export type ProductionInputLine = {
   itemId: string;
@@ -20,7 +20,7 @@ export type ProductionInputLine = {
 };
 
 export type ProductionOutputLine = {
-  recipeId: string;
+  finishedItemId: string;
   quantity: number;
   inputs: ProductionInputLine[];
 };
@@ -52,7 +52,6 @@ export class ProductionService {
     storeId: string,
     userId: string,
     data: {
-      recipeId?: string;
       batchNumber: string;
       notes?: string;
       outputWarehouseId: string;
@@ -110,13 +109,18 @@ export class ProductionService {
     const batchId = newId();
     const ts = now();
 
+    const singleRecipe =
+      data.outputs.length === 1
+        ? await RecipeService.getActiveRecipeByFinishedItem(storeId, data.outputs[0].finishedItemId)
+        : null;
+
     const [batch] = await database
       .insert(productionBatches)
       .values(
         withTimestamps({
           id: batchId,
           storeId,
-          recipeId: data.recipeId ?? null,
+          recipeId: singleRecipe?.id ?? null,
           batchNumber: data.batchNumber.trim(),
           notes: data.notes?.trim() || null,
           status: 'COMPLETED',
@@ -133,10 +137,10 @@ export class ProductionService {
     const materialRows: Array<typeof productionMaterials.$inferInsert> = [];
 
     for (const output of data.outputs) {
-      const recipe = await database.query.recipes.findFirst({
-        where: and(eq(recipes.id, output.recipeId), eq(recipes.storeId, storeId)),
-      });
-      if (!recipe) throw new Error('Selected recipe not found');
+      const recipe = await RecipeService.getActiveRecipeByFinishedItem(storeId, output.finishedItemId);
+      if (!recipe) {
+        throw new Error('No active recipe found for the selected finished good');
+      }
 
       const outputLineId = newId();
 
@@ -144,7 +148,7 @@ export class ProductionService {
         id: outputLineId,
         storeId,
         batchId,
-        recipeId: output.recipeId,
+        recipeId: recipe.id,
         itemId: recipe.finishedItemId,
         warehouseId: data.outputWarehouseId,
         quantity: output.quantity,
@@ -191,9 +195,7 @@ export class ProductionService {
     }
 
     for (const output of data.outputs) {
-      const recipe = await database.query.recipes.findFirst({
-        where: eq(recipes.id, output.recipeId),
-      });
+      const recipe = await RecipeService.getActiveRecipeByFinishedItem(storeId, output.finishedItemId);
       if (!recipe) continue;
 
       await StockService.adjustStock(storeId, userId, {

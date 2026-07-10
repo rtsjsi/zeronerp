@@ -71,8 +71,9 @@ export function ProductionBatchTable({ batches }: ProductionBatchTableProps) {
                           <div className="text-[10px] text-muted-foreground">{batch.notes}</div>
                         )}
                         <div className="text-[10px] text-muted-foreground mt-0.5">
-                          {batch.recipe?.name ??
-                            (outputLines.length > 1 ? "Multiple recipes" : "Production batch")}
+                          {outputLines.length > 1
+                            ? `${outputLines.length} finished goods`
+                            : (outputLines[0]?.item?.name ?? batch.recipe?.finishedItem?.name ?? "Production batch")}
                         </div>
                       </div>
                     </div>
@@ -89,12 +90,6 @@ export function ProductionBatchTable({ batches }: ProductionBatchTableProps) {
                           <div key={idx} className="space-y-1">
                             <div className="text-sm font-medium text-emerald-700">
                               + {output.quantity} {formatUom(output.item?.uom)} {output.item?.name}
-                              {output.recipe?.name ? (
-                                <span className="text-muted-foreground font-normal">
-                                  {" "}
-                                  ({output.recipe.name})
-                                </span>
-                              ) : null}
                             </div>
                             <div className="pl-3 border-l border-muted space-y-0.5">
                               {inputs.map((line, inputIdx) => (

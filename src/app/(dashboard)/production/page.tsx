@@ -45,13 +45,15 @@ export default function ProductionPage() {
   });
 
   const filteredRecipes = recipes?.filter((recipe: any) =>
-    recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     recipe.finishedItem?.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const filteredBatches = batches?.filter((batch: any) =>
     batch.batchNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    batch.recipe?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+    batch.outputs?.some((output: any) =>
+      output.item?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+    ) ||
+    batch.recipe?.finishedItem?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleDeleteRecipe = async (id: string) => {

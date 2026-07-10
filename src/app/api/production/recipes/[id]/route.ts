@@ -11,7 +11,7 @@ const recipeLineSchema = z.object({
 });
 
 const recipeSchema = z.object({
-  name: z.string().trim().min(2),
+  name: z.string().trim().min(2).optional(),
   finishedItemId: z.string().min(1),
   outputQuantity: z.number().positive("Output quantity must be greater than zero"),
   isActive: z.boolean().optional(),

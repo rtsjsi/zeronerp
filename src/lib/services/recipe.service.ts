@@ -4,7 +4,7 @@
 
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { recipeLines, recipes } from '@/db/schema';
+import { items, recipeLines, recipes } from '@/db/schema';
 import { newId, now, withTimestamps } from '@/db/helpers';
 
 export type RecipeLineInput = {
@@ -13,12 +13,20 @@ export type RecipeLineInput = {
 };
 
 export type RecipeInput = {
-  name: string;
+  name?: string;
   finishedItemId: string;
   outputQuantity: number;
   isActive?: boolean;
   lines: RecipeLineInput[];
 };
+
+async function resolveRecipeName(storeId: string, finishedItemId: string): Promise<string> {
+  const item = await db().query.items.findFirst({
+    where: and(eq(items.id, finishedItemId), eq(items.storeId, storeId), eq(items.isDeleted, false)),
+  });
+  if (!item) throw new Error('Finished good not found');
+  return item.name;
+}
 
 export class RecipeService {
   static async getRecipes(storeId: string) {
@@ -42,9 +50,26 @@ export class RecipeService {
     });
   }
 
+  static async getActiveRecipeByFinishedItem(storeId: string, finishedItemId: string) {
+    return db().query.recipes.findFirst({
+      where: and(
+        eq(recipes.storeId, storeId),
+        eq(recipes.finishedItemId, finishedItemId),
+        eq(recipes.isActive, true),
+        eq(recipes.isDeleted, false),
+      ),
+      with: {
+        finishedItem: true,
+        lines: { with: { rawItem: true } },
+      },
+      orderBy: desc(recipes.updatedAt),
+    });
+  }
+
   static async createRecipe(storeId: string, userId: string, data: RecipeInput) {
     const database = db();
     const recipeId = newId();
+    const name = data.name?.trim() || (await resolveRecipeName(storeId, data.finishedItemId));
 
     const [recipe] = await database
       .insert(recipes)
@@ -52,7 +77,7 @@ export class RecipeService {
         withTimestamps({
           id: recipeId,
           storeId,
-          name: data.name.trim(),
+          name,
           finishedItemId: data.finishedItemId,
           outputQuantity: data.outputQuantity,
           isActive: data.isActive ?? true,
@@ -81,10 +106,12 @@ export class RecipeService {
     const existing = await this.getRecipeById(storeId, id);
     if (!existing) throw new Error('Recipe not found');
 
+    const name = data.name?.trim() || (await resolveRecipeName(storeId, data.finishedItemId));
+
     await database
       .update(recipes)
       .set({
-        name: data.name.trim(),
+        name,
         finishedItemId: data.finishedItemId,
         outputQuantity: data.outputQuantity,
         isActive: data.isActive ?? true,

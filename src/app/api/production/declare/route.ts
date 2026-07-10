@@ -11,13 +11,12 @@ const inputLineSchema = z.object({
 });
 
 const outputLineSchema = z.object({
-  recipeId: z.string().min(1),
+  finishedItemId: z.string().min(1),
   quantity: z.number().positive("Quantity must be greater than zero"),
   inputs: z.array(inputLineSchema).min(1, "Each finished good needs raw materials"),
 });
 
 const declareSchema = z.object({
-  recipeId: z.string().optional(),
   batchNumber: z.string().trim().min(1),
   notes: z.string().optional(),
   outputWarehouseId: z.string().min(1),

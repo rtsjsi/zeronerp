@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Controller,
   useFieldArray,
@@ -25,9 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
-import { formatUom } from "@/lib/inventory/constants";
-import { ItemSelect } from "@/components/shared/item-select";
-import { SearchableLovSelect } from "@/components/shared/searchable-lov-select";
+import { ItemSelect, type ItemOption } from "@/components/shared/item-select";
+import { UomField } from "@/components/shared/uom-field";
 
 const inputLineSchema = z.object({
   itemId: z.string().min(1, "Select a raw material"),
@@ -35,7 +34,7 @@ const inputLineSchema = z.object({
 });
 
 const outputLineSchema = z.object({
-  recipeId: z.string().min(1, "Select a recipe"),
+  finishedItemId: z.string().min(1, "Select a finished good"),
   quantity: z.number().positive("Quantity must be greater than zero"),
   inputs: z.array(inputLineSchema).min(1, "Add at least one raw material"),
 });
@@ -63,12 +62,29 @@ function makeBatchNumber() {
   return `PRD-${date}-${time}`;
 }
 
-function defaultRecipeId(recipes: any[]) {
-  return recipes.length === 1 ? recipes[0].id : "";
+function finishedGoodOptions(recipes: any[]): ItemOption[] {
+  const seen = new Set<string>();
+  const options: ItemOption[] = [];
+
+  for (const recipe of recipes) {
+    if (!recipe.finishedItem || seen.has(recipe.finishedItemId)) continue;
+    seen.add(recipe.finishedItemId);
+    options.push({
+      id: recipe.finishedItemId,
+      name: recipe.finishedItem.name,
+      uom: recipe.finishedItem.uom,
+    });
+  }
+
+  return options.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function buildInputsForOutput(recipeId: string, quantity: number, recipes: any[]) {
-  const recipe = recipes.find((r) => r.id === recipeId);
+function getRecipeForFg(recipes: any[], finishedItemId: string) {
+  return recipes.find((recipe) => recipe.finishedItemId === finishedItemId);
+}
+
+function buildInputsForOutput(finishedItemId: string, quantity: number, recipes: any[]) {
+  const recipe = getRecipeForFg(recipes, finishedItemId);
   if (!recipe || !quantity) return [];
 
   const basis = Number(recipe.outputQuantity) || 1;
@@ -84,27 +100,25 @@ function FgOutputLine({
   index,
   control,
   register,
-  recipeOptions,
+  finishedGoods,
   inventoryItems,
+  recipes,
   canRemove,
   onRemove,
   onSyncInputs,
-  getRecipe,
-  getItemUom,
 }: {
   index: number;
   control: Control<DeclareFormValues>;
   register: UseFormRegister<DeclareFormValues>;
-  recipeOptions: { value: string; label: string }[];
+  finishedGoods: ItemOption[];
   inventoryItems: any[];
+  recipes: any[];
   canRemove: boolean;
   onRemove: () => void;
   onSyncInputs: () => void;
-  getRecipe: (recipeId: string) => any | undefined;
-  getItemUom: (itemId: string) => string;
 }) {
-  const recipeId = useWatch({ control, name: `outputs.${index}.recipeId` }) ?? "";
-  const recipe = getRecipe(recipeId);
+  const finishedItemId = useWatch({ control, name: `outputs.${index}.finishedItemId` }) ?? "";
+  const recipe = getRecipeForFg(recipes, finishedItemId);
 
   const {
     fields: inputFields,
@@ -117,46 +131,45 @@ function FgOutputLine({
 
   const inputValues = useWatch({ control, name: `outputs.${index}.inputs` }) ?? [];
 
+  function getItemUom(itemId: string) {
+    return inventoryItems.find((item) => item.id === itemId)?.uom ?? null;
+  }
+
   return (
     <div className="rounded-lg border border-border/80 p-3 space-y-3 bg-background/60">
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-        <div className="sm:col-span-5 space-y-1">
-          <Label className="text-xs">Recipe / FG</Label>
+        <div className="sm:col-span-7 space-y-1 min-w-0">
+          <Label className="text-xs">Finished Good</Label>
           <Controller
-            name={`outputs.${index}.recipeId`}
+            name={`outputs.${index}.finishedItemId`}
             control={control}
             render={({ field }) => (
-              <SearchableLovSelect
+              <ItemSelect
                 value={field.value}
                 onValueChange={(value) => {
                   field.onChange(value);
                   setTimeout(onSyncInputs, 0);
                 }}
-                options={recipeOptions}
-                placeholder="Select recipe"
-                searchPlaceholder="Search recipes..."
+                items={finishedGoods}
+                placeholder="Select finished good"
+                searchPlaceholder="Search finished goods..."
+                showUom={false}
               />
             )}
           />
         </div>
-        <div className="sm:col-span-3 space-y-1">
-          <Label className="text-xs">Finished Good</Label>
-          <Input value={recipe?.finishedItem?.name ?? "—"} disabled />
+        <div className="sm:col-span-2 space-y-1">
+          <Label className="text-xs">UOM</Label>
+          <UomField value={recipe?.finishedItem?.uom} compact />
         </div>
-        <div className="sm:col-span-3 space-y-1">
+        <div className="sm:col-span-2 space-y-1">
           <Label className="text-xs">Output Qty</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              step="0.001"
-              className="flex-1"
-              {...register(`outputs.${index}.quantity`, { valueAsNumber: true })}
-              onBlur={onSyncInputs}
-            />
-            <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
-              {formatUom(recipe?.finishedItem?.uom)}
-            </span>
-          </div>
+          <Input
+            type="number"
+            step="0.001"
+            {...register(`outputs.${index}.quantity`, { valueAsNumber: true })}
+            onBlur={onSyncInputs}
+          />
         </div>
         <div className="sm:col-span-1 flex justify-end">
           <Button
@@ -188,12 +201,14 @@ function FgOutputLine({
         </div>
 
         {inputFields.length === 0 && (
-          <p className="text-xs text-muted-foreground">Select a recipe to load raw materials.</p>
+          <p className="text-xs text-muted-foreground">
+            Select a finished good to load raw materials from its recipe.
+          </p>
         )}
 
         {inputFields.map((field, inputIndex) => (
           <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-            <div className="sm:col-span-6 space-y-1">
+            <div className="sm:col-span-7 space-y-1 min-w-0">
               <Controller
                 name={`outputs.${index}.inputs.${inputIndex}.itemId`}
                 control={control}
@@ -209,21 +224,18 @@ function FgOutputLine({
                 )}
               />
             </div>
-            <div className="sm:col-span-5 space-y-1">
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="0.001"
-                  placeholder="Qty"
-                  className="flex-1"
-                  {...register(`outputs.${index}.inputs.${inputIndex}.quantity`, {
-                    valueAsNumber: true,
-                  })}
-                />
-                <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
-                  {getItemUom(inputValues?.[inputIndex]?.itemId ?? "")}
-                </span>
-              </div>
+            <div className="sm:col-span-2 space-y-1">
+              <UomField value={getItemUom(inputValues?.[inputIndex]?.itemId ?? "")} compact />
+            </div>
+            <div className="sm:col-span-2 space-y-1">
+              <Input
+                type="number"
+                step="0.001"
+                placeholder="Qty"
+                {...register(`outputs.${index}.inputs.${inputIndex}.quantity`, {
+                  valueAsNumber: true,
+                })}
+              />
             </div>
             <div className="sm:col-span-1 flex justify-end">
               <Button
@@ -260,7 +272,7 @@ export function DeclareProductionDialog({
       notes: "",
       outputWarehouseId: "",
       inputWarehouseId: "",
-      outputs: [{ recipeId: "", quantity: 1, inputs: [] }],
+      outputs: [{ finishedItemId: "", quantity: 1, inputs: [] }],
     },
   });
 
@@ -269,23 +281,11 @@ export function DeclareProductionDialog({
     name: "outputs",
   });
 
-  const recipeOptions = recipes.map((recipe) => ({
-    value: recipe.id,
-    label: `${recipe.name} (${recipe.finishedItem?.name ?? "FG"})`,
-  }));
-
-  function getRecipe(recipeId: string) {
-    return recipes.find((recipe) => recipe.id === recipeId);
-  }
-
-  function getItemUom(itemId: string) {
-    const code = inventoryItems.find((item) => item.id === itemId)?.uom;
-    return formatUom(code);
-  }
+  const finishedGoods = useMemo(() => finishedGoodOptions(recipes), [recipes]);
 
   function syncOutputInputs(index: number) {
     const output = form.getValues(`outputs.${index}`);
-    const nextInputs = buildInputsForOutput(output.recipeId, output.quantity, recipes);
+    const nextInputs = buildInputsForOutput(output.finishedItemId, output.quantity, recipes);
     form.setValue(`outputs.${index}.inputs`, nextInputs, { shouldValidate: true });
   }
 
@@ -305,7 +305,11 @@ export function DeclareProductionDialog({
           : [];
       const loadedWarehouses = warehousesRes.success ? warehousesRes.data ?? [] : [];
       const defaultWh = loadedWarehouses[0]?.id ?? "";
-      const initialRecipeId = defaultRecipeId(activeRecipes);
+      const fgOptions = finishedGoodOptions(activeRecipes);
+      const initialFinishedItemId = fgOptions[0]?.id ?? "";
+      const initialInputs = initialFinishedItemId
+        ? buildInputsForOutput(initialFinishedItemId, 1, activeRecipes)
+        : [];
 
       setRecipes(activeRecipes);
       setWarehouses(loadedWarehouses);
@@ -313,16 +317,12 @@ export function DeclareProductionDialog({
         setInventoryItems(itemsRes.data);
       }
 
-      const initialInputs = initialRecipeId
-        ? buildInputsForOutput(initialRecipeId, 1, activeRecipes)
-        : [];
-
       form.reset({
         batchNumber: makeBatchNumber(),
         notes: "",
         outputWarehouseId: defaultWh,
         inputWarehouseId: defaultWh,
-        outputs: [{ recipeId: initialRecipeId, quantity: 1, inputs: initialInputs }],
+        outputs: [{ finishedItemId: initialFinishedItemId, quantity: 1, inputs: initialInputs }],
       });
     };
 
@@ -332,19 +332,9 @@ export function DeclareProductionDialog({
   async function onSubmit(data: DeclareFormValues) {
     setIsSubmitting(true);
     try {
-      const uniqueRecipeIds = [...new Set(data.outputs.map((line) => line.recipeId))];
-      const recipeId = uniqueRecipeIds.length === 1 ? uniqueRecipeIds[0] : undefined;
-
       const res = await apiFetch("/api/production/declare", {
         method: "POST",
-        body: JSON.stringify({
-          recipeId,
-          batchNumber: data.batchNumber,
-          notes: data.notes,
-          outputWarehouseId: data.outputWarehouseId,
-          inputWarehouseId: data.inputWarehouseId,
-          outputs: data.outputs,
-        }),
+        body: JSON.stringify(data),
       });
 
       if (res.success) {
@@ -361,7 +351,7 @@ export function DeclareProductionDialog({
     }
   }
 
-  const hasRecipes = recipes.length > 0;
+  const hasRecipes = finishedGoods.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -369,8 +359,8 @@ export function DeclareProductionDialog({
         <DialogHeader>
           <DialogTitle>Declare Production</DialogTitle>
           <DialogDescription>
-            Declare finished goods under one batch. Each FG line has its own raw materials, linked
-            for stock and history reporting.
+            Select finished goods to produce. Raw materials load automatically from each item&apos;s
+            recipe.
           </DialogDescription>
         </DialogHeader>
 
@@ -431,11 +421,11 @@ export function DeclareProductionDialog({
                 className="gap-1"
                 disabled={!hasRecipes}
                 onClick={() => {
-                  const recipeId = defaultRecipeId(recipes);
+                  const finishedItemId = finishedGoods[0]?.id ?? "";
                   appendOutput({
-                    recipeId,
+                    finishedItemId,
                     quantity: 1,
-                    inputs: buildInputsForOutput(recipeId, 1, recipes),
+                    inputs: buildInputsForOutput(finishedItemId, 1, recipes),
                   });
                 }}
               >
@@ -455,13 +445,12 @@ export function DeclareProductionDialog({
                 index={index}
                 control={form.control}
                 register={form.register}
-                recipeOptions={recipeOptions}
+                finishedGoods={finishedGoods}
                 inventoryItems={inventoryItems}
+                recipes={recipes}
                 canRemove={outputFields.length > 1}
                 onRemove={() => removeOutput(index)}
                 onSyncInputs={() => syncOutputInputs(index)}
-                getRecipe={getRecipe}
-                getItemUom={getItemUom}
               />
             ))}
             {form.formState.errors.outputs && (

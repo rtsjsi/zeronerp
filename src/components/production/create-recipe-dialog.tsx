@@ -21,7 +21,6 @@ import { ItemSelect } from "@/components/shared/item-select";
 import { UomField } from "@/components/shared/uom-field";
 
 const recipeSchema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters"),
   finishedItemId: z.string().min(1, "Select a finished good"),
   outputQuantity: z.number().positive("Output quantity must be greater than zero"),
   lines: z
@@ -50,7 +49,6 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
   const form = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeSchema),
     defaultValues: {
-      name: "",
       finishedItemId: "",
       outputQuantity: 1,
       lines: [{ rawItemId: "", quantity: 1 }],
@@ -76,7 +74,6 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
 
     loadItems();
     form.reset({
-      name: "",
       finishedItemId: "",
       outputQuantity: 1,
       lines: [{ rawItemId: "", quantity: 1 }],
@@ -116,59 +113,49 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="name">Recipe Name</Label>
-              <Input id="name" {...form.register("name")} placeholder="e.g. Groundnut Oil 1Ltr" />
-              {form.formState.errors.name && (
-                <p className="text-[10px] text-destructive">{form.formState.errors.name.message}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3">
+            <div className="space-y-2 sm:col-span-8 min-w-0">
+              <Label htmlFor="finishedItemId">Finished Good</Label>
+              <Controller
+                name="finishedItemId"
+                control={form.control}
+                render={({ field }) => (
+                  <ItemSelect
+                    id="finishedItemId"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={finishedGoods}
+                    placeholder="Select finished good"
+                    searchPlaceholder="Search finished goods..."
+                    showUom={false}
+                  />
+                )}
+              />
+              {form.formState.errors.finishedItemId && (
+                <p className="text-[10px] text-destructive">
+                  {form.formState.errors.finishedItemId.message}
+                </p>
               )}
             </div>
 
-            <div className="space-y-2 sm:col-span-2 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3">
-              <div className="space-y-2 sm:col-span-8 min-w-0">
-                <Label htmlFor="finishedItemId">Finished Good</Label>
-                <Controller
-                  name="finishedItemId"
-                  control={form.control}
-                  render={({ field }) => (
-                    <ItemSelect
-                      id="finishedItemId"
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      items={finishedGoods}
-                      placeholder="Select finished good"
-                      searchPlaceholder="Search finished goods..."
-                      showUom={false}
-                    />
-                  )}
-                />
-                {form.formState.errors.finishedItemId && (
-                  <p className="text-[10px] text-destructive">
-                    {form.formState.errors.finishedItemId.message}
-                  </p>
-                )}
-              </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>UOM</Label>
+              <UomField value={finishedGoodUom} compact />
+            </div>
 
-              <div className="space-y-2 sm:col-span-2">
-                <Label>UOM</Label>
-                <UomField value={finishedGoodUom} compact />
-              </div>
-
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="outputQuantity">Output Qty</Label>
-                <Input
-                  id="outputQuantity"
-                  type="number"
-                  step="0.001"
-                  {...form.register("outputQuantity", { valueAsNumber: true })}
-                />
-                {form.formState.errors.outputQuantity && (
-                  <p className="text-[10px] text-destructive">
-                    {form.formState.errors.outputQuantity.message}
-                  </p>
-                )}
-              </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="outputQuantity">Output Qty</Label>
+              <Input
+                id="outputQuantity"
+                type="number"
+                step="0.001"
+                {...form.register("outputQuantity", { valueAsNumber: true })}
+              />
+              {form.formState.errors.outputQuantity && (
+                <p className="text-[10px] text-destructive">
+                  {form.formState.errors.outputQuantity.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -191,47 +178,47 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
                 rawMaterials.find((item) => item.id === lineValues?.[index]?.rawItemId)?.uom ?? null;
 
               return (
-              <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                <div className="sm:col-span-7 space-y-1 min-w-0">
-                  <Controller
-                    name={`lines.${index}.rawItemId`}
-                    control={form.control}
-                    render={({ field }) => (
-                      <ItemSelect
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        items={rawMaterials}
-                        placeholder="Select raw material"
-                        searchPlaceholder="Search items..."
-                        showUom={false}
-                      />
-                    )}
-                  />
+                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                  <div className="sm:col-span-7 space-y-1 min-w-0">
+                    <Controller
+                      name={`lines.${index}.rawItemId`}
+                      control={form.control}
+                      render={({ field }) => (
+                        <ItemSelect
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          items={rawMaterials}
+                          placeholder="Select raw material"
+                          searchPlaceholder="Search items..."
+                          showUom={false}
+                        />
+                      )}
+                    />
+                  </div>
+                  <div className="sm:col-span-2 space-y-1">
+                    <UomField value={rawItemUom} compact />
+                  </div>
+                  <div className="sm:col-span-2 space-y-1">
+                    <Input
+                      type="number"
+                      step="0.001"
+                      placeholder="Qty"
+                      {...form.register(`lines.${index}.quantity`, { valueAsNumber: true })}
+                    />
+                  </div>
+                  <div className="sm:col-span-1 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={fields.length === 1}
+                      onClick={() => remove(index)}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="sm:col-span-2 space-y-1">
-                  <UomField value={rawItemUom} compact />
-                </div>
-                <div className="sm:col-span-2 space-y-1">
-                  <Input
-                    type="number"
-                    step="0.001"
-                    placeholder="Qty"
-                    {...form.register(`lines.${index}.quantity`, { valueAsNumber: true })}
-                  />
-                </div>
-                <div className="sm:col-span-1 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={fields.length === 1}
-                    onClick={() => remove(index)}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            );
+              );
             })}
             {form.formState.errors.lines && (
               <p className="text-[10px] text-destructive">
