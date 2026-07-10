@@ -18,7 +18,6 @@ const outputLineSchema = z.object({
 
 const declareSchema = z.object({
   batchNumber: z.string().trim().min(1),
-  notes: z.string().optional(),
   outputWarehouseId: z.string().min(1),
   inputWarehouseId: z.string().min(1),
   outputs: z.array(outputLineSchema).min(1, "Add at least one finished good line"),

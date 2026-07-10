@@ -179,11 +179,18 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-1"
+                className="gap-1 h-8"
                 onClick={() => append({ rawItemId: "", quantity: 1 })}
               >
                 <Plus className="w-3.5 h-3.5" /> Add Line
               </Button>
+            </div>
+
+            <div className="hidden sm:grid sm:grid-cols-12 gap-2">
+              <Label className="sm:col-span-7">Raw Material</Label>
+              <Label className="sm:col-span-2">UOM</Label>
+              <Label className="sm:col-span-2">Qty</Label>
+              <div className="sm:col-span-1" />
             </div>
 
             {fields.map((field, index) => {
@@ -191,8 +198,9 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                 rawMaterials.find((item) => item.id === lineValues?.[index]?.rawItemId)?.uom ?? null;
 
               return (
-                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                  <div className="sm:col-span-7 space-y-1 min-w-0">
+                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                  <div className="sm:col-span-7 space-y-2 min-w-0">
+                    <Label className="sm:hidden">Raw Material</Label>
                     <Controller
                       name={`lines.${index}.rawItemId`}
                       control={form.control}
@@ -208,10 +216,12 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                       )}
                     />
                   </div>
-                  <div className="sm:col-span-2 space-y-1">
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label className="sm:hidden">UOM</Label>
                     <UomField value={rawItemUom} compact />
                   </div>
-                  <div className="sm:col-span-2 space-y-1">
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label className="sm:hidden">Qty</Label>
                     <Input
                       type="number"
                       step="0.001"
@@ -224,6 +234,7 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                       type="button"
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8"
                       disabled={fields.length === 1}
                       onClick={() => remove(index)}
                     >

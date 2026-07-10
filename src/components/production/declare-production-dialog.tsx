@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
@@ -41,7 +40,6 @@ const outputLineSchema = z.object({
 
 const declareSchema = z.object({
   batchNumber: z.string().trim().min(1, "Batch number is required"),
-  notes: z.string().optional(),
   outputWarehouseId: z.string().min(1, "Select finished good warehouse"),
   inputWarehouseId: z.string().min(1, "Select raw material warehouse"),
   outputs: z.array(outputLineSchema).min(1, "Add at least one finished good line"),
@@ -137,9 +135,9 @@ function FgOutputLine({
 
   return (
     <div className="rounded-lg border border-border/80 p-3 space-y-3 bg-background/60">
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-        <div className="sm:col-span-7 space-y-1 min-w-0">
-          <Label className="text-xs">Finished Good</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+        <div className="sm:col-span-7 space-y-2 min-w-0">
+          <Label className="sm:hidden">Finished Good</Label>
           <Controller
             name={`outputs.${index}.finishedItemId`}
             control={control}
@@ -158,12 +156,12 @@ function FgOutputLine({
             )}
           />
         </div>
-        <div className="sm:col-span-2 space-y-1">
-          <Label className="text-xs">UOM</Label>
+        <div className="sm:col-span-2 space-y-2">
+          <Label className="sm:hidden">UOM</Label>
           <UomField value={recipe?.finishedItem?.uom} compact />
         </div>
-        <div className="sm:col-span-2 space-y-1">
-          <Label className="text-xs">Output Qty</Label>
+        <div className="sm:col-span-2 space-y-2">
+          <Label className="sm:hidden">Output Qty</Label>
           <Input
             type="number"
             step="0.001"
@@ -176,6 +174,7 @@ function FgOutputLine({
             type="button"
             variant="ghost"
             size="icon"
+            className="h-8 w-8"
             disabled={!canRemove}
             onClick={onRemove}
           >
@@ -193,7 +192,7 @@ function FgOutputLine({
             type="button"
             variant="outline"
             size="sm"
-            className="gap-1 h-7 text-xs"
+            className="gap-1 h-8"
             onClick={() => appendInput({ itemId: "", quantity: 1 })}
           >
             <Plus className="w-3 h-3" /> Add RM
@@ -206,9 +205,19 @@ function FgOutputLine({
           </p>
         )}
 
+        {inputFields.length > 0 && (
+          <div className="hidden sm:grid sm:grid-cols-12 gap-2">
+            <Label className="sm:col-span-7">Raw Material</Label>
+            <Label className="sm:col-span-2">UOM</Label>
+            <Label className="sm:col-span-2">Qty</Label>
+            <div className="sm:col-span-1" />
+          </div>
+        )}
+
         {inputFields.map((field, inputIndex) => (
-          <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-            <div className="sm:col-span-7 space-y-1 min-w-0">
+          <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+            <div className="sm:col-span-7 space-y-2 min-w-0">
+              <Label className="sm:hidden">Raw Material</Label>
               <Controller
                 name={`outputs.${index}.inputs.${inputIndex}.itemId`}
                 control={control}
@@ -224,10 +233,12 @@ function FgOutputLine({
                 )}
               />
             </div>
-            <div className="sm:col-span-2 space-y-1">
+            <div className="sm:col-span-2 space-y-2">
+              <Label className="sm:hidden">UOM</Label>
               <UomField value={getItemUom(inputValues?.[inputIndex]?.itemId ?? "")} compact />
             </div>
-            <div className="sm:col-span-2 space-y-1">
+            <div className="sm:col-span-2 space-y-2">
+              <Label className="sm:hidden">Qty</Label>
               <Input
                 type="number"
                 step="0.001"
@@ -242,6 +253,7 @@ function FgOutputLine({
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="h-8 w-8"
                 disabled={inputFields.length === 1}
                 onClick={() => removeInput(inputIndex)}
               >
@@ -269,7 +281,6 @@ export function DeclareProductionDialog({
     resolver: zodResolver(declareSchema),
     defaultValues: {
       batchNumber: makeBatchNumber(),
-      notes: "",
       outputWarehouseId: "",
       inputWarehouseId: "",
       outputs: [{ finishedItemId: "", quantity: 1, inputs: [] }],
@@ -319,7 +330,6 @@ export function DeclareProductionDialog({
 
       form.reset({
         batchNumber: makeBatchNumber(),
-        notes: "",
         outputWarehouseId: defaultWh,
         inputWarehouseId: defaultWh,
         outputs: [{ finishedItemId: initialFinishedItemId, quantity: 1, inputs: initialInputs }],
@@ -368,7 +378,13 @@ export function DeclareProductionDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="batchNumber">Batch Number</Label>
-              <Input id="batchNumber" {...form.register("batchNumber")} />
+              <Input
+                id="batchNumber"
+                readOnly
+                disabled
+                className="bg-muted/50"
+                {...form.register("batchNumber")}
+              />
             </div>
 
             <div className="space-y-2">
@@ -376,7 +392,7 @@ export function DeclareProductionDialog({
               <select
                 id="outputWarehouseId"
                 {...form.register("outputWarehouseId")}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="w-full flex h-8 rounded-lg border border-input bg-background px-2.5 py-1 text-sm"
               >
                 <option value="">Select warehouse</option>
                 {warehouses.map((w) => (
@@ -392,7 +408,7 @@ export function DeclareProductionDialog({
               <select
                 id="inputWarehouseId"
                 {...form.register("inputWarehouseId")}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="w-full flex h-8 rounded-lg border border-input bg-background px-2.5 py-1 text-sm"
               >
                 <option value="">Select warehouse</option>
                 {warehouses.map((w) => (
@@ -404,11 +420,6 @@ export function DeclareProductionDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" {...form.register("notes")} className="resize-none h-16" />
-          </div>
-
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -418,7 +429,7 @@ export function DeclareProductionDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-1"
+                className="gap-1 h-8"
                 disabled={!hasRecipes}
                 onClick={() => {
                   const finishedItemId = finishedGoods[0]?.id ?? "";
@@ -437,6 +448,15 @@ export function DeclareProductionDialog({
               <p className="text-xs text-muted-foreground">
                 Create an active recipe before declaring production.
               </p>
+            )}
+
+            {hasRecipes && (
+              <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-0">
+                <Label className="sm:col-span-7">Finished Good</Label>
+                <Label className="sm:col-span-2">UOM</Label>
+                <Label className="sm:col-span-2">Output Qty</Label>
+                <div className="sm:col-span-1" />
+              </div>
             )}
 
             {outputFields.map((field, index) => (

@@ -20,7 +20,7 @@ export function UomField({ value, className, compact }: UomFieldProps) {
     <div
       className={cn(
         "flex h-8 w-full min-w-0 items-center rounded-lg border border-input bg-muted/50 text-foreground",
-        compact ? "justify-center px-1.5 text-xs font-medium" : "px-2.5 text-sm",
+        compact ? "justify-center px-1.5 text-sm font-medium" : "px-2.5 text-sm",
         className,
       )}
     >

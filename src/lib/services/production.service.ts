@@ -53,7 +53,6 @@ export class ProductionService {
     userId: string,
     data: {
       batchNumber: string;
-      notes?: string;
       outputWarehouseId: string;
       inputWarehouseId: string;
       outputs: ProductionOutputLine[];
@@ -122,7 +121,6 @@ export class ProductionService {
           storeId,
           recipeId: singleRecipe?.id ?? null,
           batchNumber: data.batchNumber.trim(),
-          notes: data.notes?.trim() || null,
           status: 'COMPLETED',
           startTime: ts,
           endTime: ts,

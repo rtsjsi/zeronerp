@@ -9,7 +9,6 @@ interface ProductionBatchRow {
   batchNumber: string;
   status: string;
   createdAt: string;
-  notes?: string | null;
   recipe?: { name: string; finishedItem?: { name: string } } | null;
   outputs?: Array<{
     quantity: number;
@@ -67,9 +66,6 @@ export function ProductionBatchTable({ batches }: ProductionBatchTableProps) {
                       </div>
                       <div>
                         <div className="font-semibold">{batch.batchNumber}</div>
-                        {batch.notes && (
-                          <div className="text-[10px] text-muted-foreground">{batch.notes}</div>
-                        )}
                         <div className="text-[10px] text-muted-foreground mt-0.5">
                           {outputLines.length > 1
                             ? `${outputLines.length} finished goods`

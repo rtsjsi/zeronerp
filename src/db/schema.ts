@@ -242,7 +242,6 @@ export const productionBatches = sqliteTable('ProductionBatch', {
   recipeId: text('recipeId').references(() => recipes.id),
   batchNumber: text('batchNumber').notNull(),
   status: text('status').notNull().default('DRAFT'),
-  notes: text('notes'),
   startTime: text('startTime'),
   endTime: text('endTime'),
   isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
