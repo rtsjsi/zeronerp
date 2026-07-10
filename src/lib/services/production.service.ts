@@ -16,11 +16,13 @@ import { RecipeService } from './recipe.service';
 
 export type ProductionInputLine = {
   itemId: string;
+  warehouseId: string;
   quantity: number;
 };
 
 export type ProductionOutputLine = {
   finishedItemId: string;
+  warehouseId: string;
   quantity: number;
   inputs: ProductionInputLine[];
 };
@@ -53,8 +55,6 @@ export class ProductionService {
     userId: string,
     data: {
       batchNumber: string;
-      outputWarehouseId: string;
-      inputWarehouseId: string;
       outputs: ProductionOutputLine[];
     },
   ) {
@@ -68,6 +68,9 @@ export class ProductionService {
       if (output.quantity <= 0) {
         throw new Error('All output quantities must be greater than zero');
       }
+      if (!output.warehouseId) {
+        throw new Error('Each finished good line needs a warehouse');
+      }
       if (!output.inputs.length) {
         throw new Error('Each finished good line needs at least one raw material');
       }
@@ -75,20 +78,23 @@ export class ProductionService {
         if (input.quantity <= 0) {
           throw new Error('All raw material quantities must be greater than zero');
         }
+        if (!input.warehouseId) {
+          throw new Error('Each raw material line needs a warehouse');
+        }
       }
     }
 
     const aggregatedInputs = new Map<string, { itemId: string; warehouseId: string; quantity: number }>();
     for (const output of data.outputs) {
       for (const input of output.inputs) {
-        const key = `${input.itemId}:${data.inputWarehouseId}`;
+        const key = `${input.itemId}:${input.warehouseId}`;
         const existing = aggregatedInputs.get(key);
         if (existing) {
           existing.quantity += input.quantity;
         } else {
           aggregatedInputs.set(key, {
             itemId: input.itemId,
-            warehouseId: data.inputWarehouseId,
+            warehouseId: input.warehouseId,
             quantity: input.quantity,
           });
         }
@@ -148,7 +154,7 @@ export class ProductionService {
         batchId,
         recipeId: recipe.id,
         itemId: recipe.finishedItemId,
-        warehouseId: data.outputWarehouseId,
+        warehouseId: output.warehouseId,
         quantity: output.quantity,
         createdAt: ts,
       });
@@ -159,7 +165,7 @@ export class ProductionService {
         batchId,
         outputLineId,
         itemId: recipe.finishedItemId,
-        warehouseId: data.outputWarehouseId,
+        warehouseId: output.warehouseId,
         type: 'OUTPUT',
         quantity: output.quantity,
         createdAt: ts,
@@ -172,7 +178,7 @@ export class ProductionService {
           batchId,
           outputLineId,
           itemId: input.itemId,
-          warehouseId: data.inputWarehouseId,
+          warehouseId: input.warehouseId,
           type: 'INPUT',
           quantity: input.quantity,
           createdAt: ts,
@@ -198,7 +204,7 @@ export class ProductionService {
 
       await StockService.adjustStock(storeId, userId, {
         itemId: recipe.finishedItemId,
-        warehouseId: data.outputWarehouseId,
+        warehouseId: output.warehouseId,
         quantity: output.quantity,
         type: 'IN',
         reference,

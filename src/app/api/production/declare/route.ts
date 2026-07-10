@@ -7,19 +7,19 @@ import { z } from "zod";
 
 const inputLineSchema = z.object({
   itemId: z.string().min(1),
+  warehouseId: z.string().min(1, "Select warehouse"),
   quantity: z.number().positive("Quantity must be greater than zero"),
 });
 
 const outputLineSchema = z.object({
   finishedItemId: z.string().min(1),
+  warehouseId: z.string().min(1, "Select warehouse"),
   quantity: z.number().positive("Quantity must be greater than zero"),
   inputs: z.array(inputLineSchema).min(1, "Each finished good needs raw materials"),
 });
 
 const declareSchema = z.object({
   batchNumber: z.string().trim().min(1),
-  outputWarehouseId: z.string().min(1),
-  inputWarehouseId: z.string().min(1),
   outputs: z.array(outputLineSchema).min(1, "Add at least one finished good line"),
 });
 

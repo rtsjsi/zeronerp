@@ -25,23 +25,24 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 import { ItemSelect, type ItemOption } from "@/components/shared/item-select";
+import { LovSelect } from "@/components/shared/lov-select";
 import { UomField } from "@/components/shared/uom-field";
 
 const inputLineSchema = z.object({
   itemId: z.string().min(1, "Select a raw material"),
+  warehouseId: z.string().min(1, "Select warehouse"),
   quantity: z.number().positive("Quantity must be greater than zero"),
 });
 
 const outputLineSchema = z.object({
   finishedItemId: z.string().min(1, "Select a finished good"),
+  warehouseId: z.string().min(1, "Select warehouse"),
   quantity: z.number().positive("Quantity must be greater than zero"),
   inputs: z.array(inputLineSchema).min(1, "Add at least one raw material"),
 });
 
 const declareSchema = z.object({
   batchNumber: z.string().trim().min(1, "Batch number is required"),
-  outputWarehouseId: z.string().min(1, "Select finished good warehouse"),
-  inputWarehouseId: z.string().min(1, "Select raw material warehouse"),
   outputs: z.array(outputLineSchema).min(1, "Add at least one finished good line"),
 });
 
@@ -81,7 +82,12 @@ function getRecipeForFg(recipes: any[], finishedItemId: string) {
   return recipes.find((recipe) => recipe.finishedItemId === finishedItemId);
 }
 
-function buildInputsForOutput(finishedItemId: string, quantity: number, recipes: any[]) {
+function buildInputsForOutput(
+  finishedItemId: string,
+  quantity: number,
+  recipes: any[],
+  warehouseId: string,
+) {
   const recipe = getRecipeForFg(recipes, finishedItemId);
   if (!recipe || !quantity) return [];
 
@@ -90,8 +96,13 @@ function buildInputsForOutput(finishedItemId: string, quantity: number, recipes:
 
   return (recipe.lines ?? []).map((line: any) => ({
     itemId: line.rawItemId,
+    warehouseId,
     quantity: Number((Number(line.quantity) * factor).toFixed(3)),
   }));
+}
+
+function warehouseOptions(warehouses: any[]) {
+  return warehouses.map((w) => ({ value: w.id, label: w.name }));
 }
 
 function FgOutputLine({
@@ -101,6 +112,8 @@ function FgOutputLine({
   finishedGoods,
   inventoryItems,
   recipes,
+  warehouses,
+  defaultWarehouseId,
   canRemove,
   onRemove,
   onSyncInputs,
@@ -111,12 +124,15 @@ function FgOutputLine({
   finishedGoods: ItemOption[];
   inventoryItems: any[];
   recipes: any[];
+  warehouses: any[];
+  defaultWarehouseId: string;
   canRemove: boolean;
   onRemove: () => void;
   onSyncInputs: () => void;
 }) {
   const finishedItemId = useWatch({ control, name: `outputs.${index}.finishedItemId` }) ?? "";
   const recipe = getRecipeForFg(recipes, finishedItemId);
+  const whOptions = warehouseOptions(warehouses);
 
   const {
     fields: inputFields,
@@ -136,7 +152,7 @@ function FgOutputLine({
   return (
     <div className="rounded-lg border border-border/80 p-3 space-y-3 bg-background/60">
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-        <div className="sm:col-span-7 space-y-2 min-w-0">
+        <div className="sm:col-span-4 space-y-2 min-w-0">
           <Label className="sm:hidden">Finished Good</Label>
           <Controller
             name={`outputs.${index}.finishedItemId`}
@@ -152,6 +168,22 @@ function FgOutputLine({
                 placeholder="Select finished good"
                 searchPlaceholder="Search finished goods..."
                 showUom={false}
+              />
+            )}
+          />
+        </div>
+        <div className="sm:col-span-3 space-y-2 min-w-0">
+          <Label className="sm:hidden">FG Warehouse</Label>
+          <Controller
+            name={`outputs.${index}.warehouseId`}
+            control={control}
+            render={({ field }) => (
+              <LovSelect
+                value={field.value}
+                onValueChange={field.onChange}
+                options={whOptions}
+                placeholder="Warehouse"
+                className="w-full"
               />
             )}
           />
@@ -193,7 +225,7 @@ function FgOutputLine({
             variant="outline"
             size="sm"
             className="gap-1 h-8"
-            onClick={() => appendInput({ itemId: "", quantity: 1 })}
+            onClick={() => appendInput({ itemId: "", warehouseId: defaultWarehouseId, quantity: 1 })}
           >
             <Plus className="w-3 h-3" /> Add RM
           </Button>
@@ -207,7 +239,8 @@ function FgOutputLine({
 
         {inputFields.length > 0 && (
           <div className="hidden sm:grid sm:grid-cols-12 gap-2">
-            <Label className="sm:col-span-7">Raw Material</Label>
+            <Label className="sm:col-span-4">Raw Material</Label>
+            <Label className="sm:col-span-3">RM Warehouse</Label>
             <Label className="sm:col-span-2">UOM</Label>
             <Label className="sm:col-span-2">Qty</Label>
             <div className="sm:col-span-1" />
@@ -216,7 +249,7 @@ function FgOutputLine({
 
         {inputFields.map((field, inputIndex) => (
           <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-            <div className="sm:col-span-7 space-y-2 min-w-0">
+            <div className="sm:col-span-4 space-y-2 min-w-0">
               <Label className="sm:hidden">Raw Material</Label>
               <Controller
                 name={`outputs.${index}.inputs.${inputIndex}.itemId`}
@@ -229,6 +262,22 @@ function FgOutputLine({
                     placeholder="Select raw material"
                     searchPlaceholder="Search items..."
                     showUom={false}
+                  />
+                )}
+              />
+            </div>
+            <div className="sm:col-span-3 space-y-2 min-w-0">
+              <Label className="sm:hidden">RM Warehouse</Label>
+              <Controller
+                name={`outputs.${index}.inputs.${inputIndex}.warehouseId`}
+                control={control}
+                render={({ field: whField }) => (
+                  <LovSelect
+                    value={whField.value}
+                    onValueChange={whField.onChange}
+                    options={whOptions}
+                    placeholder="Warehouse"
+                    className="w-full"
                   />
                 )}
               />
@@ -281,9 +330,7 @@ export function DeclareProductionDialog({
     resolver: zodResolver(declareSchema),
     defaultValues: {
       batchNumber: makeBatchNumber(),
-      outputWarehouseId: "",
-      inputWarehouseId: "",
-      outputs: [{ finishedItemId: "", quantity: 1, inputs: [] }],
+      outputs: [{ finishedItemId: "", warehouseId: "", quantity: 1, inputs: [] }],
     },
   });
 
@@ -296,9 +343,24 @@ export function DeclareProductionDialog({
 
   function syncOutputInputs(index: number) {
     const output = form.getValues(`outputs.${index}`);
-    const nextInputs = buildInputsForOutput(output.finishedItemId, output.quantity, recipes);
+    const existingByItem = new Map(
+      (output.inputs ?? []).map((input) => [input.itemId, input.warehouseId]),
+    );
+    const rmWarehouseId = output.inputs?.[0]?.warehouseId || defaultWarehouseId;
+    const built = buildInputsForOutput(
+      output.finishedItemId,
+      output.quantity,
+      recipes,
+      rmWarehouseId,
+    );
+    const nextInputs = built.map((input) => ({
+      ...input,
+      warehouseId: existingByItem.get(input.itemId) ?? input.warehouseId,
+    }));
     form.setValue(`outputs.${index}.inputs`, nextInputs, { shouldValidate: true });
   }
+
+  const defaultWarehouseId = warehouses[0]?.id ?? "";
 
   useEffect(() => {
     if (!open) return;
@@ -319,7 +381,7 @@ export function DeclareProductionDialog({
       const fgOptions = finishedGoodOptions(activeRecipes);
       const initialFinishedItemId = fgOptions[0]?.id ?? "";
       const initialInputs = initialFinishedItemId
-        ? buildInputsForOutput(initialFinishedItemId, 1, activeRecipes)
+        ? buildInputsForOutput(initialFinishedItemId, 1, activeRecipes, defaultWh)
         : [];
 
       setRecipes(activeRecipes);
@@ -330,9 +392,14 @@ export function DeclareProductionDialog({
 
       form.reset({
         batchNumber: makeBatchNumber(),
-        outputWarehouseId: defaultWh,
-        inputWarehouseId: defaultWh,
-        outputs: [{ finishedItemId: initialFinishedItemId, quantity: 1, inputs: initialInputs }],
+        outputs: [
+          {
+            finishedItemId: initialFinishedItemId,
+            warehouseId: defaultWh,
+            quantity: 1,
+            inputs: initialInputs,
+          },
+        ],
       });
     };
 
@@ -365,7 +432,7 @@ export function DeclareProductionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[920px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Declare Production</DialogTitle>
           <DialogDescription>
@@ -375,49 +442,15 @@ export function DeclareProductionDialog({
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="batchNumber">Batch Number</Label>
-              <Input
-                id="batchNumber"
-                readOnly
-                disabled
-                className="bg-muted/50"
-                {...form.register("batchNumber")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="outputWarehouseId">Finished Good Warehouse</Label>
-              <select
-                id="outputWarehouseId"
-                {...form.register("outputWarehouseId")}
-                className="w-full flex h-8 rounded-lg border border-input bg-background px-2.5 py-1 text-sm"
-              >
-                <option value="">Select warehouse</option>
-                {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="inputWarehouseId">Raw Material Warehouse</Label>
-              <select
-                id="inputWarehouseId"
-                {...form.register("inputWarehouseId")}
-                className="w-full flex h-8 rounded-lg border border-input bg-background px-2.5 py-1 text-sm"
-              >
-                <option value="">Select warehouse</option>
-                {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="batchNumber">Batch Number</Label>
+            <Input
+              id="batchNumber"
+              readOnly
+              disabled
+              className="bg-muted/50"
+              {...form.register("batchNumber")}
+            />
           </div>
 
           <div className="space-y-3">
@@ -435,8 +468,14 @@ export function DeclareProductionDialog({
                   const finishedItemId = finishedGoods[0]?.id ?? "";
                   appendOutput({
                     finishedItemId,
+                    warehouseId: defaultWarehouseId,
                     quantity: 1,
-                    inputs: buildInputsForOutput(finishedItemId, 1, recipes),
+                    inputs: buildInputsForOutput(
+                      finishedItemId,
+                      1,
+                      recipes,
+                      defaultWarehouseId,
+                    ),
                   });
                 }}
               >
@@ -452,7 +491,8 @@ export function DeclareProductionDialog({
 
             {hasRecipes && (
               <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-0">
-                <Label className="sm:col-span-7">Finished Good</Label>
+                <Label className="sm:col-span-4">Finished Good</Label>
+                <Label className="sm:col-span-3">FG Warehouse</Label>
                 <Label className="sm:col-span-2">UOM</Label>
                 <Label className="sm:col-span-2">Output Qty</Label>
                 <div className="sm:col-span-1" />
@@ -468,6 +508,8 @@ export function DeclareProductionDialog({
                 finishedGoods={finishedGoods}
                 inventoryItems={inventoryItems}
                 recipes={recipes}
+                warehouses={warehouses}
+                defaultWarehouseId={defaultWarehouseId}
                 canRemove={outputFields.length > 1}
                 onRemove={() => removeOutput(index)}
                 onSyncInputs={() => syncOutputInputs(index)}
