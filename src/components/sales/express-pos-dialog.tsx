@@ -29,6 +29,7 @@ interface CartItem {
   id: string;
   name: string;
   mrp: number;
+  gstRate: number;
   quantity: number;
   warehouseId: string;
 }
@@ -112,6 +113,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
           id: item.id,
           name: item.name,
           mrp: Number(item.mrp),
+          gstRate: Number(item.gstRate ?? 0),
           quantity: 1,
           warehouseId: selectedWarehouseId,
         },
@@ -151,7 +153,10 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
 
   // Cart math
   const cartSubtotal = cart.reduce((sum, item) => sum + item.mrp * item.quantity, 0);
-  const cartTax = cartSubtotal * 0.05; // 5% flat GST/VAT simulation
+  const cartTax = cart.reduce(
+    (sum, item) => sum + item.mrp * item.quantity * (item.gstRate / 100),
+    0,
+  );
   const cartGrandTotal = cartSubtotal + cartTax;
 
   const returnChange = amountReceived 
@@ -168,13 +173,16 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
     setIsSubmitting(true);
     try {
       const generatedInvoiceNo = `RINV-${Date.now().toString().slice(-6)}`;
-      const currentYear = new Date().getFullYear();
-      
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      const fyStart = currentMonth >= 3 ? currentYear : currentYear - 1;
+
       const payload = {
-        customerId: "walkin", // Special keyword to resolve to 'Walk-in Customer'
+        customerId: "walkin",
         invoiceNumber: generatedInvoiceNo,
-        financialYear: `${currentYear}-${(currentYear + 1).toString().slice(-2)}`,
-        notes: `Retail walk-in transaction paid via ${paymentMethod}.`,
+        invoiceDate: today.toISOString().slice(0, 10),
+        financialYear: `${fyStart}-${(fyStart + 1).toString().slice(-2)}`,
         paymentMethod,
         amountReceived: amountReceived ? Number(amountReceived) : cartGrandTotal,
         amountReturned: returnChange,
@@ -183,6 +191,7 @@ export function ExpressPOSDialog({ open, onOpenChange, onSuccess }: ExpressPOSDi
           warehouseId: i.warehouseId,
           quantity: i.quantity,
           unitPrice: i.mrp,
+          gstRate: i.gstRate,
         })),
       };
 

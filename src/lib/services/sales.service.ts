@@ -2,7 +2,7 @@
  * Sales Service (Cloudflare D1 / Drizzle)
  */
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
   customers,
@@ -146,8 +146,8 @@ export class SalesService {
     data: {
       customerId?: string;
       invoiceNumber: string;
+      invoiceDate: string;
       financialYear: string;
-      notes?: string;
       paymentMethod?: string;
       amountReceived?: number;
       amountReturned?: number;
@@ -156,6 +156,7 @@ export class SalesService {
         warehouseId: string;
         quantity: number;
         unitPrice: number;
+        gstRate: number;
       }[];
     },
   ) {
@@ -181,8 +182,12 @@ export class SalesService {
     }
 
     const { items: lineItems, customerId: _ignored, ...invData } = data;
+    const lineTotal = (item: { quantity: number; unitPrice: number; gstRate: number }) => {
+      const taxable = item.quantity * item.unitPrice;
+      return Number((taxable * (1 + item.gstRate / 100)).toFixed(2));
+    };
     const totalAmount = Number(
-      lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0).toFixed(2),
+      lineItems.reduce((sum, item) => sum + lineTotal(item), 0).toFixed(2),
     );
     const invoiceId = newId();
     const ts = now();
@@ -214,7 +219,8 @@ export class SalesService {
           warehouseId: item.warehouseId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+          gstRate: item.gstRate,
+          totalPrice: lineTotal(item),
         })),
       );
     } catch (itemErr) {
@@ -260,6 +266,205 @@ export class SalesService {
         createdAt: now(),
       });
     }
+
+    return invoice;
+  }
+
+  static async getSalesInvoiceById(storeId: string, id: string) {
+    return db().query.salesInvoices.findFirst({
+      where: and(
+        eq(salesInvoices.id, id),
+        eq(salesInvoices.storeId, storeId),
+        eq(salesInvoices.isDeleted, false),
+      ),
+      with: {
+        customer: true,
+        items: { with: { item: true, warehouse: true } },
+      },
+    });
+  }
+
+  static async updateSalesInvoice(
+    storeId: string,
+    userId: string,
+    id: string,
+    data: {
+      customerId: string;
+      invoiceNumber: string;
+      invoiceDate: string;
+      financialYear: string;
+      items: {
+        itemId: string;
+        warehouseId: string;
+        quantity: number;
+        unitPrice: number;
+        gstRate: number;
+      }[];
+    },
+  ) {
+    const database = db();
+
+    const existing = await database.query.salesInvoices.findFirst({
+      where: and(
+        eq(salesInvoices.id, id),
+        eq(salesInvoices.storeId, storeId),
+        eq(salesInvoices.isDeleted, false),
+      ),
+      with: { items: true },
+    });
+
+    if (!existing) {
+      throw new Error('Sales Invoice not found');
+    }
+
+    const duplicate = await database.query.salesInvoices.findFirst({
+      where: and(
+        eq(salesInvoices.storeId, storeId),
+        eq(salesInvoices.invoiceNumber, data.invoiceNumber),
+        eq(salesInvoices.financialYear, data.financialYear),
+        eq(salesInvoices.isDeleted, false),
+        ne(salesInvoices.id, id),
+      ),
+    });
+
+    if (duplicate) {
+      throw new Error('Duplicate Sales Invoice number is not allowed in the same financial year.');
+    }
+
+    const { items: lineItems, ...invData } = data;
+    const lineTotal = (item: { quantity: number; unitPrice: number; gstRate: number }) => {
+      const taxable = item.quantity * item.unitPrice;
+      return Number((taxable * (1 + item.gstRate / 100)).toFixed(2));
+    };
+    const totalAmount = Number(
+      lineItems.reduce((sum, item) => sum + lineTotal(item), 0).toFixed(2),
+    );
+
+    for (const item of existing.items) {
+      const qty = Number(item.quantity);
+      const existingStock = await database.query.stocks.findFirst({
+        where: and(eq(stocks.itemId, item.itemId), eq(stocks.warehouseId, item.warehouseId)),
+      });
+
+      if (existingStock) {
+        await database
+          .update(stocks)
+          .set({
+            quantity: Number(existingStock.quantity) + qty,
+            updatedAt: now(),
+          })
+          .where(eq(stocks.id, existingStock.id));
+      } else {
+        await database.insert(stocks).values({
+          id: newId(),
+          storeId,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: qty,
+          updatedAt: now(),
+        });
+      }
+
+      await database.insert(inventoryTransactions).values({
+        id: newId(),
+        storeId,
+        itemId: item.itemId,
+        warehouseId: item.warehouseId,
+        type: 'IN',
+        quantity: qty,
+        reference: `Sales Invoice ${existing.invoiceNumber} (edit reversal)`,
+        performedBy: userId,
+        createdAt: now(),
+      });
+    }
+
+    await database.delete(salesInvoiceItems).where(eq(salesInvoiceItems.invoiceId, id));
+
+    try {
+      await database.insert(salesInvoiceItems).values(
+        lineItems.map((item) => ({
+          id: newId(),
+          invoiceId: id,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          gstRate: item.gstRate,
+          totalPrice: lineTotal(item),
+        })),
+      );
+    } catch (itemErr) {
+      throw new Error(
+        `Failed to update Sales Invoice items: ${itemErr instanceof Error ? itemErr.message : 'Unknown error'}`,
+      );
+    }
+
+    for (const item of lineItems) {
+      const existingStock = await database.query.stocks.findFirst({
+        where: and(eq(stocks.itemId, item.itemId), eq(stocks.warehouseId, item.warehouseId)),
+      });
+
+      if (existingStock) {
+        await database
+          .update(stocks)
+          .set({
+            quantity: Number(existingStock.quantity) - Number(item.quantity),
+            updatedAt: now(),
+          })
+          .where(eq(stocks.id, existingStock.id));
+      } else {
+        await database.insert(stocks).values({
+          id: newId(),
+          storeId,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: -Number(item.quantity),
+          updatedAt: now(),
+        });
+      }
+
+      await database.insert(inventoryTransactions).values({
+        id: newId(),
+        storeId,
+        itemId: item.itemId,
+        warehouseId: item.warehouseId,
+        type: 'OUT',
+        quantity: -Number(item.quantity),
+        reference: `Sales Invoice ${data.invoiceNumber}`,
+        performedBy: userId,
+        createdAt: now(),
+      });
+    }
+
+    const previousTotal = Number(existing.totalAmount);
+    const previousReceived = Number(existing.amountReceived);
+    const previousReturned = Number(existing.amountReturned);
+
+    let amountReceived = previousReceived;
+    let amountReturned = previousReturned;
+
+    if (previousReturned > 0) {
+      amountReceived = previousReceived;
+      amountReturned = Math.max(0, Number((previousReceived - totalAmount).toFixed(2)));
+    } else if (previousReceived === previousTotal) {
+      amountReceived = totalAmount;
+      amountReturned = 0;
+    } else {
+      amountReceived = totalAmount;
+      amountReturned = 0;
+    }
+
+    const [invoice] = await database
+      .update(salesInvoices)
+      .set({
+        ...invData,
+        totalAmount,
+        amountReceived,
+        amountReturned,
+        updatedAt: now(),
+      })
+      .where(eq(salesInvoices.id, id))
+      .returning();
 
     return invoice;
   }

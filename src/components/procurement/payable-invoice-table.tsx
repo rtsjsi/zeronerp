@@ -9,11 +9,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Calendar, User, Warehouse } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FileText, Calendar, User, Warehouse, MoreVertical, Edit2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
+import type { PurchaseInvoiceForEdit } from "@/components/procurement/create-invoice-dialog";
 
-interface PurchaseInvoice {
+export interface PurchaseInvoice {
   id: string;
+  vendorId: string;
   invoiceNumber: string;
   invoiceDate: string;
   financialYear: string;
@@ -25,22 +33,44 @@ interface PurchaseInvoice {
   status: string;
   items?: {
     id: string;
+    itemId: string;
+    warehouseId: string;
+    quantity: number;
+    unitPrice: number;
+    gstRate?: number;
     item: {
       name: string;
     };
     warehouse: {
       name: string;
     };
-    quantity: number;
-    unitPrice: number;
   }[];
 }
 
 interface PayableInvoiceTableProps {
   invoices: PurchaseInvoice[];
+  onEdit?: (invoice: PurchaseInvoiceForEdit) => void;
 }
 
-export function PayableInvoiceTable({ invoices }: PayableInvoiceTableProps) {
+function toEditableInvoice(invoice: PurchaseInvoice): PurchaseInvoiceForEdit {
+  return {
+    id: invoice.id,
+    vendorId: invoice.vendorId,
+    invoiceNumber: invoice.invoiceNumber,
+    invoiceDate: invoice.invoiceDate,
+    financialYear: invoice.financialYear,
+    items:
+      invoice.items?.map((item) => ({
+        itemId: item.itemId,
+        warehouseId: item.warehouseId,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        gstRate: Number(item.gstRate ?? 0),
+      })) ?? [],
+  };
+}
+
+export function PayableInvoiceTable({ invoices, onEdit }: PayableInvoiceTableProps) {
   return (
     <div className="rounded-xl border bg-card/50 backdrop-blur-sm min-w-0 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Table>
@@ -53,12 +83,13 @@ export function PayableInvoiceTable({ invoices }: PayableInvoiceTableProps) {
             <TableHead>Materials Received</TableHead>
             <TableHead>Total Amount</TableHead>
             <TableHead>Status</TableHead>
+            {onEdit && <TableHead className="text-right w-[70px]">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {invoices.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={onEdit ? 8 : 7} className="h-24 text-center text-muted-foreground">
                 No invoices found.
               </TableCell>
             </TableRow>
@@ -104,6 +135,20 @@ export function PayableInvoiceTable({ invoices }: PayableInvoiceTableProps) {
                     Completed & Stocked
                   </Badge>
                 </TableCell>
+                {onEdit && (
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
+                        <MoreVertical className="w-4 h-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => onEdit(toEditableInvoice(invoice))}>
+                          <Edit2 className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                )}
               </TableRow>
             ))
           )}

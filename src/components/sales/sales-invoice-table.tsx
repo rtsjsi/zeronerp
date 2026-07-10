@@ -9,12 +9,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Calendar, User, Warehouse } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FileText, Calendar, User, Warehouse, MoreVertical, Edit2 } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/format";
+import type { SalesInvoiceForEdit } from "@/components/sales/create-invoice-dialog";
 
-interface SalesInvoice {
+export interface SalesInvoice {
   id: string;
+  customerId: string;
   invoiceNumber: string;
+  invoiceDate: string;
   financialYear: string;
   customer: {
     name: string;
@@ -22,25 +31,46 @@ interface SalesInvoice {
   totalAmount: number;
   createdAt: string;
   status: string;
-  notes?: string;
   items?: {
     id: string;
+    itemId: string;
+    warehouseId: string;
+    quantity: number;
+    unitPrice: number;
+    gstRate?: number;
     item: {
       name: string;
     };
     warehouse: {
       name: string;
     };
-    quantity: number;
-    unitPrice: number;
   }[];
 }
 
 interface SalesInvoiceTableProps {
   invoices: SalesInvoice[];
+  onEdit?: (invoice: SalesInvoiceForEdit) => void;
 }
 
-export function SalesInvoiceTable({ invoices }: SalesInvoiceTableProps) {
+function toEditableInvoice(invoice: SalesInvoice): SalesInvoiceForEdit {
+  return {
+    id: invoice.id,
+    customerId: invoice.customerId,
+    invoiceNumber: invoice.invoiceNumber,
+    invoiceDate: invoice.invoiceDate,
+    financialYear: invoice.financialYear,
+    items:
+      invoice.items?.map((item) => ({
+        itemId: item.itemId,
+        warehouseId: item.warehouseId,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        gstRate: Number(item.gstRate ?? 0),
+      })) ?? [],
+  };
+}
+
+export function SalesInvoiceTable({ invoices, onEdit }: SalesInvoiceTableProps) {
   return (
     <div className="rounded-xl border bg-card/50 backdrop-blur-sm min-w-0 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Table>
@@ -53,12 +83,13 @@ export function SalesInvoiceTable({ invoices }: SalesInvoiceTableProps) {
             <TableHead>Materials Shipped</TableHead>
             <TableHead>Total Amount</TableHead>
             <TableHead>Status</TableHead>
+            {onEdit && <TableHead className="text-right w-[70px]">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {invoices.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={onEdit ? 8 : 7} className="h-24 text-center text-muted-foreground">
                 No invoices found.
               </TableCell>
             </TableRow>
@@ -83,7 +114,7 @@ export function SalesInvoiceTable({ invoices }: SalesInvoiceTableProps) {
                 <TableCell>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5" />
-                    {new Date(invoice.createdAt).toLocaleDateString()}
+                    {formatDate(invoice.invoiceDate || invoice.createdAt)}
                   </div>
                 </TableCell>
                 <TableCell className="max-w-[200px]">
@@ -104,6 +135,20 @@ export function SalesInvoiceTable({ invoices }: SalesInvoiceTableProps) {
                     Completed & Shipped
                   </Badge>
                 </TableCell>
+                {onEdit && (
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted transition-colors outline-none">
+                        <MoreVertical className="w-4 h-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => onEdit(toEditableInvoice(invoice))}>
+                          <Edit2 className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                )}
               </TableRow>
             ))
           )}

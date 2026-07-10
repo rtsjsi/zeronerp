@@ -9,7 +9,7 @@ import { CustomerTable } from "@/components/sales/customer-table";
 import { CreateCustomerDialog } from "@/components/sales/create-customer-dialog";
 import { EditCustomerDialog } from "@/components/sales/edit-customer-dialog";
 import { SalesInvoiceTable } from "@/components/sales/sales-invoice-table";
-import { CreateInvoiceDialog } from "@/components/sales/create-invoice-dialog";
+import { CreateInvoiceDialog, type SalesInvoiceForEdit } from "@/components/sales/create-invoice-dialog";
 import { ExpressPOSDialog } from "@/components/sales/express-pos-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ export default function SalesPage() {
   const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
   const [editCustomer, setEditCustomer] = useState<any | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<SalesInvoiceForEdit | null>(null);
   const [isPOSOpen, setIsPOSOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
@@ -77,7 +78,7 @@ export default function SalesPage() {
           actions={
             activeTab === "invoices" ? (
               <>
-                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} className="gap-2 shrink-0">
+                <Button variant="outline" onClick={() => { setEditingInvoice(null); setIsInvoiceOpen(true); }} className="gap-2 shrink-0">
                   <Receipt className="w-4 h-4 shrink-0" />
                   <span className="hidden sm:inline">Record B2B Invoice</span>
                   <span className="sm:hidden">B2B Invoice</span>
@@ -119,7 +120,13 @@ export default function SalesPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : filteredInvoices && filteredInvoices.length > 0 ? (
-            <SalesInvoiceTable invoices={filteredInvoices} />
+            <SalesInvoiceTable
+              invoices={filteredInvoices}
+              onEdit={(invoice) => {
+                setEditingInvoice(invoice);
+                setIsInvoiceOpen(true);
+              }}
+            />
           ) : (
             <EmptyState
               icon={Receipt}
@@ -190,7 +197,11 @@ export default function SalesPage() {
 
       <CreateInvoiceDialog
         open={isInvoiceOpen}
-        onOpenChange={setIsInvoiceOpen}
+        onOpenChange={(open) => {
+          setIsInvoiceOpen(open);
+          if (!open) setEditingInvoice(null);
+        }}
+        invoice={editingInvoice}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["sales-invoices"] });
         }}

@@ -7,16 +7,17 @@ import { z } from "zod";
 const invoiceSchema = z.object({
   customerId: z.string().optional(),
   invoiceNumber: z.string().min(2),
+  invoiceDate: z.string().min(1),
   financialYear: z.string().min(4),
-  notes: z.string().optional(),
   paymentMethod: z.string().optional(),
   amountReceived: z.number().optional(),
   amountReturned: z.number().optional(),
   items: z.array(z.object({
-    itemId: z.string().uuid(),
-    warehouseId: z.string().uuid(),
+    itemId: z.string().min(1),
+    warehouseId: z.string().min(1),
     quantity: z.number().positive(),
     unitPrice: z.number().nonnegative(),
+    gstRate: z.number().min(0).max(100),
   })).min(1),
 });
 

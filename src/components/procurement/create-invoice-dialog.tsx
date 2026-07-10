@@ -46,10 +46,26 @@ interface InventoryItem {
   gstRate?: number;
 }
 
+export interface PurchaseInvoiceForEdit {
+  id: string;
+  vendorId: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  financialYear: string;
+  items: {
+    itemId: string;
+    warehouseId: string;
+    quantity: number;
+    unitPrice: number;
+    gstRate?: number;
+  }[];
+}
+
 interface CreateInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  invoice?: PurchaseInvoiceForEdit | null;
 }
 
 function getCurrentFinancialYear() {
@@ -119,7 +135,13 @@ function GstRateField({
   );
 }
 
-export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInvoiceDialogProps) {
+export function CreateInvoiceDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+  invoice,
+}: CreateInvoiceDialogProps) {
+  const isEditing = Boolean(invoice);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
@@ -192,40 +214,63 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
       setInventoryItems(loadedItems);
       setWarehouses(loadedWarehouses);
 
-      form.reset({
-        vendorId: "",
-        invoiceNumber: "",
-        invoiceDate: todayIsoDate(),
-        financialYear: getCurrentFinancialYear(),
-        items: [
-          {
-            itemId: "",
-            warehouseId: loadedWarehouses[0]?.id || "",
-            quantity: 1,
-            unitPrice: 0,
-            gstRate: 0,
-          },
-        ],
-      });
+      if (invoice) {
+        form.reset({
+          vendorId: invoice.vendorId,
+          invoiceNumber: invoice.invoiceNumber,
+          invoiceDate: invoice.invoiceDate,
+          financialYear: invoice.financialYear,
+          items: invoice.items.map((item) => ({
+            itemId: item.itemId,
+            warehouseId: item.warehouseId,
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            gstRate: Number(item.gstRate ?? 0),
+          })),
+        });
+      } else {
+        form.reset({
+          vendorId: "",
+          invoiceNumber: "",
+          invoiceDate: todayIsoDate(),
+          financialYear: getCurrentFinancialYear(),
+          items: [
+            {
+              itemId: "",
+              warehouseId: loadedWarehouses[0]?.id || "",
+              quantity: 1,
+              unitPrice: 0,
+              gstRate: 0,
+            },
+          ],
+        });
+      }
     };
 
     void load();
-  }, [open, form]);
+  }, [open, form, invoice]);
 
   async function onSubmit(data: InvoiceFormValues) {
     setIsSubmitting(true);
     try {
-      const res = await apiFetch("/api/procurement/invoices", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const res = await apiFetch(
+        isEditing ? `/api/procurement/invoices/${invoice!.id}` : "/api/procurement/invoices",
+        {
+          method: isEditing ? "PATCH" : "POST",
+          body: JSON.stringify(data),
+        },
+      );
 
       if (res.success) {
-        toast.success("Payable Invoice created & inventory updated successfully");
+        toast.success(
+          isEditing
+            ? "Payable Invoice updated & inventory adjusted successfully"
+            : "Payable Invoice created & inventory updated successfully",
+        );
         onSuccess();
         onOpenChange(false);
       } else {
-        toast.error(res.message || "Failed to create invoice");
+        toast.error(res.message || `Failed to ${isEditing ? "update" : "create"} invoice`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -239,10 +284,13 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
       <DialogContent className="sm:max-w-[920px] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-muted/20">
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Receipt className="w-5 h-5 text-primary" /> Create Payable Invoice
+            <Receipt className="w-5 h-5 text-primary" />
+            {isEditing ? "Edit Payable Invoice" : "Create Payable Invoice"}
           </DialogTitle>
           <DialogDescription>
-            Record a supplier invoice and receive stock into the selected warehouse(s).
+            {isEditing
+              ? "Update supplier invoice details. Stock levels will be adjusted to match the revised line items."
+              : "Record a supplier invoice and receive stock into the selected warehouse(s)."}
           </DialogDescription>
         </DialogHeader>
 
@@ -505,7 +553,13 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
               </Button>
               <Button type="submit" disabled={isSubmitting} className="gap-2">
                 <Receipt className="w-4 h-4" />
-                {isSubmitting ? "Creating..." : "Create & Receive Stock"}
+                {isSubmitting
+                  ? isEditing
+                    ? "Saving..."
+                    : "Creating..."
+                  : isEditing
+                    ? "Save Changes"
+                    : "Create & Receive Stock"}
               </Button>
             </div>
           </div>

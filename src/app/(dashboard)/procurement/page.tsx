@@ -9,7 +9,7 @@ import { VendorTable } from "@/components/procurement/vendor-table";
 import { CreateVendorDialog } from "@/components/procurement/create-vendor-dialog";
 import { EditVendorDialog } from "@/components/procurement/edit-vendor-dialog";
 import { PayableInvoiceTable } from "@/components/procurement/payable-invoice-table";
-import { CreateInvoiceDialog } from "@/components/procurement/create-invoice-dialog";
+import { CreateInvoiceDialog, type PurchaseInvoiceForEdit } from "@/components/procurement/create-invoice-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,7 @@ export default function ProcurementPage() {
   const [isEditVendorOpen, setIsEditVendorOpen] = useState(false);
   const [editVendor, setEditVendor] = useState<any | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<PurchaseInvoiceForEdit | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -74,7 +75,7 @@ export default function ProcurementPage() {
           }
           actions={
             activeTab === "invoices" ? (
-              <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2 shrink-0">
+              <Button onClick={() => { setEditingInvoice(null); setIsInvoiceOpen(true); }} className="gap-2 shrink-0">
                 <Plus className="w-4 h-4 shrink-0" />
                 <span className="hidden sm:inline">Record Supplier Invoice</span>
                 <span className="sm:hidden">Record Invoice</span>
@@ -107,7 +108,13 @@ export default function ProcurementPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : filteredInvoices && filteredInvoices.length > 0 ? (
-            <PayableInvoiceTable invoices={filteredInvoices} />
+            <PayableInvoiceTable
+              invoices={filteredInvoices}
+              onEdit={(invoice) => {
+                setEditingInvoice(invoice);
+                setIsInvoiceOpen(true);
+              }}
+            />
           ) : (
             <EmptyState
               icon={Receipt}
@@ -178,7 +185,11 @@ export default function ProcurementPage() {
 
       <CreateInvoiceDialog
         open={isInvoiceOpen}
-        onOpenChange={setIsInvoiceOpen}
+        onOpenChange={(open) => {
+          setIsInvoiceOpen(open);
+          if (!open) setEditingInvoice(null);
+        }}
+        invoice={editingInvoice}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["purchase-invoices"] });
         }}

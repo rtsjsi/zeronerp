@@ -190,10 +190,10 @@ export const salesInvoices = sqliteTable(
     storeId: text('storeId').notNull().references(() => stores.id),
     customerId: text('customerId').notNull().references(() => customers.id),
     invoiceNumber: text('invoiceNumber').notNull(),
+    invoiceDate: text('invoiceDate').notNull(),
     financialYear: text('financialYear').notNull(),
     status: text('status').notNull().default('COMPLETED'),
     totalAmount: real('totalAmount').notNull().default(0),
-    notes: text('notes'),
     paymentMethod: text('paymentMethod').notNull().default('CASH'),
     amountReceived: real('amountReceived').notNull().default(0),
     amountReturned: real('amountReturned').notNull().default(0),
@@ -217,6 +217,7 @@ export const salesInvoiceItems = sqliteTable('SalesInvoiceItem', {
   warehouseId: text('warehouseId').notNull().references(() => warehouses.id),
   quantity: real('quantity').notNull(),
   unitPrice: real('unitPrice').notNull(),
+  gstRate: real('gstRate').notNull().default(0),
   totalPrice: real('totalPrice').notNull(),
 });
 

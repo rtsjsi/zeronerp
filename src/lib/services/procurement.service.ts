@@ -2,7 +2,7 @@
  * Procurement Service (Cloudflare D1 / Drizzle)
  */
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
   inventoryTransactions,
@@ -227,6 +227,188 @@ export class ProcurementService {
         createdAt: now(),
       });
     }
+
+    return invoice;
+  }
+
+  static async getPurchaseInvoiceById(storeId: string, id: string) {
+    return db().query.purchaseInvoices.findFirst({
+      where: and(
+        eq(purchaseInvoices.id, id),
+        eq(purchaseInvoices.storeId, storeId),
+        eq(purchaseInvoices.isDeleted, false),
+      ),
+      with: {
+        vendor: true,
+        items: { with: { item: true, warehouse: true } },
+      },
+    });
+  }
+
+  static async updatePurchaseInvoice(
+    storeId: string,
+    userId: string,
+    id: string,
+    data: {
+      vendorId: string;
+      invoiceNumber: string;
+      invoiceDate: string;
+      financialYear: string;
+      items: {
+        itemId: string;
+        warehouseId: string;
+        quantity: number;
+        unitPrice: number;
+        gstRate: number;
+      }[];
+    },
+  ) {
+    const database = db();
+
+    const existing = await database.query.purchaseInvoices.findFirst({
+      where: and(
+        eq(purchaseInvoices.id, id),
+        eq(purchaseInvoices.storeId, storeId),
+        eq(purchaseInvoices.isDeleted, false),
+      ),
+      with: { items: true },
+    });
+
+    if (!existing) {
+      throw new Error('Payable Invoice not found');
+    }
+
+    const duplicate = await database.query.purchaseInvoices.findFirst({
+      where: and(
+        eq(purchaseInvoices.storeId, storeId),
+        eq(purchaseInvoices.vendorId, data.vendorId),
+        eq(purchaseInvoices.invoiceNumber, data.invoiceNumber),
+        eq(purchaseInvoices.financialYear, data.financialYear),
+        eq(purchaseInvoices.isDeleted, false),
+        ne(purchaseInvoices.id, id),
+      ),
+    });
+
+    if (duplicate) {
+      throw new Error(
+        'Duplicate Supplier Invoice number is not allowed for the same supplier in the same financial year.',
+      );
+    }
+
+    const { items: lineItems, ...invData } = data;
+    const lineTotal = (item: { quantity: number; unitPrice: number; gstRate: number }) => {
+      const taxable = item.quantity * item.unitPrice;
+      return Number((taxable * (1 + item.gstRate / 100)).toFixed(2));
+    };
+    const totalAmount = Number(
+      lineItems.reduce((sum, item) => sum + lineTotal(item), 0).toFixed(2),
+    );
+
+    for (const item of existing.items) {
+      const qty = Number(item.quantity);
+      const existingStock = await database.query.stocks.findFirst({
+        where: and(eq(stocks.itemId, item.itemId), eq(stocks.warehouseId, item.warehouseId)),
+      });
+
+      if (existingStock) {
+        await database
+          .update(stocks)
+          .set({
+            quantity: Number(existingStock.quantity) - qty,
+            updatedAt: now(),
+          })
+          .where(eq(stocks.id, existingStock.id));
+      } else {
+        await database.insert(stocks).values({
+          id: newId(),
+          storeId,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: -qty,
+          updatedAt: now(),
+        });
+      }
+
+      await database.insert(inventoryTransactions).values({
+        id: newId(),
+        storeId,
+        itemId: item.itemId,
+        warehouseId: item.warehouseId,
+        type: 'OUT',
+        quantity: -qty,
+        reference: `Supplier Invoice ${existing.invoiceNumber} (edit reversal)`,
+        performedBy: userId,
+        createdAt: now(),
+      });
+    }
+
+    await database.delete(purchaseInvoiceItems).where(eq(purchaseInvoiceItems.invoiceId, id));
+
+    try {
+      await database.insert(purchaseInvoiceItems).values(
+        lineItems.map((item) => ({
+          id: newId(),
+          invoiceId: id,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          gstRate: item.gstRate,
+          totalPrice: lineTotal(item),
+        })),
+      );
+    } catch (itemErr) {
+      throw new Error(
+        `Failed to update Payable Invoice items: ${itemErr instanceof Error ? itemErr.message : 'Unknown error'}`,
+      );
+    }
+
+    for (const item of lineItems) {
+      const existingStock = await database.query.stocks.findFirst({
+        where: and(eq(stocks.itemId, item.itemId), eq(stocks.warehouseId, item.warehouseId)),
+      });
+
+      if (existingStock) {
+        await database
+          .update(stocks)
+          .set({
+            quantity: Number(existingStock.quantity) + Number(item.quantity),
+            updatedAt: now(),
+          })
+          .where(eq(stocks.id, existingStock.id));
+      } else {
+        await database.insert(stocks).values({
+          id: newId(),
+          storeId,
+          itemId: item.itemId,
+          warehouseId: item.warehouseId,
+          quantity: Number(item.quantity),
+          updatedAt: now(),
+        });
+      }
+
+      await database.insert(inventoryTransactions).values({
+        id: newId(),
+        storeId,
+        itemId: item.itemId,
+        warehouseId: item.warehouseId,
+        type: 'IN',
+        quantity: Number(item.quantity),
+        reference: `Supplier Invoice ${data.invoiceNumber}`,
+        performedBy: userId,
+        createdAt: now(),
+      });
+    }
+
+    const [invoice] = await database
+      .update(purchaseInvoices)
+      .set({
+        ...invData,
+        totalAmount,
+        updatedAt: now(),
+      })
+      .where(eq(purchaseInvoices.id, id))
+      .returning();
 
     return invoice;
   }
