@@ -117,13 +117,14 @@ export class ProcurementService {
     data: {
       vendorId: string;
       invoiceNumber: string;
+      invoiceDate: string;
       financialYear: string;
-      notes?: string;
       items: {
         itemId: string;
         warehouseId: string;
         quantity: number;
         unitPrice: number;
+        gstRate: number;
       }[];
     },
   ) {
@@ -146,8 +147,12 @@ export class ProcurementService {
     }
 
     const { items: lineItems, ...invData } = data;
+    const lineTotal = (item: { quantity: number; unitPrice: number; gstRate: number }) => {
+      const taxable = item.quantity * item.unitPrice;
+      return Number((taxable * (1 + item.gstRate / 100)).toFixed(2));
+    };
     const totalAmount = Number(
-      lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0).toFixed(2),
+      lineItems.reduce((sum, item) => sum + lineTotal(item), 0).toFixed(2),
     );
     const invoiceId = newId();
     const ts = now();
@@ -175,7 +180,8 @@ export class ProcurementService {
           warehouseId: item.warehouseId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          totalPrice: Number((item.quantity * item.unitPrice).toFixed(2)),
+          gstRate: item.gstRate,
+          totalPrice: lineTotal(item),
         })),
       );
     } catch (itemErr) {

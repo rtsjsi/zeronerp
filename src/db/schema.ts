@@ -154,10 +154,10 @@ export const purchaseInvoices = sqliteTable(
     storeId: text('storeId').notNull().references(() => stores.id),
     vendorId: text('vendorId').notNull().references(() => vendors.id),
     invoiceNumber: text('invoiceNumber').notNull(),
+    invoiceDate: text('invoiceDate').notNull(),
     financialYear: text('financialYear').notNull(),
     status: text('status').notNull().default('COMPLETED'),
     totalAmount: real('totalAmount').notNull().default(0),
-    notes: text('notes'),
     isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
     createdBy: text('createdBy'),
     ...timestamps,
@@ -179,6 +179,7 @@ export const purchaseInvoiceItems = sqliteTable('PurchaseInvoiceItem', {
   warehouseId: text('warehouseId').notNull().references(() => warehouses.id),
   quantity: real('quantity').notNull(),
   unitPrice: real('unitPrice').notNull(),
+  gstRate: real('gstRate').notNull().default(0),
   totalPrice: real('totalPrice').notNull(),
 });
 

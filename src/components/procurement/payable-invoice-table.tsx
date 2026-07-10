@@ -10,11 +10,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Calendar, User, Warehouse } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 interface PurchaseInvoice {
   id: string;
   invoiceNumber: string;
+  invoiceDate: string;
   financialYear: string;
   vendor: {
     name: string;
@@ -22,7 +23,6 @@ interface PurchaseInvoice {
   totalAmount: number;
   createdAt: string;
   status: string;
-  notes?: string;
   items?: {
     id: string;
     item: {
@@ -83,7 +83,7 @@ export function PayableInvoiceTable({ invoices }: PayableInvoiceTableProps) {
                 <TableCell>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5" />
-                    {new Date(invoice.createdAt).toLocaleDateString()}
+                    {formatDate(invoice.invoiceDate || invoice.createdAt)}
                   </div>
                 </TableCell>
                 <TableCell className="max-w-[200px]">
