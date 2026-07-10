@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, Search, Filter, Box, History, ArrowRightLeft } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ItemTable } from "@/components/inventory/item-table";
@@ -84,9 +83,7 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in min-w-0">
-      <PageHeader breadcrumbs={[{ label: "Inventory" }]} />
-
+    <div className="animate-fade-in min-w-0">
       <Tabs defaultValue="items" className="w-full min-w-0" onValueChange={setActiveTab}>
         <TabToolbar
           tabs={
@@ -101,6 +98,21 @@ export default function InventoryPage() {
                 <History className="w-4 h-4 shrink-0" /> Movements
               </TabsTrigger>
             </TabsList>
+          }
+          actions={
+            activeTab === "items" ? (
+              <Button onClick={() => setIsItemOpen(true)} className="gap-2 shrink-0">
+                <Plus className="w-4 h-4 shrink-0" /> Add Item
+              </Button>
+            ) : activeTab === "warehouses" ? (
+              <Button onClick={() => setIsWarehouseOpen(true)} className="gap-2 shrink-0">
+                <Plus className="w-4 h-4 shrink-0" /> Add Warehouse
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => setIsMovementOpen(true)} className="gap-2 shrink-0">
+                <ArrowRightLeft className="w-4 h-4 shrink-0" /> Move Stock
+              </Button>
+            )
           }
         >
           <div className="relative flex-1 min-w-0">
@@ -117,12 +129,7 @@ export default function InventoryPage() {
           </Button>
         </TabToolbar>
 
-        <TabsContent value="items" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => setIsItemOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4 shrink-0" /> Add Item
-            </Button>
-          </div>
+        <TabsContent value="items" className="mt-3">
           {isLoadingItems ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -152,12 +159,7 @@ export default function InventoryPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="warehouses" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => setIsWarehouseOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4 shrink-0" /> Add Warehouse
-            </Button>
-          </div>
+        <TabsContent value="warehouses" className="mt-3">
           {isLoadingWarehouses ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -191,12 +193,7 @@ export default function InventoryPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="history" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button variant="outline" onClick={() => setIsMovementOpen(true)} className="gap-2">
-              <ArrowRightLeft className="w-4 h-4 shrink-0" /> Move Stock
-            </Button>
-          </div>
+        <TabsContent value="history" className="mt-3">
           {isLoadingTransactions ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

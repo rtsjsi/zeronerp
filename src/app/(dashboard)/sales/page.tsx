@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Receipt, UserCircle, Search, Filter, Users, Sparkles } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CustomerTable } from "@/components/sales/customer-table";
@@ -55,9 +54,7 @@ export default function SalesPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in min-w-0">
-      <PageHeader breadcrumbs={[{ label: "Sales" }]} />
-
+    <div className="animate-fade-in min-w-0">
       <Tabs value={activeTab} className="w-full min-w-0" onValueChange={setActiveTab}>
         <TabToolbar
           tabs={
@@ -71,6 +68,30 @@ export default function SalesPage() {
                 <Users className="w-4 h-4 shrink-0" /> Customers
               </TabsTrigger>
             </TabsList>
+          }
+          actions={
+            activeTab === "invoices" ? (
+              <>
+                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} className="gap-2 shrink-0">
+                  <Receipt className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Record B2B Invoice</span>
+                  <span className="sm:hidden">B2B Invoice</span>
+                </Button>
+                <Button
+                  onClick={() => setIsPOSOpen(true)}
+                  className="gap-2 shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md border-none"
+                >
+                  <Sparkles className="w-4 h-4 shrink-0 text-yellow-300 fill-yellow-300" />
+                  <span className="hidden sm:inline">Express POS</span>
+                  <span className="sm:hidden">POS</span>
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setIsCustomerOpen(true)} className="gap-2 shrink-0">
+                <UserCircle className="w-4 h-4 shrink-0" />
+                <span>Add Customer</span>
+              </Button>
+            )
           }
         >
           <div className="relative flex-1 min-w-0">
@@ -87,22 +108,7 @@ export default function SalesPage() {
           </Button>
         </TabToolbar>
 
-        <TabsContent value="invoices" className="mt-6">
-          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mb-4">
-            <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} className="gap-2">
-              <Receipt className="w-4 h-4 shrink-0" />
-              <span className="sm:hidden">B2B Invoice</span>
-              <span className="hidden sm:inline">Record B2B Invoice</span>
-            </Button>
-            <Button
-              onClick={() => setIsPOSOpen(true)}
-              className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md border-none"
-            >
-              <Sparkles className="w-4 h-4 shrink-0 text-yellow-300 fill-yellow-300" />
-              <span className="sm:hidden">Express POS</span>
-              <span className="hidden sm:inline">Express POS checkout</span>
-            </Button>
-          </div>
+        <TabsContent value="invoices" className="mt-3">
           {isLoadingInvoices ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -124,13 +130,7 @@ export default function SalesPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="customers" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button variant="outline" onClick={() => setIsCustomerOpen(true)} className="gap-2">
-              <UserCircle className="w-4 h-4 shrink-0" />
-              <span>Add Customer</span>
-            </Button>
-          </div>
+        <TabsContent value="customers" className="mt-3">
           {isLoadingCustomers ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

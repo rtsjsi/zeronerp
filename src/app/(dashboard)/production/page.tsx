@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Filter, FlaskConical, Factory } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { RecipeTable } from "@/components/production/recipe-table";
@@ -68,9 +67,7 @@ export default function ProductionPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in min-w-0">
-      <PageHeader breadcrumbs={[{ label: "Production" }]} />
-
+    <div className="animate-fade-in min-w-0">
       <Tabs value={activeTab} className="w-full min-w-0" onValueChange={setActiveTab}>
         <TabToolbar
           tabs={
@@ -82,6 +79,17 @@ export default function ProductionPage() {
                 <FlaskConical className="w-4 h-4 shrink-0" /> Recipes
               </TabsTrigger>
             </TabsList>
+          }
+          actions={
+            activeTab === "production" ? (
+              <Button onClick={() => setIsDeclareOpen(true)} className="gap-2 shrink-0">
+                <Plus className="w-4 h-4 shrink-0" /> Declare Production
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => setIsRecipeOpen(true)} className="gap-2 shrink-0">
+                <FlaskConical className="w-4 h-4 shrink-0" /> Add Recipe
+              </Button>
+            )
           }
         >
           <div className="relative flex-1 min-w-0">
@@ -98,12 +106,7 @@ export default function ProductionPage() {
           </Button>
         </TabToolbar>
 
-        <TabsContent value="production" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => setIsDeclareOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4 shrink-0" /> Declare Production
-            </Button>
-          </div>
+        <TabsContent value="production" className="mt-3">
           {isLoadingBatches ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -125,12 +128,7 @@ export default function ProductionPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="recipes" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button variant="outline" onClick={() => setIsRecipeOpen(true)} className="gap-2">
-              <FlaskConical className="w-4 h-4 shrink-0" /> Add Recipe
-            </Button>
-          </div>
+        <TabsContent value="recipes" className="mt-3">
           {isLoadingRecipes ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

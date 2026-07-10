@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Filter, Users, Receipt } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { VendorTable } from "@/components/procurement/vendor-table";
@@ -53,9 +52,7 @@ export default function ProcurementPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in min-w-0">
-      <PageHeader breadcrumbs={[{ label: "Procurement" }]} />
-
+    <div className="animate-fade-in min-w-0">
       <Tabs value={activeTab} className="w-full min-w-0" onValueChange={setActiveTab}>
         <TabToolbar
           tabs={
@@ -69,6 +66,20 @@ export default function ProcurementPage() {
                 <Users className="w-4 h-4 shrink-0" /> Vendors
               </TabsTrigger>
             </TabsList>
+          }
+          actions={
+            activeTab === "invoices" ? (
+              <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2 shrink-0">
+                <Plus className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Record Supplier Invoice</span>
+                <span className="sm:hidden">Record Invoice</span>
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => setIsVendorOpen(true)} className="gap-2 shrink-0">
+                <Users className="w-4 h-4 shrink-0" />
+                <span>Add Vendor</span>
+              </Button>
+            )
           }
         >
           <div className="relative flex-1 min-w-0">
@@ -85,14 +96,7 @@ export default function ProcurementPage() {
           </Button>
         </TabToolbar>
 
-        <TabsContent value="invoices" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => setIsInvoiceOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4 shrink-0" />
-              <span className="sm:hidden">Record Invoice</span>
-              <span className="hidden sm:inline">Record Supplier Invoice</span>
-            </Button>
-          </div>
+        <TabsContent value="invoices" className="mt-3">
           {isLoadingInvoices ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -114,13 +118,7 @@ export default function ProcurementPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="vendors" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button variant="outline" onClick={() => setIsVendorOpen(true)} className="gap-2">
-              <Users className="w-4 h-4 shrink-0" />
-              <span>Add Vendor</span>
-            </Button>
-          </div>
+        <TabsContent value="vendors" className="mt-3">
           {isLoadingVendors ? (
             <div className="grid place-items-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
