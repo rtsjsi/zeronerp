@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 import { Plus, Trash2, Receipt } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { invoiceLineAmount } from "@/lib/invoice-amounts";
 import { ItemSelect } from "@/components/shared/item-select";
 import { LovSelect, type LovOption } from "@/components/shared/lov-select";
 import { UomField } from "@/components/shared/uom-field";
@@ -97,9 +98,9 @@ function todayIsoDate() {
 }
 
 function lineAmounts(qty: number, unitPrice: number, gstRate: number) {
-  const taxable = qty * unitPrice;
-  const gst = taxable * (gstRate / 100);
-  return { taxable, gst, total: taxable + gst };
+  const lineAmount = invoiceLineAmount(qty, unitPrice);
+  const gst = lineAmount * (gstRate / 100);
+  return { lineAmount, gst };
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -170,21 +171,20 @@ export function CreateInvoiceDialog({
   const watchItems = form.watch("items");
 
   const totals = useMemo(() => {
-    if (!watchItems?.length) return { subtotal: 0, gst: 0, total: 0 };
+    if (!watchItems?.length) return { lineTotal: 0, gst: 0 };
     return watchItems.reduce(
       (acc, item) => {
-        const { taxable, gst, total } = lineAmounts(
+        const { lineAmount, gst } = lineAmounts(
           Number(item?.quantity || 0),
           Number(item?.unitPrice || 0),
           Number(item?.gstRate || 0),
         );
         return {
-          subtotal: acc.subtotal + taxable,
+          lineTotal: acc.lineTotal + lineAmount,
           gst: acc.gst + gst,
-          total: acc.total + total,
         };
       },
-      { subtotal: 0, gst: 0, total: 0 },
+      { lineTotal: 0, gst: 0 },
     );
   }, [watchItems]);
 
@@ -417,7 +417,7 @@ export function CreateInvoiceDialog({
                     <div className="divide-y">
                       {fields.map((field, index) => {
                         const line = watchItems?.[index];
-                        const { total: lineTotal } = lineAmounts(
+                        const { lineAmount } = lineAmounts(
                           Number(line?.quantity || 0),
                           Number(line?.unitPrice || 0),
                           Number(line?.gstRate || 0),
@@ -518,7 +518,7 @@ export function CreateInvoiceDialog({
                             </div>
 
                             <div className="h-9 flex items-center justify-end text-sm font-semibold text-primary tabular-nums">
-                              {formatCurrency(lineTotal)}
+                              {formatCurrency(lineAmount)}
                             </div>
 
                             <div className="flex justify-center">
@@ -549,12 +549,13 @@ export function CreateInvoiceDialog({
 
           <div className="border-t bg-muted/20 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1 text-sm">
-              <div className="flex items-center gap-6 text-muted-foreground">
-                <span>Taxable: {formatCurrency(totals.subtotal)}</span>
-                <span>GST: {formatCurrency(totals.gst)}</span>
-              </div>
+              {totals.gst > 0 && (
+                <div className="text-muted-foreground">
+                  GST (reference): {formatCurrency(totals.gst)}
+                </div>
+              )}
               <div className="text-lg font-bold text-primary">
-                Grand Total: {formatCurrency(totals.total)}
+                Total Invoice Amount: {formatCurrency(totals.lineTotal)}
               </div>
             </div>
 

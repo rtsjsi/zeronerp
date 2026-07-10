@@ -12,6 +12,7 @@ import {
   stocks,
 } from '@/db/schema';
 import { newId, now, toJson, withTimestamps } from '@/db/helpers';
+import { invoiceLineAmount, sumInvoiceLineAmounts } from '@/lib/invoice-amounts';
 import { normalizePartnerTaxFields, normalizePartnerInput } from '@/lib/partner-schema';
 
 export class SalesService {
@@ -182,13 +183,7 @@ export class SalesService {
     }
 
     const { items: lineItems, customerId: _ignored, ...invData } = data;
-    const lineTotal = (item: { quantity: number; unitPrice: number; gstRate: number }) => {
-      const taxable = item.quantity * item.unitPrice;
-      return Number((taxable * (1 + item.gstRate / 100)).toFixed(2));
-    };
-    const totalAmount = Number(
-      lineItems.reduce((sum, item) => sum + lineTotal(item), 0).toFixed(2),
-    );
+    const totalAmount = sumInvoiceLineAmounts(lineItems);
     const invoiceId = newId();
     const ts = now();
 
@@ -220,7 +215,7 @@ export class SalesService {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           gstRate: item.gstRate,
-          totalPrice: lineTotal(item),
+          totalPrice: invoiceLineAmount(item.quantity, item.unitPrice),
         })),
       );
     } catch (itemErr) {
@@ -332,13 +327,7 @@ export class SalesService {
     }
 
     const { items: lineItems, ...invData } = data;
-    const lineTotal = (item: { quantity: number; unitPrice: number; gstRate: number }) => {
-      const taxable = item.quantity * item.unitPrice;
-      return Number((taxable * (1 + item.gstRate / 100)).toFixed(2));
-    };
-    const totalAmount = Number(
-      lineItems.reduce((sum, item) => sum + lineTotal(item), 0).toFixed(2),
-    );
+    const totalAmount = sumInvoiceLineAmounts(lineItems);
 
     for (const item of existing.items) {
       const qty = Number(item.quantity);
@@ -390,7 +379,7 @@ export class SalesService {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           gstRate: item.gstRate,
-          totalPrice: lineTotal(item),
+          totalPrice: invoiceLineAmount(item.quantity, item.unitPrice),
         })),
       );
     } catch (itemErr) {
