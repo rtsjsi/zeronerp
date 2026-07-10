@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Package, Search, Filter, Box, History, ArrowRightLeft } from "lucide-react";
+import { Plus, Package, Search, Filter, Box, History, ArrowRightLeft, Layers } from "lucide-react";
 import { TabToolbar } from "@/components/shared/tab-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ItemTable } from "@/components/inventory/item-table";
+import { StockTable } from "@/components/inventory/stock-table";
 import { CreateItemDialog } from "@/components/inventory/create-item-dialog";
 import { EditItemDialog } from "@/components/inventory/edit-item-dialog";
 import { WarehouseTable } from "@/components/inventory/warehouse-table";
@@ -19,6 +20,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
+const TAB_LABELS: Record<string, string> = {
+  items: "item master",
+  stock: "stock",
+  warehouses: "warehouses",
+  history: "movements",
+};
+
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState("items");
   const [isItemOpen, setIsItemOpen] = useState(false);
@@ -31,7 +39,6 @@ export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
-  // Queries
   const { data: items, isLoading: isLoadingItems } = useQuery({
     queryKey: ["inventory-items"],
     queryFn: async () => {
@@ -40,6 +47,16 @@ export default function InventoryPage() {
       return res.data;
     },
     enabled: activeTab === "items",
+  });
+
+  const { data: stockItems, isLoading: isLoadingStock } = useQuery({
+    queryKey: ["inventory-stock"],
+    queryFn: async () => {
+      const res = await apiFetch<any[]>("/api/inventory/stock");
+      if (!res.success) throw new Error(res.message);
+      return res.data;
+    },
+    enabled: activeTab === "stock",
   });
 
   const { data: warehouses, isLoading: isLoadingWarehouses } = useQuery({
@@ -62,18 +79,24 @@ export default function InventoryPage() {
     enabled: activeTab === "history",
   });
 
-  // Filters
   const filteredItems = items?.filter((item: any) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
+  const filteredStockItems = stockItems?.filter((item: any) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.stocks?.some((stock: any) =>
+      stock.warehouse?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+    ),
   );
 
   const filteredWarehouses = warehouses?.filter((wh: any) =>
-    wh.name.toLowerCase().includes(searchQuery.toLowerCase())
+    wh.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const filteredTransactions = transactions?.filter((tx: any) =>
     tx.item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tx.reference?.toLowerCase().includes(searchQuery.toLowerCase())
+    tx.reference?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleDeleteItem = async (id: string) => {
@@ -82,7 +105,14 @@ export default function InventoryPage() {
     if (res.success) {
       toast.success("Item deleted");
       queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-stock"] });
     }
+  };
+
+  const invalidateStockQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
+    queryClient.invalidateQueries({ queryKey: ["inventory-stock"] });
+    queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] });
   };
 
   return (
@@ -92,7 +122,12 @@ export default function InventoryPage() {
           tabs={
             <TabsList variant="line" className="w-max min-w-full sm:min-w-0">
               <TabsTrigger value="items" className="gap-2 shrink-0">
-                <Package className="w-4 h-4 shrink-0" /> Items
+                <Package className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Item Master</span>
+                <span className="sm:hidden">Items</span>
+              </TabsTrigger>
+              <TabsTrigger value="stock" className="gap-2 shrink-0">
+                <Layers className="w-4 h-4 shrink-0" /> Stock
               </TabsTrigger>
               <TabsTrigger value="warehouses" className="gap-2 shrink-0">
                 <Box className="w-4 h-4 shrink-0" /> Warehouses
@@ -111,17 +146,17 @@ export default function InventoryPage() {
               <Button onClick={() => setIsWarehouseOpen(true)} className="gap-2 shrink-0">
                 <Plus className="w-4 h-4 shrink-0" /> Add Warehouse
               </Button>
-            ) : (
+            ) : activeTab === "stock" || activeTab === "history" ? (
               <Button variant="outline" onClick={() => setIsMovementOpen(true)} className="gap-2 shrink-0">
                 <ArrowRightLeft className="w-4 h-4 shrink-0" /> Move Stock
               </Button>
-            )
+            ) : null
           }
         >
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder={`Search ${activeTab}...`}
+              placeholder={`Search ${TAB_LABELS[activeTab] ?? activeTab}...`}
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -154,10 +189,32 @@ export default function InventoryPage() {
               description={
                 searchQuery
                   ? `No items found matching "${searchQuery}".`
-                  : "Start by adding your first inventory item."
+                  : "Start by adding your first item to the master catalog."
               }
               actionLabel={searchQuery ? "Clear Search" : "Add Item"}
               onAction={() => (searchQuery ? setSearchQuery("") : setIsItemOpen(true))}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="stock" className="mt-3">
+          {isLoadingStock ? (
+            <div className="grid place-items-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredStockItems && filteredStockItems.length > 0 ? (
+            <StockTable items={filteredStockItems} />
+          ) : (
+            <EmptyState
+              icon={Layers}
+              title={searchQuery ? "No matching stock" : "No stockable items yet"}
+              description={
+                searchQuery
+                  ? `No stock records found matching "${searchQuery}".`
+                  : "Add stockable items in Item Master, then receive stock via purchase invoices or manual adjustments."
+              }
+              actionLabel={searchQuery ? "Clear Search" : "Go to Item Master"}
+              onAction={() => (searchQuery ? setSearchQuery("") : setActiveTab("items"))}
             />
           )}
         </TabsContent>
@@ -180,6 +237,7 @@ export default function InventoryPage() {
                 if (res.success) {
                   toast.success("Warehouse deleted");
                   queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+                  queryClient.invalidateQueries({ queryKey: ["inventory-stock"] });
                 }
               }}
             />
@@ -222,7 +280,10 @@ export default function InventoryPage() {
       <CreateItemDialog
         open={isItemOpen}
         onOpenChange={setIsItemOpen}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["inventory-items"] })}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
+          queryClient.invalidateQueries({ queryKey: ["inventory-stock"] });
+        }}
       />
 
       <EditItemDialog
@@ -232,7 +293,10 @@ export default function InventoryPage() {
           if (!open) setEditItem(null);
         }}
         item={editItem}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["inventory-items"] })}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
+          queryClient.invalidateQueries({ queryKey: ["inventory-stock"] });
+        }}
       />
 
       <CreateWarehouseDialog
@@ -254,10 +318,7 @@ export default function InventoryPage() {
       <StockMovementDialog
         open={isMovementOpen}
         onOpenChange={setIsMovementOpen}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["inventory-items"] });
-          queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] });
-        }}
+        onSuccess={invalidateStockQueries}
       />
     </div>
   );

@@ -20,6 +20,7 @@ import { Plus, Trash2, Receipt } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { ItemSelect } from "@/components/shared/item-select";
 import { LovSelect, type LovOption } from "@/components/shared/lov-select";
+import { UomField } from "@/components/shared/uom-field";
 
 const invoiceItemSchema = z.object({
   itemId: z.string().min(1, "Please select a material"),
@@ -43,6 +44,7 @@ interface InventoryItem {
   id: string;
   name: string;
   cost: number;
+  uom?: string | null;
   gstRate?: number;
 }
 
@@ -400,10 +402,11 @@ export function CreateInvoiceDialog({
 
               <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                  <div className="min-w-[860px]">
-                    <div className="grid grid-cols-[minmax(220px,2fr)_120px_72px_96px_72px_96px_40px] gap-2 px-3 py-2 bg-muted/40 border-b text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <div className="min-w-[920px]">
+                    <div className="grid grid-cols-[minmax(200px,2fr)_112px_52px_72px_96px_72px_96px_40px] gap-2 px-3 py-2 bg-muted/40 border-b text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                       <span>Material</span>
                       <span>Warehouse</span>
+                      <span>UOM</span>
                       <span>Qty</span>
                       <span>Unit Price</span>
                       <span>GST %</span>
@@ -423,7 +426,7 @@ export function CreateInvoiceDialog({
                         return (
                           <div
                             key={field.id}
-                            className="grid grid-cols-[minmax(220px,2fr)_120px_72px_96px_72px_96px_40px] gap-2 px-3 py-3 items-start"
+                            className="grid grid-cols-[minmax(200px,2fr)_112px_52px_72px_96px_72px_96px_40px] gap-2 px-3 py-3 items-start"
                           >
                             <div className="min-w-0">
                               <Controller
@@ -465,6 +468,14 @@ export function CreateInvoiceDialog({
                                 )}
                               />
                               <FieldError message={form.formState.errors.items?.[index]?.warehouseId?.message} />
+                            </div>
+
+                            <div>
+                              <UomField
+                                value={inventoryItems.find((i) => i.id === line?.itemId)?.uom}
+                                compact
+                                className="h-9"
+                              />
                             </div>
 
                             <div>

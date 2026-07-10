@@ -35,23 +35,27 @@ export class InventoryService {
   static async getItems(storeId: string) {
     return db().query.items.findMany({
       where: and(eq(items.storeId, storeId), eq(items.isDeleted, false)),
+      orderBy: desc(items.updatedAt),
+    });
+  }
+
+  static async getStockOverview(storeId: string) {
+    const allItems = await db().query.items.findMany({
+      where: and(eq(items.storeId, storeId), eq(items.isDeleted, false)),
       with: {
         stocks: {
           with: { warehouse: true },
         },
       },
-      orderBy: desc(items.updatedAt),
+      orderBy: items.name,
     });
+
+    return allItems.filter((item) => item.itemType === 'STOCKABLE');
   }
 
   static async getItemById(storeId: string, id: string) {
     return db().query.items.findFirst({
       where: and(eq(items.id, id), eq(items.storeId, storeId), eq(items.isDeleted, false)),
-      with: {
-        stocks: {
-          with: { warehouse: true },
-        },
-      },
     });
   }
 

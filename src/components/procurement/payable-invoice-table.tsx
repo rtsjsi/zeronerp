@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FileText, Calendar, User, Warehouse, MoreVertical, Edit2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { normalizeUomCode } from "@/lib/inventory/constants";
 import type { PurchaseInvoiceForEdit } from "@/components/procurement/create-invoice-dialog";
 
 export interface PurchaseInvoice {
@@ -40,6 +41,7 @@ export interface PurchaseInvoice {
     gstRate?: number;
     item: {
       name: string;
+      uom?: string | null;
     };
     warehouse: {
       name: string;
@@ -122,7 +124,10 @@ export function PayableInvoiceTable({ invoices, onEdit }: PayableInvoiceTablePro
                     {invoice.items?.map((pi) => (
                       <div key={pi.id} className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
                         <Warehouse className="w-3 h-3 text-secondary shrink-0" />
-                        <span>{pi.quantity} × {pi.item?.name} in {pi.warehouse?.name}</span>
+                        <span>
+                          {pi.quantity}
+                          {pi.item?.uom ? ` ${normalizeUomCode(pi.item.uom)}` : ""} × {pi.item?.name} in {pi.warehouse?.name}
+                        </span>
                       </div>
                     ))}
                   </div>

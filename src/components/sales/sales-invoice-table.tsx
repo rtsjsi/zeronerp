@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FileText, Calendar, User, Warehouse, MoreVertical, Edit2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { normalizeUomCode } from "@/lib/inventory/constants";
 import type { SalesInvoiceForEdit } from "@/components/sales/create-invoice-dialog";
 
 export interface SalesInvoice {
@@ -40,6 +41,7 @@ export interface SalesInvoice {
     gstRate?: number;
     item: {
       name: string;
+      uom?: string | null;
     };
     warehouse: {
       name: string;
@@ -122,7 +124,10 @@ export function SalesInvoiceTable({ invoices, onEdit }: SalesInvoiceTableProps) 
                     {invoice.items?.map((si) => (
                       <div key={si.id} className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
                         <Warehouse className="w-3 h-3 text-secondary shrink-0" />
-                        <span>{si.quantity} × {si.item?.name} from {si.warehouse?.name}</span>
+                        <span>
+                          {si.quantity}
+                          {si.item?.uom ? ` ${normalizeUomCode(si.item.uom)}` : ""} × {si.item?.name} from {si.warehouse?.name}
+                        </span>
                       </div>
                     ))}
                   </div>
