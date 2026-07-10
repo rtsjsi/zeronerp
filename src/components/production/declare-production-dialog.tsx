@@ -236,17 +236,21 @@ export function DeclareProductionDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="outputQuantity">Produce Quantity</Label>
-              <Input
-                id="outputQuantity"
-                type="number"
-                step="0.001"
-                {...form.register("outputQuantity", { valueAsNumber: true })}
-              />
+              <Label htmlFor="outputQuantity">Produce Qty</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="outputQuantity"
+                  type="number"
+                  step="0.001"
+                  className="flex-1"
+                  {...form.register("outputQuantity", { valueAsNumber: true })}
+                />
+                <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
+                  {selectedRecipe?.finishedItem?.uom ?? "—"}
+                </span>
+              </div>
               {selectedRecipe && (
-                <p className="text-[10px] text-muted-foreground">
-                  {finishedItemName} ({selectedRecipe.finishedItem?.uom})
-                </p>
+                <p className="text-[10px] text-muted-foreground">{finishedItemName}</p>
               )}
             </div>
 
@@ -296,16 +300,22 @@ export function DeclareProductionDialog({
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Item</Label>
+                    <Label className="text-xs">Finished Good</Label>
                     <Input value={finishedItemName} disabled />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Output Quantity</Label>
-                    <Input
-                      type="number"
-                      step="0.001"
-                      {...form.register("outputQty", { valueAsNumber: true })}
-                    />
+                    <Label className="text-xs">Output Qty</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.001"
+                        className="flex-1"
+                        {...form.register("outputQty", { valueAsNumber: true })}
+                      />
+                      <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
+                        {selectedRecipe.finishedItem?.uom ?? "—"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -318,16 +328,19 @@ export function DeclareProductionDialog({
                   const line = selectedRecipe.lines?.[index];
                   return (
                     <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                      <div className="sm:col-span-7 text-sm truncate">
+                      <div className="sm:col-span-6 text-sm truncate">
                         {line?.rawItem?.name ?? "Raw material"}
-                        <span className="text-muted-foreground ml-1">({line?.rawItem?.uom})</span>
                       </div>
-                      <div className="sm:col-span-5">
+                      <div className="sm:col-span-6 flex items-center gap-2">
                         <Input
                           type="number"
                           step="0.001"
+                          className="flex-1"
                           {...form.register(`inputs.${index}.quantity`, { valueAsNumber: true })}
                         />
+                        <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
+                          {line?.rawItem?.uom ?? "—"}
+                        </span>
                       </div>
                       <input type="hidden" {...form.register(`inputs.${index}.itemId`)} />
                       <input type="hidden" {...form.register(`inputs.${index}.warehouseId`)} />

@@ -57,6 +57,10 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
   });
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "lines" });
+  const finishedItemId = form.watch("finishedItemId");
+  const lineValues = form.watch("lines");
+  const finishedGoodUom =
+    finishedGoods.find((item) => item.id === finishedItemId)?.uom ?? "—";
 
   useEffect(() => {
     if (!open) return;
@@ -120,42 +124,51 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
               )}
             </div>
 
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="finishedItemId">Finished Good</Label>
-              <Controller
-                name="finishedItemId"
-                control={form.control}
-                render={({ field }) => (
-                  <ItemSelect
-                    id="finishedItemId"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    items={finishedGoods}
-                    placeholder="Select finished good"
-                    searchPlaceholder="Search finished goods..."
-                  />
+            <div className="space-y-2 sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="finishedItemId">Finished Good</Label>
+                <Controller
+                  name="finishedItemId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <ItemSelect
+                      id="finishedItemId"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      items={finishedGoods}
+                      placeholder="Select finished good"
+                      searchPlaceholder="Search finished goods..."
+                      showUom={false}
+                    />
+                  )}
+                />
+                {form.formState.errors.finishedItemId && (
+                  <p className="text-[10px] text-destructive">
+                    {form.formState.errors.finishedItemId.message}
+                  </p>
                 )}
-              />
-              {form.formState.errors.finishedItemId && (
-                <p className="text-[10px] text-destructive">
-                  {form.formState.errors.finishedItemId.message}
-                </p>
-              )}
-            </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="outputQuantity">Output Quantity (basis)</Label>
-              <Input
-                id="outputQuantity"
-                type="number"
-                step="0.001"
-                {...form.register("outputQuantity", { valueAsNumber: true })}
-              />
-              {form.formState.errors.outputQuantity && (
-                <p className="text-[10px] text-destructive">
-                  {form.formState.errors.outputQuantity.message}
-                </p>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="outputQuantity">Output Qty</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="outputQuantity"
+                    type="number"
+                    step="0.001"
+                    className="flex-1"
+                    {...form.register("outputQuantity", { valueAsNumber: true })}
+                  />
+                  <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
+                    {finishedGoodUom}
+                  </span>
+                </div>
+                {form.formState.errors.outputQuantity && (
+                  <p className="text-[10px] text-destructive">
+                    {form.formState.errors.outputQuantity.message}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -173,9 +186,13 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
               </Button>
             </div>
 
-            {fields.map((field, index) => (
+            {fields.map((field, index) => {
+              const rawItemUom =
+                rawMaterials.find((item) => item.id === lineValues?.[index]?.rawItemId)?.uom ?? "—";
+
+              return (
               <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                <div className="sm:col-span-7 space-y-1">
+                <div className="sm:col-span-6 space-y-1">
                   <Controller
                     name={`lines.${index}.rawItemId`}
                     control={form.control}
@@ -186,17 +203,24 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
                         items={rawMaterials}
                         placeholder="Select raw material"
                         searchPlaceholder="Search items..."
+                        showUom={false}
                       />
                     )}
                   />
                 </div>
-                <div className="sm:col-span-4 space-y-1">
-                  <Input
-                    type="number"
-                    step="0.001"
-                    placeholder="Qty"
-                    {...form.register(`lines.${index}.quantity`, { valueAsNumber: true })}
-                  />
+                <div className="sm:col-span-5 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="0.001"
+                      placeholder="Qty"
+                      className="flex-1"
+                      {...form.register(`lines.${index}.quantity`, { valueAsNumber: true })}
+                    />
+                    <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
+                      {rawItemUom}
+                    </span>
+                  </div>
                 </div>
                 <div className="sm:col-span-1 flex justify-end">
                   <Button
@@ -210,7 +234,8 @@ export function CreateRecipeDialog({ open, onOpenChange, onSuccess }: CreateReci
                   </Button>
                 </div>
               </div>
-            ))}
+            );
+            })}
             {form.formState.errors.lines && (
               <p className="text-[10px] text-destructive">
                 {form.formState.errors.lines.message || form.formState.errors.lines.root?.message}

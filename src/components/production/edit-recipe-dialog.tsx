@@ -60,6 +60,10 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
   });
 
   const { fields, append, remove, replace } = useFieldArray({ control: form.control, name: "lines" });
+  const finishedItemId = form.watch("finishedItemId");
+  const lineValues = form.watch("lines");
+  const finishedGoodUom =
+    finishedGoods.find((item) => item.id === finishedItemId)?.uom ?? "—";
 
   useEffect(() => {
     if (!open || !recipe) return;
@@ -138,32 +142,41 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
               <Input id="edit-name" {...form.register("name")} />
             </div>
 
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="edit-finishedItemId">Finished Good</Label>
-              <Controller
-                name="finishedItemId"
-                control={form.control}
-                render={({ field }) => (
-                  <ItemSelect
-                    id="edit-finishedItemId"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    items={finishedGoods}
-                    placeholder="Select finished good"
-                    searchPlaceholder="Search finished goods..."
-                  />
-                )}
-              />
-            </div>
+            <div className="space-y-2 sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-finishedItemId">Finished Good</Label>
+                <Controller
+                  name="finishedItemId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <ItemSelect
+                      id="edit-finishedItemId"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      items={finishedGoods}
+                      placeholder="Select finished good"
+                      searchPlaceholder="Search finished goods..."
+                      showUom={false}
+                    />
+                  )}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="edit-outputQuantity">Output Quantity (basis)</Label>
-              <Input
-                id="edit-outputQuantity"
-                type="number"
-                step="0.001"
-                {...form.register("outputQuantity", { valueAsNumber: true })}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="edit-outputQuantity">Output Qty</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="edit-outputQuantity"
+                    type="number"
+                    step="0.001"
+                    className="flex-1"
+                    {...form.register("outputQuantity", { valueAsNumber: true })}
+                  />
+                  <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
+                    {finishedGoodUom}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -181,9 +194,13 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
               </Button>
             </div>
 
-            {fields.map((field, index) => (
+            {fields.map((field, index) => {
+              const rawItemUom =
+                rawMaterials.find((item) => item.id === lineValues?.[index]?.rawItemId)?.uom ?? "—";
+
+              return (
               <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                <div className="sm:col-span-7 space-y-1">
+                <div className="sm:col-span-6 space-y-1">
                   <Controller
                     name={`lines.${index}.rawItemId`}
                     control={form.control}
@@ -194,17 +211,24 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                         items={rawMaterials}
                         placeholder="Select raw material"
                         searchPlaceholder="Search items..."
+                        showUom={false}
                       />
                     )}
                   />
                 </div>
-                <div className="sm:col-span-4 space-y-1">
-                  <Input
-                    type="number"
-                    step="0.001"
-                    placeholder="Qty"
-                    {...form.register(`lines.${index}.quantity`, { valueAsNumber: true })}
-                  />
+                <div className="sm:col-span-5 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="0.001"
+                      placeholder="Qty"
+                      className="flex-1"
+                      {...form.register(`lines.${index}.quantity`, { valueAsNumber: true })}
+                    />
+                    <span className="shrink-0 text-sm text-muted-foreground min-w-10 text-right">
+                      {rawItemUom}
+                    </span>
+                  </div>
                 </div>
                 <div className="sm:col-span-1 flex justify-end">
                   <Button
@@ -218,7 +242,8 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                   </Button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

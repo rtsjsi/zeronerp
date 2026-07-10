@@ -34,8 +34,9 @@ export function RecipeTable({ recipes, onEdit, onDelete }: RecipeTableProps) {
             <tr>
               <th className="px-6 py-4">Recipe</th>
               <th className="px-6 py-4">Finished Good</th>
-              <th className="px-6 py-4">Output Basis</th>
+              <th className="px-6 py-4">Output Qty</th>
               <th className="px-6 py-4">Raw Materials</th>
+              <th className="px-6 py-4">RM Qty</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
@@ -53,13 +54,22 @@ export function RecipeTable({ recipes, onEdit, onDelete }: RecipeTableProps) {
                 </td>
                 <td className="px-6 py-4">{recipe.finishedItem?.name ?? "—"}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {recipe.outputQuantity} {recipe.finishedItem?.uom ?? ""}
+                  {recipe.outputQuantity} {recipe.finishedItem?.uom ?? "—"}
                 </td>
                 <td className="px-6 py-4">
                   <div className="space-y-1">
                     {recipe.lines?.map((line, idx) => (
-                      <div key={idx} className="text-xs text-muted-foreground">
-                        {line.quantity} {line.rawItem?.uom} {line.rawItem?.name}
+                      <div key={idx} className="text-xs">
+                        {line.rawItem?.name ?? "—"}
+                      </div>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="space-y-1">
+                    {recipe.lines?.map((line, idx) => (
+                      <div key={idx} className="text-xs text-muted-foreground whitespace-nowrap">
+                        {line.quantity} {line.rawItem?.uom ?? "—"}
                       </div>
                     ))}
                   </div>
