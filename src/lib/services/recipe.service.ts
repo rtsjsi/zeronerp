@@ -16,7 +16,6 @@ export type RecipeInput = {
   name: string;
   finishedItemId: string;
   outputQuantity: number;
-  notes?: string;
   isActive?: boolean;
   lines: RecipeLineInput[];
 };
@@ -56,7 +55,6 @@ export class RecipeService {
           name: data.name.trim(),
           finishedItemId: data.finishedItemId,
           outputQuantity: data.outputQuantity,
-          notes: data.notes?.trim() || null,
           isActive: data.isActive ?? true,
           createdBy: userId,
         }),
@@ -89,7 +87,6 @@ export class RecipeService {
         name: data.name.trim(),
         finishedItemId: data.finishedItemId,
         outputQuantity: data.outputQuantity,
-        notes: data.notes?.trim() || null,
         isActive: data.isActive ?? true,
         updatedAt: now(),
       })

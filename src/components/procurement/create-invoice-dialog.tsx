@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 import { Plus, Trash2, Receipt } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { ItemSelect } from "@/components/shared/item-select";
 
 const invoiceItemSchema = z.object({
   itemId: z.string().uuid("Please select an item"),
@@ -205,19 +206,26 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                 <div key={field.id} className="flex flex-col md:flex-row gap-3 items-end p-4 rounded-xl bg-card border border-border shadow-sm">
                   <div className="flex-1 w-full space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Material / Item</Label>
-                    <select
-                      {...form.register(`items.${index}.itemId`)}
-                      className="w-full flex h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/25 outline-none"
-                      onChange={(e) => {
-                        const item = inventoryItems.find(i => i.id === e.target.value);
-                        if (item) {
-                          form.setValue(`items.${index}.unitPrice`, Number(item.cost));
-                        }
-                      }}
-                    >
-                      <option value="">Select Material...</option>
-                      {inventoryItems.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-                    </select>
+                    <Controller
+                      name={`items.${index}.itemId`}
+                      control={form.control}
+                      render={({ field }) => (
+                        <ItemSelect
+                          value={field.value}
+                          onValueChange={(itemId) => {
+                            field.onChange(itemId);
+                            const item = inventoryItems.find((i) => i.id === itemId);
+                            if (item) {
+                              form.setValue(`items.${index}.unitPrice`, Number(item.cost));
+                            }
+                          }}
+                          items={inventoryItems}
+                          placeholder="Select Material..."
+                          searchPlaceholder="Search materials..."
+                          showUom={false}
+                        />
+                      )}
+                    />
                   </div>
 
                   <div className="w-full md:w-44 space-y-2">

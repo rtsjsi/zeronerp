@@ -222,7 +222,6 @@ export const recipes = sqliteTable('Recipe', {
   name: text('name').notNull(),
   finishedItemId: text('finishedItemId').notNull().references(() => items.id),
   outputQuantity: real('outputQuantity').notNull().default(1),
-  notes: text('notes'),
   isActive: integer('isActive', { mode: 'boolean' }).notNull().default(true),
   isDeleted: integer('isDeleted', { mode: 'boolean' }).notNull().default(false),
   createdBy: text('createdBy'),

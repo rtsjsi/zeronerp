@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRightLeft, MoveDown, MoveUp } from "lucide-react";
+import { ItemSelect } from "@/components/shared/item-select";
 
 const movementSchema = z.object({
   type: z.enum(["IN", "OUT", "MOVE"]),
@@ -151,14 +152,21 @@ export function StockMovementDialog({ open, onOpenChange, onSuccess }: StockMove
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-6">
             <div className="space-y-2">
               <Label htmlFor="itemId">Item</Label>
-              <select
-                id="itemId"
-                {...form.register("itemId")}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">Select Item</option>
-                {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-              </select>
+              <Controller
+                name="itemId"
+                control={form.control}
+                render={({ field }) => (
+                  <ItemSelect
+                    id="itemId"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={items}
+                    placeholder="Select Item"
+                    searchPlaceholder="Search items..."
+                    showUom={false}
+                  />
+                )}
+              />
               {form.formState.errors.itemId && (
                 <p className="text-[10px] text-destructive">{form.formState.errors.itemId.message}</p>
               )}

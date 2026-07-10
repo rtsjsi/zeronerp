@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -14,17 +14,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
+import { ItemSelect } from "@/components/shared/item-select";
 import type { RecipeRow } from "@/components/production/recipe-table";
 
 const recipeSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters"),
   finishedItemId: z.string().min(1, "Select a finished good"),
   outputQuantity: z.number().positive("Output quantity must be greater than zero"),
-  notes: z.string().optional(),
   lines: z
     .array(
       z.object({
@@ -56,7 +55,6 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
       name: "",
       finishedItemId: "",
       outputQuantity: 1,
-      notes: "",
       lines: [{ rawItemId: "", quantity: 0 }],
     },
   });
@@ -74,7 +72,7 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
 
       if (itemsRes.success && itemsRes.data) {
         setFinishedGoods(itemsRes.data.filter((i) => i.category === "FINISHED_GOODS"));
-        setRawMaterials(itemsRes.data.filter((i) => i.category === "RAW_MATERIAL"));
+        setRawMaterials(itemsRes.data);
       }
 
       if (recipeRes.success && recipeRes.data) {
@@ -84,7 +82,6 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
           name: data.name,
           finishedItemId: data.finishedItemId,
           outputQuantity: Number(data.outputQuantity),
-          notes: data.notes ?? "",
           lines: data.lines.map((line: any) => ({
             rawItemId: line.rawItemId,
             quantity: Number(line.quantity),
@@ -143,18 +140,20 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="edit-finishedItemId">Finished Good</Label>
-              <select
-                id="edit-finishedItemId"
-                {...form.register("finishedItemId")}
-                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Select finished good</option>
-                {finishedGoods.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} ({item.uom})
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="finishedItemId"
+                control={form.control}
+                render={({ field }) => (
+                  <ItemSelect
+                    id="edit-finishedItemId"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={finishedGoods}
+                    placeholder="Select finished good"
+                    searchPlaceholder="Search finished goods..."
+                  />
+                )}
+              />
             </div>
 
             <div className="space-y-2">
@@ -166,11 +165,6 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
                 {...form.register("outputQuantity", { valueAsNumber: true })}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-notes">Notes</Label>
-            <Textarea id="edit-notes" {...form.register("notes")} className="resize-none h-16" />
           </div>
 
           <div className="space-y-3">
@@ -190,17 +184,19 @@ export function EditRecipeDialog({ open, onOpenChange, recipe, onSuccess }: Edit
             {fields.map((field, index) => (
               <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
                 <div className="sm:col-span-7 space-y-1">
-                  <select
-                    {...form.register(`lines.${index}.rawItemId`)}
-                    className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">Select raw material</option>
-                    {rawMaterials.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} ({item.uom})
-                      </option>
-                    ))}
-                  </select>
+                  <Controller
+                    name={`lines.${index}.rawItemId`}
+                    control={form.control}
+                    render={({ field }) => (
+                      <ItemSelect
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        items={rawMaterials}
+                        placeholder="Select raw material"
+                        searchPlaceholder="Search items..."
+                      />
+                    )}
+                  />
                 </div>
                 <div className="sm:col-span-4 space-y-1">
                   <Input
