@@ -23,11 +23,13 @@ Indian multi-store ERP PWA (oil-crushing vertical is the seeded demo: seeds `KGM
 ## Resume a machine
 
 1. Clone `https://github.com/rtsjsi/zeronerp.git`
-2. Restore **`.env.local`** (Cloudflare API token only). Template: `.env.local.example`. Do not commit it. A copy lives on Google Drive.
-3. `npm install` then `npm run dev`
-4. Do **not** run `npm run secrets:jwt` unless rotating — that invalidates all logins. `JWT_SECRET` is already on the Worker.
+2. After you clone again:
+   - Restore `.env.local` from Google Drive
+   - `npm install`
+   - `npm run dev`
+3. Do **not** run `npm run secrets:jwt` unless rotating — that invalidates all logins. `JWT_SECRET` is already on the Worker.
 
-`.env.local` has `CLOUDFLARE_API_TOKEN` only. `JWT_SECRET` is a Worker secret, never a repo/env file.
+`.env.local` has `CLOUDFLARE_API_TOKEN` only (template: `.env.local.example`). Do not commit it. `JWT_SECRET` is a Worker secret, never a repo/env file.
 
 ## Database SOP (mandatory)
 
