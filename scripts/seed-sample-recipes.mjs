@@ -20,7 +20,6 @@ loadEnvLocal();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-/** @type {import('../src/lib/inventory/sample-recipes').SampleRecipeDefinition[]} */
 const SAMPLE_RECIPES = JSON.parse(
   readFileSync(join(__dirname, '../src/lib/inventory/sample-recipes.json'), 'utf8'),
 );
